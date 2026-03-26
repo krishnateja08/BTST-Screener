@@ -28,6 +28,7 @@ from datetime import datetime
 from zoneinfo import ZoneInfo          # stdlib — Python 3.9+
 from tabulate import tabulate
 from colorama import Fore, Style, init
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 warnings.filterwarnings("ignore")
 init(autoreset=True)
@@ -38,10 +39,10 @@ init(autoreset=True)
 
 NIFTY100_SYMBOLS = [
     "RELIANCE.NS", "TCS.NS", "HDFCBANK.NS", "BHARTIARTL.NS", "ICICIBANK.NS",
-    "INFY.NS", "SBIN.NS", "HINDUNILVR.NS", "ITC.NS", "KOTAKBANK.NS",
+    "INFOSYS.NS", "SBIN.NS", "HINDUNILVR.NS", "ITC.NS", "KOTAKBANK.NS",
     "LT.NS", "AXISBANK.NS", "BAJFINANCE.NS", "ASIANPAINT.NS", "MARUTI.NS",
     "SUNPHARMA.NS", "TITAN.NS", "ULTRACEMCO.NS", "WIPRO.NS", "ADANIENT.NS",
-    "NESTLEIND.NS", "JSWSTEEL.NS", "TMCV.NS", "TMPV.NS", "POWERGRID.NS", "NTPC.NS",
+    "NESTLEIND.NS", "JSWSTEEL.NS", "TATAMOTORS.NS", "POWERGRID.NS", "NTPC.NS",
     "ONGC.NS", "COALINDIA.NS", "BAJAJFINSV.NS", "TECHM.NS", "HCLTECH.NS",
     "TATASTEEL.NS", "HINDALCO.NS", "GRASIM.NS", "DRREDDY.NS", "CIPLA.NS",
     "BPCL.NS", "EICHERMOT.NS", "HEROMOTOCO.NS", "DIVISLAB.NS", "APOLLOHOSP.NS",
@@ -51,7 +52,7 @@ NIFTY100_SYMBOLS = [
     "TORNTPHARM.NS", "MUTHOOTFIN.NS", "SHREECEM.NS", "AMBUJACEM.NS", "GAIL.NS",
     "IOC.NS", "INDUSINDBK.NS", "BANDHANBNK.NS", "PNB.NS", "CANBK.NS",
     "BANKBARODA.NS", "FEDERALBNK.NS", "IDFCFIRSTB.NS", "HDFCAMC.NS", "NAUKRI.NS",
-    "DMART.NS", "ETERNAL.NS", "PAYTM.NS", "IRCTC.NS", "HAL.NS",
+    "DMART.NS", "ZOMATO.NS", "PAYTM.NS", "IRCTC.NS", "HAL.NS",
     "BEL.NS", "BHEL.NS", "DLF.NS", "GODREJCP.NS", "COLPAL.NS",
     "PGHH.NS", "CONCOR.NS", "ADANIGREEN.NS", "ADANIPOWER.NS", "TATAPOWER.NS",
     "NHPC.NS", "RECLTD.NS", "PFC.NS", "INDIANB.NS", "UNIONBANK.NS",
@@ -69,7 +70,7 @@ SP500_TOP100_SYMBOLS = [
     "SPGI", "BKNG", "AMGN", "TXN", "MS", "BLK", "PFE", "SYK", "AMAT", "NEE",
     "PLD", "UNP", "HON", "LOW", "T", "CMCSA", "UBER", "ETN", "DE", "BSX",
     "ADP", "VRTX", "PANW", "CB", "TJX", "BMY", "GILD", "SO", "SCHW", "ZTS",
-    "MRSH", "LRCX", "ADI", "BA", "MO", "ELV", "DUK", "CI", "MDLZ", "APH",
+    "MMC", "LRCX", "ADI", "BA", "MO", "ELV", "DUK", "CI", "MDLZ", "APH",
     "PH", "ICE", "SHW", "KLAC", "MCO", "AON", "CME", "REGN", "CEG", "CL",
 ]
 
@@ -254,16 +255,149 @@ def score_stock(symbol: str) -> dict | None:
 # RUN SCREENER
 # ══════════════════════════════════════════════════════════
 
+def _batch_download(symbols: list) -> dict[str, pd.DataFrame]:
+    """
+    Download all symbols in one yf.download() call (much faster than
+    one-by-one). Returns a dict {symbol: single-ticker DataFrame}.
+    """
+    raw = yf.download(
+        symbols,
+        period=f"{LOOKBACK_DAYS}d",
+        interval="1d",
+        progress=False,
+        auto_adjust=True,
+        group_by="ticker",
+        threads=True,         # yfinance uses internal threading per batch
+    )
+    result = {}
+    for sym in symbols:
+        try:
+            if isinstance(raw.columns, pd.MultiIndex):
+                df = raw[sym].dropna()
+            else:
+                # Only one symbol was passed — raw IS the df
+                df = raw.dropna()
+            if len(df) >= 20:
+                result[sym] = df
+        except Exception:
+            pass
+    return result
+
+
+def score_stock_from_df(symbol: str, df: pd.DataFrame) -> dict | None:
+    """Score a stock using a pre-downloaded DataFrame (no network call)."""
+    try:
+        df = df.copy()
+        # Flatten MultiIndex columns if present
+        if isinstance(df.columns, pd.MultiIndex):
+            df.columns = df.columns.get_level_values(0)
+
+        close  = float(df["Close"].iloc[-1])
+        high   = float(df["High"].iloc[-1])
+        low    = float(df["Low"].iloc[-1])
+        volume = float(df["Volume"].iloc[-1])
+
+        # Volume surge
+        avg_vol   = df["Volume"].iloc[-AVG_VOL_PERIOD-1:-1].mean()
+        vol_ratio = volume / avg_vol if avg_vol > 0 else 0
+        s_vol     = (WEIGHTS["volume_surge"] if vol_ratio >= 1.5 else
+                     WEIGHTS["volume_surge"] * 0.5 if vol_ratio >= 1.2 else 0)
+
+        # RSI
+        rsi_s = ta.rsi(df["Close"], length=14)
+        rsi   = float(rsi_s.iloc[-1]) if rsi_s is not None else 50
+        s_rsi = (WEIGHTS["rsi_zone"] if 55 <= rsi <= 75 else
+                 WEIGHTS["rsi_zone"] * 0.5 if 50 <= rsi < 55 else 0)
+
+        # MACD
+        macd_df   = ta.macd(df["Close"], fast=12, slow=26, signal=9)
+        s_macd    = 0
+        macd_hist = None
+        if macd_df is not None and not macd_df.empty:
+            hcol = [c for c in macd_df.columns if "MACDh" in c]
+            if hcol:
+                macd_hist = float(macd_df[hcol[0]].iloc[-1])
+                prev_h    = float(macd_df[hcol[0]].iloc[-2])
+                s_macd    = (WEIGHTS["macd_bullish"] if macd_hist > 0 and prev_h <= 0
+                             else WEIGHTS["macd_bullish"] * 0.7 if macd_hist > 0 else 0)
+
+        # EMA
+        ema20 = float(ta.ema(df["Close"], length=20).iloc[-1])
+        ema50 = float(ta.ema(df["Close"], length=50).iloc[-1])
+        s_ema = (WEIGHTS["above_ema"] if close > ema20 and close > ema50
+                 else WEIGHTS["above_ema"] * 0.5 if close > ema20 else 0)
+
+        # Price breakout
+        rng   = high - low
+        pos   = (close - low) / rng if rng > 0 else 0
+        s_brk = (WEIGHTS["price_breakout"] if pos >= 0.90
+                 else WEIGHTS["price_breakout"] * 0.6 if pos >= 0.75 else 0)
+
+        # ADX
+        adx_df  = ta.adx(df["High"], df["Low"], df["Close"], length=14)
+        adx_val = 0.0
+        s_adx   = 0
+        if adx_df is not None and not adx_df.empty:
+            ac = [c for c in adx_df.columns if c.startswith("ADX_")]
+            if ac:
+                adx_val = float(adx_df[ac[0]].iloc[-1])
+                s_adx   = (WEIGHTS["adx_trend"] if adx_val >= 25
+                           else WEIGHTS["adx_trend"] * 0.5 if adx_val >= 20 else 0)
+
+        prev_close = float(df["Close"].iloc[-2])
+        day_chg    = (close - prev_close) / prev_close * 100
+
+        total = s_vol + s_rsi + s_macd + s_ema + s_brk + s_adx
+        if day_chg > 4.0:
+            total *= 0.6
+
+        clean_sym = (symbol.replace(".NS", "")
+                           .replace("-", ".")
+                           .replace("BRK.B", "BRK-B"))
+
+        return {
+            "Symbol":       clean_sym,
+            "Close":        round(close, 2),
+            "Change%":      round(day_chg, 2),
+            "Volume_Ratio": round(vol_ratio, 2),
+            "RSI":          round(rsi, 1),
+            "MACD_Hist":    round(macd_hist, 4) if macd_hist is not None else None,
+            "EMA20":        round(ema20, 2),
+            "EMA50":        round(ema50, 2),
+            "ADX":          round(adx_val, 1),
+            "Range_Pos%":   round(pos * 100, 1),
+            "BTST_Score":   round(total, 1),
+        }
+    except Exception as e:
+        print(f"  {Fore.YELLOW}⚠  Skipping {symbol}: {e}{Style.RESET_ALL}")
+        return None
+
+
 def run_screener(symbols: list, label: str) -> pd.DataFrame:
-    hdr(f"Scanning {len(symbols)} {label} stocks …")
-    results, total = [], len(symbols)
-    for i, sym in enumerate(symbols, 1):
-        print(f"  [{i:>3}/{total}] {sym:<22}", end="\r")
-        r = score_stock(sym)
-        if r:
-            results.append(r)
+    hdr(f"Scanning {len(symbols)} {label} stocks (batch + parallel) …")
+
+    # ── Step 1: Batch-download all OHLCV data in one request ──────
+    print(f"  📥  Downloading all {len(symbols)} tickers in one batch …", flush=True)
+    cache = _batch_download(symbols)
+    print(f"  ✅  Downloaded {len(cache)}/{len(symbols)} tickers. Scoring …", flush=True)
+
+    # ── Step 2: Score all stocks in parallel (CPU-bound TA calcs) ─
+    results = []
+    with ThreadPoolExecutor(max_workers=16) as pool:
+        futures = {
+            pool.submit(score_stock_from_df, sym, df): sym
+            for sym, df in cache.items()
+        }
+        done = 0
+        for future in as_completed(futures):
+            done += 1
+            print(f"  ⚙️  Scoring [{done:>3}/{len(cache)}]", end="\r", flush=True)
+            r = future.result()
+            if r:
+                results.append(r)
+
     print(" " * 60, end="\r")
-    print(f"  ✅  Scanned {len(results)} stocks successfully.")
+    print(f"  ✅  Scored {len(results)} stocks successfully.")
     return pd.DataFrame(results)
 
 
