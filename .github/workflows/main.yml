@@ -1,176 +1,150 @@
-name: BTST Stock Screener — India + USA
+# ══════════════════════════════════════════════════════════════
+#  BTST Screener — Single Unified Workflow
+#
+#  Flow:
+#    scan-india ──┐
+#                 ├──► commit (generates HTML + pushes ONCE)
+#    scan-usa   ──┘
+#
+#  Runs twice daily:
+#    • 10:00 UTC  →  3:30 PM IST  (India market close)
+#    • 21:00 UTC  →  4:00 PM EST  (USA market close)
+#
+#  No more push conflicts — only the final commit job touches git.
+# ══════════════════════════════════════════════════════════════
+
+name: BTST Screener
 
 on:
   schedule:
-    - cron: "45 9 * * 1-5"
-    - cron: "30 20 * * 1-5"
+    - cron: '0 10 * * 1-5'   # 3:30 PM IST — India market close
+    - cron: '0 21 * * 1-5'   # 4:00 PM EST — USA market close
+  workflow_dispatch:           # allow manual trigger from Actions tab
 
-  workflow_dispatch:
-    inputs:
-      market:
-        description: "Which market to scan?"
-        required: true
-        default: "both"
-        type: choice
-        options:
-          - both
-          - india
-          - usa
+# Prevent two runs from pushing at the same time
+concurrency:
+  group: btst-deploy
+  cancel-in-progress: false   # queue, don't cancel
 
 jobs:
 
-  india-screener:
-    name: 🇮🇳 India — Nifty 100 BTST Scan
+  # ── JOB 1: Scan India (parallel) ────────────────────────────
+  scan-india:
+    name: 🇮🇳 Scan India (Nifty 100)
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
-
-    if: >-
-      (github.event_name == 'schedule' && github.event.schedule == '45 9 * * 1-5') ||
-      (github.event_name == 'workflow_dispatch' && (github.event.inputs.market == 'india' || github.event.inputs.market == 'both'))
-
     steps:
-      - name: ⬇️  Checkout Repository
+      - name: Checkout repo
         uses: actions/checkout@v4
 
-      - name: 🐍  Setup Python 3.12
+      - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.12"
+          python-version: '3.11'
+          cache: 'pip'
 
-      - name: 📦  Install Dependencies
-        run: |
-          pip install --upgrade pip
-          pip install \
-            yfinance>=0.2.36 \
-            pandas>=2.0.0 \
-            pandas-ta>=0.3.14b \
-            tabulate>=0.9.0 \
-            colorama>=0.4.6 \
-            requests>=2.31.0
+      - name: Install dependencies
+        run: pip install yfinance pandas pandas-ta requests tabulate colorama
 
-      - name: 🇮🇳  Run India BTST Screener
+      - name: Run India scan
         run: python btst_screener.py --india
 
-      - name: ✅  Verify HTML Report Exists
-        run: |
-          HTML=$(ls btst_report_*.html 2>/dev/null | head -1)
-          if [ -z "$HTML" ]; then
-            echo "❌ ERROR: btst_report_*.html was NOT generated!"
-            exit 1
-          fi
-          echo "✅ HTML found: $HTML  ($(wc -c < "$HTML") bytes)"
-          ls -lh btst_*.html btst_*.csv 2>/dev/null || true
-
-      - name: 📤  Upload India Reports
+      - name: Upload India scan output
         uses: actions/upload-artifact@v4
         with:
-          name: btst-india-${{ github.run_id }}
+          name: scan-india
           path: |
             btst_india_*.csv
-            btst_india_full_*.csv
-            btst_report_*.html
+            btst_india_meta_*.json
           retention-days: 7
 
-      - name: 💾  Commit India Reports to Repo
-        run: |
-          mkdir -p docs
-          cp btst_india_*.csv      docs/ 2>/dev/null || true
-          cp btst_india_full_*.csv docs/ 2>/dev/null || true
-          cp btst_report_*.html    docs/ 2>/dev/null || true
-          LATEST=$(ls -t docs/btst_report_*.html 2>/dev/null | head -1 | xargs basename 2>/dev/null || echo "")
-          if [ -n "$LATEST" ]; then
-            echo "<meta http-equiv=\"refresh\" content=\"0; url=$LATEST\">" > docs/index.html
-            echo "📄 index.html → $LATEST"
-          fi
-          git config user.name  "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add docs/
-          if git diff --cached --quiet; then
-            echo "ℹ️  No changes to commit."
-          else
-            git commit -m "📊 [India] BTST Report $(TZ='Asia/Kolkata' date +'%Y-%m-%d %I:%M %p IST')"
-            for i in 1 2 3; do
-              git pull --rebase origin main && git push && echo "✅ Push succeeded" && break
-              echo "⚠️  Push attempt $i failed, retrying in 5s..."
-              sleep 5
-            done
-          fi
-
-  usa-screener:
-    name: 🇺🇸 USA — S&P 500 Top 100 BTST Scan
+  # ── JOB 2: Scan USA (parallel) ──────────────────────────────
+  scan-usa:
+    name: 🇺🇸 Scan USA (S&P 500 Top 100)
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
-
-    if: >-
-      (github.event_name == 'schedule' && github.event.schedule == '30 20 * * 1-5') ||
-      (github.event_name == 'workflow_dispatch' && (github.event.inputs.market == 'usa' || github.event.inputs.market == 'both'))
-
     steps:
-      - name: ⬇️  Checkout Repository
+      - name: Checkout repo
         uses: actions/checkout@v4
 
-      - name: 🐍  Setup Python 3.12
+      - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.12"
+          python-version: '3.11'
+          cache: 'pip'
 
-      - name: 📦  Install Dependencies
-        run: |
-          pip install --upgrade pip
-          pip install \
-            yfinance>=0.2.36 \
-            pandas>=2.0.0 \
-            pandas-ta>=0.3.14b \
-            tabulate>=0.9.0 \
-            colorama>=0.4.6 \
-            requests>=2.31.0
+      - name: Install dependencies
+        run: pip install yfinance pandas pandas-ta requests tabulate colorama
 
-      - name: 🇺🇸  Run USA BTST Screener
+      - name: Run USA scan
         run: python btst_screener.py --usa
 
-      - name: ✅  Verify HTML Report Exists
-        run: |
-          HTML=$(ls btst_report_*.html 2>/dev/null | head -1)
-          if [ -z "$HTML" ]; then
-            echo "❌ ERROR: btst_report_*.html was NOT generated!"
-            exit 1
-          fi
-          echo "✅ HTML found: $HTML  ($(wc -c < "$HTML") bytes)"
-          ls -lh btst_*.html btst_*.csv 2>/dev/null || true
-
-      - name: 📤  Upload USA Reports
+      - name: Upload USA scan output
         uses: actions/upload-artifact@v4
         with:
-          name: btst-usa-${{ github.run_id }}
+          name: scan-usa
           path: |
             btst_usa_*.csv
-            btst_usa_full_*.csv
-            btst_report_*.html
+            btst_usa_meta_*.json
           retention-days: 7
 
-      - name: 💾  Commit USA Reports to Repo
+  # ── JOB 3: Combine results, generate HTML, commit ONCE ──────
+  commit:
+    name: 📝 Generate Report & Commit
+    runs-on: ubuntu-latest
+    needs: [scan-india, scan-usa]   # waits for BOTH parallel jobs
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # full history needed for clean push
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: pip install yfinance pandas pandas-ta requests tabulate colorama
+
+      # Download both scan artifacts into working directory
+      - name: Download India scan output
+        uses: actions/download-artifact@v4
+        with:
+          name: scan-india
+          path: .
+
+      - name: Download USA scan output
+        uses: actions/download-artifact@v4
+        with:
+          name: scan-usa
+          path: .
+
+      # Generate combined HTML from the saved CSVs — no yfinance calls needed
+      - name: Generate combined HTML report
+        run: python btst_screener.py --html-only
+
+      # Copy all outputs into the docs/ folder (GitHub Pages source)
+      - name: Copy outputs to docs/
         run: |
           mkdir -p docs
-          cp btst_usa_*.csv      docs/ 2>/dev/null || true
-          cp btst_usa_full_*.csv docs/ 2>/dev/null || true
-          cp btst_report_*.html  docs/ 2>/dev/null || true
-          LATEST=$(ls -t docs/btst_report_*.html 2>/dev/null | head -1 | xargs basename 2>/dev/null || echo "")
-          if [ -n "$LATEST" ]; then
-            echo "<meta http-equiv=\"refresh\" content=\"0; url=$LATEST\">" > docs/index.html
-            echo "📄 index.html → $LATEST"
-          fi
+          cp btst_india_*.csv   docs/ 2>/dev/null || true
+          cp btst_india_full_*.csv  docs/ 2>/dev/null || true
+          cp btst_india_meta_*.json docs/ 2>/dev/null || true
+          cp btst_usa_*.csv     docs/ 2>/dev/null || true
+          cp btst_usa_full_*.csv    docs/ 2>/dev/null || true
+          cp btst_usa_meta_*.json   docs/ 2>/dev/null || true
+          cp btst_report_*.html docs/ 2>/dev/null || true
+          cp index.html         docs/ 2>/dev/null || true
+
+      # Single git commit + push — no more conflicts!
+      - name: Commit and push to repo
+        run: |
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add docs/
-          if git diff --cached --quiet; then
-            echo "ℹ️  No changes to commit."
-          else
-            git commit -m "📊 [USA] BTST Report $(TZ='America/New_York' date +'%Y-%m-%d %I:%M %p EST')"
-            for i in 1 2 3; do
-              git pull --rebase origin main && git push && echo "✅ Push succeeded" && break
-              echo "⚠️  Push attempt $i failed, retrying in 5s..."
-              sleep 5
-            done
-          fi
+          # Only commit if there are actual changes
+          git diff --cached --quiet && echo "No changes to commit" && exit 0
+          DATE=$(TZ='Asia/Kolkata' date +'%Y-%m-%d')
+          git commit -m "📊 BTST Report ${DATE} — India + USA"
+          git push origin main
