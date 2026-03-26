@@ -32,6 +32,12 @@ on:
           - usa
 
 # ─────────────────────────────────────────────────────────────────
+# SHARED SETUP — reusable across all jobs via a composite action
+# ─────────────────────────────────────────────────────────────────
+# NOTE: Dependencies are installed inline below — no requirements.txt needed.
+#       Packages: yfinance, pandas, pandas-ta, tabulate, colorama, requests
+
+# ─────────────────────────────────────────────────────────────────
 # JOBS
 # ─────────────────────────────────────────────────────────────────
 jobs:
@@ -52,21 +58,29 @@ jobs:
       - name: ⬇️  Checkout Repository
         uses: actions/checkout@v4
 
-      # ── 2. Python (no pip cache — avoids requirements.txt lookup) ─
+      # ── 2. Python setup (no cache — avoids requirements.txt lookup)
       - name: 🐍  Setup Python 3.11
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
 
-      # ── 3. Install deps ──────────────────────────────────────────
+      # ── 3. Install all dependencies inline ───────────────────────
       - name: 📦  Install Dependencies
-        run: pip install -r requirements.txt
+        run: |
+          pip install --upgrade pip
+          pip install \
+            yfinance>=0.2.36 \
+            pandas>=2.0.0 \
+            pandas-ta>=0.3.14b \
+            tabulate>=0.9.0 \
+            colorama>=0.4.6 \
+            requests>=2.31.0
 
-      # ── 4. Run ───────────────────────────────────────────────────
+      # ── 4. Run India screener ─────────────────────────────────────
       - name: 🇮🇳  Run India BTST Screener
         run: python btst_screener.py --india
 
-      # ── 5. Upload artifacts (downloadable from Actions UI) ───────
+      # ── 5. Upload artifacts (downloadable from Actions UI) ────────
       - name: 📤  Upload India Reports
         uses: actions/upload-artifact@v4
         with:
@@ -77,7 +91,7 @@ jobs:
             btst_report_*.html
           retention-days: 7
 
-      # ── 6. Commit reports into repo under reports/ folder ────────
+      # ── 6. Commit reports into repo under reports/ folder ─────────
       - name: 💾  Commit India Reports to Repo
         run: |
           mkdir -p reports
@@ -112,7 +126,15 @@ jobs:
           python-version: "3.11"
 
       - name: 📦  Install Dependencies
-        run: pip install -r requirements.txt
+        run: |
+          pip install --upgrade pip
+          pip install \
+            yfinance>=0.2.36 \
+            pandas>=2.0.0 \
+            pandas-ta>=0.3.14b \
+            tabulate>=0.9.0 \
+            colorama>=0.4.6 \
+            requests>=2.31.0
 
       - name: 🇺🇸  Run USA BTST Screener
         run: python btst_screener.py --usa
@@ -141,7 +163,7 @@ jobs:
           git push || true
 
   # ══════════════════════════════════════════════════════════════
-  # JOB 3 — BOTH  (manual "both" only — scans India + USA together)
+  # JOB 3 — BOTH  (manual "both" — scans India + USA together)
   # ══════════════════════════════════════════════════════════════
   both-screener:
     name: 🌏 Both Markets — Full BTST Scan
@@ -160,7 +182,15 @@ jobs:
           python-version: "3.11"
 
       - name: 📦  Install Dependencies
-        run: pip install -r requirements.txt
+        run: |
+          pip install --upgrade pip
+          pip install \
+            yfinance>=0.2.36 \
+            pandas>=2.0.0 \
+            pandas-ta>=0.3.14b \
+            tabulate>=0.9.0 \
+            colorama>=0.4.6 \
+            requests>=2.31.0
 
       - name: 🌏  Run Both Markets Screener
         run: python btst_screener.py
