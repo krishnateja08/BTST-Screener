@@ -30,6 +30,9 @@ on:
   workflow_dispatch:   # manual trigger from Actions tab
 
 # Prevent two runs from pushing at the same time
+permissions:
+  contents: write   # allows git push
+
 concurrency:
   group: btst-deploy
   cancel-in-progress: false   # queue, don't cancel
@@ -153,4 +156,4 @@ jobs:
           fi
           DATE=$(TZ='Asia/Kolkata' date +'%Y-%m-%d %I:%M %p IST')
           git commit -m "📊 BTST Report ${DATE} — India + USA"
-          git push origin main
+          git push https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git main
