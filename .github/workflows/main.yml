@@ -1,24 +1,10 @@
 name: BTST Stock Screener — India + USA
 
-# ─────────────────────────────────────────────────────────────────
-# SCHEDULE STRATEGY
-#
-#  Two auto-runs per weekday:
-#
-#  1) India run  — 3:15 PM IST  = 09:45 UTC  (near NSE market close)
-#  2) USA run    — 3:30 PM EST  = 20:30 UTC  (near NYSE market close)
-#
-#  Manual trigger available from the GitHub Actions tab.
-# ─────────────────────────────────────────────────────────────────
-
 on:
   schedule:
-    # ── India: 3:15 PM IST (Mon–Fri) ──────────────────────────────
     - cron: "45 9 * * 1-5"
-    # ── USA: 3:30 PM EST = 20:30 UTC (Mon–Fri) ────────────────────
     - cron: "30 20 * * 1-5"
 
-  # ── Manual trigger — pick which market to scan ────────────────
   workflow_dispatch:
     inputs:
       market:
@@ -31,40 +17,27 @@ on:
           - india
           - usa
 
-# ─────────────────────────────────────────────────────────────────
-# SHARED SETUP — reusable across all jobs via a composite action
-# ─────────────────────────────────────────────────────────────────
-# NOTE: Dependencies are installed inline below — no requirements.txt needed.
-#       Packages: yfinance, pandas, pandas-ta, tabulate, colorama, requests
-
-# ─────────────────────────────────────────────────────────────────
-# JOBS
-# ─────────────────────────────────────────────────────────────────
 jobs:
 
-  # ══════════════════════════════════════════════════════════════
-  # JOB 1 — INDIA  (auto at 09:45 UTC  OR  manual india/both)
-  # ══════════════════════════════════════════════════════════════
   india-screener:
     name: 🇮🇳 India — Nifty 100 BTST Scan
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
 
     if: >-
       (github.event_name == 'schedule' && github.event.schedule == '45 9 * * 1-5') ||
       (github.event_name == 'workflow_dispatch' && (github.event.inputs.market == 'india' || github.event.inputs.market == 'both'))
 
     steps:
-      # ── 1. Checkout ──────────────────────────────────────────────
       - name: ⬇️  Checkout Repository
         uses: actions/checkout@v4
 
-      # ── 2. Python setup (no cache — avoids requirements.txt lookup)
       - name: 🐍  Setup Python 3.12
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
 
-      # ── 3. Install all dependencies inline ───────────────────────
       - name: 📦  Install Dependencies
         run: |
           pip install --upgrade pip
@@ -76,11 +49,19 @@ jobs:
             colorama>=0.4.6 \
             requests>=2.31.0
 
-      # ── 4. Run India screener ─────────────────────────────────────
       - name: 🇮🇳  Run India BTST Screener
         run: python btst_screener.py --india
 
-      # ── 5. Upload artifacts (downloadable from Actions UI) ────────
+      - name: ✅  Verify HTML Report Exists
+        run: |
+          HTML=$(ls btst_report_*.html 2>/dev/null | head -1)
+          if [ -z "$HTML" ]; then
+            echo "❌ ERROR: btst_report_*.html was NOT generated!"
+            exit 1
+          fi
+          echo "✅ HTML found: $HTML  ($(wc -c < "$HTML") bytes)"
+          ls -lh btst_*.html btst_*.csv 2>/dev/null || true
+
       - name: 📤  Upload India Reports
         uses: actions/upload-artifact@v4
         with:
@@ -91,35 +72,36 @@ jobs:
             btst_report_*.html
           retention-days: 7
 
-      # ── 6. Commit reports into repo under docs/ folder ──────────────
       - name: 💾  Commit India Reports to Repo
         run: |
           mkdir -p docs
           cp btst_india_*.csv      docs/ 2>/dev/null || true
           cp btst_india_full_*.csv docs/ 2>/dev/null || true
           cp btst_report_*.html    docs/ 2>/dev/null || true
-          # Generate index.html pointing to latest report
           LATEST=$(ls -t docs/btst_report_*.html 2>/dev/null | head -1 | xargs basename 2>/dev/null || echo "")
           if [ -n "$LATEST" ]; then
             echo "<meta http-equiv=\"refresh\" content=\"0; url=$LATEST\">" > docs/index.html
+            echo "📄 index.html → $LATEST"
           fi
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add docs/ || true
-          git diff --cached --quiet || \
+          git add docs/
+          if git diff --cached --quiet; then
+            echo "ℹ️  No changes to commit."
+          else
             git commit -m "📊 [India] BTST Report $(TZ='Asia/Kolkata' date +'%Y-%m-%d %I:%M %p IST')"
-          for i in 1 2 3; do
-            git pull --rebase origin main && git push && break
-            echo "Push attempt $i failed, retrying in 5s..."
-            sleep 5
-          done
+            for i in 1 2 3; do
+              git pull --rebase origin main && git push && echo "✅ Push succeeded" && break
+              echo "⚠️  Push attempt $i failed, retrying in 5s..."
+              sleep 5
+            done
+          fi
 
-  # ══════════════════════════════════════════════════════════════
-  # JOB 2 — USA  (auto at 20:30 UTC  OR  manual usa/both)
-  # ══════════════════════════════════════════════════════════════
   usa-screener:
     name: 🇺🇸 USA — S&P 500 Top 100 BTST Scan
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
 
     if: >-
       (github.event_name == 'schedule' && github.event.schedule == '30 20 * * 1-5') ||
@@ -148,6 +130,16 @@ jobs:
       - name: 🇺🇸  Run USA BTST Screener
         run: python btst_screener.py --usa
 
+      - name: ✅  Verify HTML Report Exists
+        run: |
+          HTML=$(ls btst_report_*.html 2>/dev/null | head -1)
+          if [ -z "$HTML" ]; then
+            echo "❌ ERROR: btst_report_*.html was NOT generated!"
+            exit 1
+          fi
+          echo "✅ HTML found: $HTML  ($(wc -c < "$HTML") bytes)"
+          ls -lh btst_*.html btst_*.csv 2>/dev/null || true
+
       - name: 📤  Upload USA Reports
         uses: actions/upload-artifact@v4
         with:
@@ -164,18 +156,21 @@ jobs:
           cp btst_usa_*.csv      docs/ 2>/dev/null || true
           cp btst_usa_full_*.csv docs/ 2>/dev/null || true
           cp btst_report_*.html  docs/ 2>/dev/null || true
-          # Generate index.html pointing to latest report
           LATEST=$(ls -t docs/btst_report_*.html 2>/dev/null | head -1 | xargs basename 2>/dev/null || echo "")
           if [ -n "$LATEST" ]; then
             echo "<meta http-equiv=\"refresh\" content=\"0; url=$LATEST\">" > docs/index.html
+            echo "📄 index.html → $LATEST"
           fi
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add docs/ || true
-          git diff --cached --quiet || \
+          git add docs/
+          if git diff --cached --quiet; then
+            echo "ℹ️  No changes to commit."
+          else
             git commit -m "📊 [USA] BTST Report $(TZ='America/New_York' date +'%Y-%m-%d %I:%M %p EST')"
-          for i in 1 2 3; do
-            git pull --rebase origin main && git push && break
-            echo "Push attempt $i failed, retrying in 5s..."
-            sleep 5
-          done
+            for i in 1 2 3; do
+              git pull --rebase origin main && git push && echo "✅ Push succeeded" && break
+              echo "⚠️  Push attempt $i failed, retrying in 5s..."
+              sleep 5
+            done
+          fi
