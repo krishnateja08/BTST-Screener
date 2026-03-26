@@ -7,17 +7,20 @@ Requirements:
     pip install yfinance pandas pandas-ta requests tabulate colorama
 
 Usage:
-    python btst_screener.py              # scans both markets
+    python btst_screener.py              # scans both markets (BTST + ORB)
     python btst_screener.py --india      # India only
     python btst_screener.py --usa        # USA only
+    python btst_screener.py --no-orb     # skip ORB intraday scan
     python btst_screener.py --backtest   # replay past CSV picks (last 30 days)
     python btst_screener.py --backtest --days 60   # extend backtest window
     python btst_screener.py --backtest --india      # India backtest only
 
 Output:
-    btst_report_YYYY-MM-DD.html    (combined HTML with toggle)
+    btst_report_YYYY-MM-DD.html    (combined HTML with BTST + ORB tabs)
     btst_india_YYYY-MM-DD.csv
     btst_usa_YYYY-MM-DD.csv
+    orb_india_YYYY-MM-DD.csv
+    orb_usa_YYYY-MM-DD.csv
 ============================================================
 """
 
@@ -205,6 +208,26 @@ WEIGHTS = {
 
 IST = ZoneInfo("Asia/Kolkata")
 EST = ZoneInfo("America/New_York")
+
+# ══════════════════════════════════════════════════════════
+# ORB (Opening Range Breakout) CONFIG  — intraday 5-min
+# ══════════════════════════════════════════════════════════
+# Opening Range = first ORB_BARS × 5-min candles after market open
+#   India: 9:15–9:30 AM IST  (3 bars)
+#   USA  : 9:30–9:45 AM EST  (3 bars)
+
+ORB_BARS = 3          # number of 5-min bars defining the opening range
+
+ORB_WEIGHTS = {
+    "breakout_strength": 25,   # how far price is above ORB high
+    "volume_surge":      20,   # current bar vol vs ORB avg vol
+    "rsi_5m":            15,   # RSI on 5m >= 55
+    "adx_5m":            10,   # ADX on 5m >= 25
+    "orb_range_tight":   10,   # tight ORB = higher conviction
+    "open_candle_bull":   8,   # first bar of day was green
+    "sector_bonus":        7,  # sector index green (shared with BTST)
+}
+# Max ORB score ~95 pts
 
 
 # ══════════════════════════════════════════════════════════
@@ -575,6 +598,139 @@ def score_stock_from_df(symbol: str, df: pd.DataFrame,
 
 
 # ══════════════════════════════════════════════════════════
+# ORB SCORE — single stock, live 5-min intraday data
+# ══════════════════════════════════════════════════════════
+
+def score_orb_stock(symbol: str, sector_bonus: float = 0.0) -> dict | None:
+    """
+    Download today's 5-min bars, identify the Opening Range (first ORB_BARS bars),
+    and score bullish breakouts above the ORB High.
+    Returns None if no breakout or insufficient data.
+    """
+    try:
+        # ── Fetch intraday 5-min data (2 days to guarantee today's bars) ──
+        raw = yf.download(symbol, period="2d", interval="5m",
+                          progress=False, auto_adjust=True)
+        if isinstance(raw.columns, pd.MultiIndex):
+            raw.columns = raw.columns.get_level_values(0)
+        raw = raw.dropna()
+        if len(raw) < ORB_BARS + 2:
+            return None
+
+        # ── Localise index to market timezone ────────────────────────
+        is_india = symbol.endswith(".NS")
+        tz       = IST if is_india else EST
+        currency = "₹" if is_india else "$"
+
+        if raw.index.tzinfo is None:
+            raw.index = raw.index.tz_localize("UTC")
+        raw.index = raw.index.tz_convert(tz)
+
+        # ── Keep only today's bars ────────────────────────────────────
+        today_date = datetime.now(tz=tz).date()
+        df = raw[raw.index.date == today_date].copy()
+        if len(df) < ORB_BARS + 1:
+            return None          # market not open long enough yet
+
+        # ── Opening Range (first ORB_BARS bars) ──────────────────────
+        orb     = df.iloc[:ORB_BARS]
+        orb_high  = float(orb["High"].max())
+        orb_low   = float(orb["Low"].min())
+        orb_range = orb_high - orb_low
+        orb_range_pct = (orb_range / orb_high * 100) if orb_high > 0 else 0.0
+
+        # ── Current (latest) bar ─────────────────────────────────────
+        cur_bar = df.iloc[-1]
+        price   = float(cur_bar["Close"])
+        cur_vol = float(cur_bar["Volume"])
+
+        # ── Breakout condition: price must be ABOVE ORB High ─────────
+        if price <= orb_high:
+            return None          # not yet broken out (or broken down)
+
+        # ── 1. Breakout strength ──────────────────────────────────────
+        brk_pct = (price - orb_high) / orb_high * 100
+        s_brk   = (ORB_WEIGHTS["breakout_strength"]        if brk_pct >= 1.0 else
+                   ORB_WEIGHTS["breakout_strength"] * 0.72 if brk_pct >= 0.5 else
+                   ORB_WEIGHTS["breakout_strength"] * 0.48)
+
+        # ── 2. Volume surge (current bar vs ORB avg) ─────────────────
+        orb_avg_vol = float(orb["Volume"].mean())
+        vol_ratio   = cur_vol / orb_avg_vol if orb_avg_vol > 0 else 1.0
+        s_vol = (ORB_WEIGHTS["volume_surge"]        if vol_ratio >= 2.0 else
+                 ORB_WEIGHTS["volume_surge"] * 0.70 if vol_ratio >= 1.5 else
+                 ORB_WEIGHTS["volume_surge"] * 0.40 if vol_ratio >= 1.2 else 0)
+
+        # ── 3. RSI on 5-min bars ──────────────────────────────────────
+        rsi_s = ta.rsi(df["Close"], length=14)
+        rsi   = float(rsi_s.iloc[-1]) if rsi_s is not None and not rsi_s.empty else 50.0
+        s_rsi = (ORB_WEIGHTS["rsi_5m"]        if rsi >= 55 else
+                 ORB_WEIGHTS["rsi_5m"] * 0.53 if rsi >= 50 else 0)
+
+        # ── 4. ADX on 5-min bars ──────────────────────────────────────
+        adx_df  = ta.adx(df["High"], df["Low"], df["Close"], length=14)
+        adx_val = 0.0
+        s_adx   = 0
+        if adx_df is not None and not adx_df.empty:
+            ac = [c for c in adx_df.columns if c.startswith("ADX_")]
+            if ac:
+                adx_val = float(adx_df[ac[0]].iloc[-1])
+                s_adx   = (ORB_WEIGHTS["adx_5m"]        if adx_val >= 25 else
+                           ORB_WEIGHTS["adx_5m"] * 0.50 if adx_val >= 20 else 0)
+
+        # ── 5. ORB range quality (tighter = cleaner breakout) ────────
+        s_range = (ORB_WEIGHTS["orb_range_tight"]        if orb_range_pct <= 1.0 else
+                   ORB_WEIGHTS["orb_range_tight"] * 0.70 if orb_range_pct <= 1.5 else
+                   ORB_WEIGHTS["orb_range_tight"] * 0.40 if orb_range_pct <= 2.0 else 0)
+
+        # ── 6. First bar of the day was bullish ───────────────────────
+        first = df.iloc[0]
+        s_candle = (ORB_WEIGHTS["open_candle_bull"]
+                    if float(first["Close"]) > float(first["Open"]) else 0)
+
+        # ── 7. Sector alignment bonus (passed in) ─────────────────────
+        total = s_brk + s_vol + s_rsi + s_adx + s_range + s_candle + sector_bonus
+
+        # ── ATR for stop-loss ─────────────────────────────────────────
+        atr_s   = ta.atr(df["High"], df["Low"], df["Close"], length=14)
+        atr_val = (float(atr_s.iloc[-1])
+                   if atr_s is not None and not atr_s.empty else orb_range)
+
+        # ── Stop Loss and Target ──────────────────────────────────────
+        # SL  = ORB Low (clean invalidation level)  OR  price – ATR, whichever is tighter
+        # Tgt = ORB High + 1.5 × ORB Range  (classic first extension)
+        stop_loss = round(max(orb_low, price - atr_val), 2)
+        target    = round(orb_high + 1.5 * orb_range, 2)
+        risk      = price - stop_loss
+        reward    = target - price
+        rr_ratio  = round(reward / risk, 2) if risk > 0 else 0.0
+
+        clean_sym = (symbol.replace(".NS", "")
+                           .replace("-", ".")
+                           .replace("BRK.B", "BRK-B"))
+
+        return {
+            "Symbol":       clean_sym,
+            "Price":        round(price, 2),
+            "ORB_High":     round(orb_high, 2),
+            "ORB_Low":      round(orb_low, 2),
+            "ORB_Range%":   round(orb_range_pct, 2),
+            "Brk_Pct":      round(brk_pct, 2),
+            "Vol_Ratio":    round(vol_ratio, 2),
+            "RSI_5m":       round(rsi, 1),
+            "ADX_5m":       round(adx_val, 1),
+            "Sector_Align": sector_bonus > 0,
+            "Stop_Loss":    stop_loss,
+            "Target":       target,
+            "RR_Ratio":     rr_ratio,
+            "ORB_Score":    round(total, 1),
+        }
+    except Exception as e:
+        print(f"  {Fore.YELLOW}⚠  ORB skip {symbol}: {e}{Style.RESET_ALL}")
+        return None
+
+
+# ══════════════════════════════════════════════════════════
 # RUN SCREENER  — batch download + parallel scoring
 # ══════════════════════════════════════════════════════════
 
@@ -616,6 +772,56 @@ def run_screener(symbols: list, label: str, index_chg: float = 0.0) -> pd.DataFr
     print(" " * 60, end="\r")
     print(f"  ✅  Scored {len(results)} stocks successfully.")
     return pd.DataFrame(results)
+
+
+# ══════════════════════════════════════════════════════════
+# RUN ORB SCREENER  — live 5-min intraday scan (parallel)
+# ══════════════════════════════════════════════════════════
+
+def run_orb_screener(symbols: list, label: str) -> pd.DataFrame:
+    hdr(f"ORB Scan — {len(symbols)} {label} stocks (5-min bars) …")
+
+    market      = "india" if any(s.endswith(".NS") for s in symbols) else "usa"
+    sector_map  = INDIA_SECTOR_MAP if market == "india" else USA_SECTOR_MAP
+    sector_perf = fetch_sector_perf(market)
+
+    def _sector_bonus(sym: str) -> float:
+        sec = sector_map.get(sym)
+        if sec and sector_perf.get(sec, False):
+            return float(SECTOR_BONUS_PTS)
+        return 0.0
+
+    results = []
+    with ThreadPoolExecutor(max_workers=16) as pool:
+        futures = {
+            pool.submit(score_orb_stock, sym, _sector_bonus(sym)): sym
+            for sym in symbols
+        }
+        done = 0
+        for future in as_completed(futures):
+            done += 1
+            print(f"  ⚙️  ORB [{done:>3}/{len(symbols)}]", end="\r", flush=True)
+            r = future.result()
+            if r:
+                results.append(r)
+
+    print(" " * 60, end="\r")
+    breakouts = len(results)
+    print(f"  ✅  ORB: {breakouts} confirmed breakout(s) found out of {len(symbols)} scanned.")
+    return pd.DataFrame(results)
+
+
+def filter_and_rank_orb(df: pd.DataFrame) -> pd.DataFrame:
+    """Filter ORB candidates: valid R:R, decent volume, momentum; rank by score."""
+    if df.empty:
+        return df
+    f = df[
+        (df["RSI_5m"]   >= 50) &
+        (df["Vol_Ratio"] >= 1.2) &
+        (df["RR_Ratio"]  >= 1.5)
+    ].copy()
+    f.sort_values("ORB_Score", ascending=False, inplace=True)
+    return f.head(15)
 
 
 # ══════════════════════════════════════════════════════════
@@ -807,6 +1013,60 @@ def _rows(df: pd.DataFrame, currency: str = "₹",
     return rows
 
 
+def _rows_orb(df: pd.DataFrame, currency: str = "₹") -> str:
+    """Build HTML table rows for ORB candidates."""
+    medals = {1: "🥇", 2: "🥈", 3: "🥉"}
+    rows   = ""
+    for rank, (_, row) in enumerate(df.iterrows(), 1):
+        medal   = medals.get(rank, f"#{rank}")
+        sc      = row["ORB_Score"]
+        bc      = "#00e676" if sc >= 60 else "#ffca28" if sc >= 40 else "#ff5252"
+        pct     = min(sc / 95 * 100, 100)
+
+        vol_cls = "bg" if row["Vol_Ratio"] >= 2.0 else "by" if row["Vol_Ratio"] >= 1.5 else "br"
+        rsi_cls = "bg" if row["RSI_5m"] >= 55    else "by" if row["RSI_5m"] >= 50    else "br"
+
+        sec_align = row.get("Sector_Align", False)
+        sec_bg    = "rgba(0,230,118,0.10)" if sec_align else "rgba(255,82,82,0.08)"
+        sec_txt   = "#00e676" if sec_align else "#ff5252"
+        sec_label = "✅ Green" if sec_align else "❌ Red"
+
+        rr     = row.get("RR_Ratio", 0)
+        rr_col = "#00e676" if rr >= 2 else "#ffca28" if rr >= 1.5 else "#ff5252"
+        sl     = row.get("Stop_Loss", 0)
+        tgt    = row.get("Target", 0)
+
+        brk_pct = row.get("Brk_Pct", 0)
+        brk_col = "#00e676" if brk_pct >= 1.0 else "#ffca28"
+
+        rows += f"""
+        <tr>
+          <td class="rnk">{medal}</td>
+          <td class="sym">{row['Symbol']}</td>
+          <td class="num">{currency}{row['Price']:,.2f}</td>
+          <td class="num" style="color:var(--green);font-weight:700">{currency}{row['ORB_High']:,.2f}</td>
+          <td class="num" style="color:var(--red)">{currency}{row['ORB_Low']:,.2f}</td>
+          <td class="num">{row['ORB_Range%']:.2f}%</td>
+          <td><span style="color:{brk_col};font-weight:700">+{brk_pct:.2f}%</span></td>
+          <td><span class="badge {vol_cls}">{row['Vol_Ratio']:.2f}x</span></td>
+          <td><span class="badge {rsi_cls}">{row['RSI_5m']:.1f}</span></td>
+          <td class="num">{row['ADX_5m']:.1f}</td>
+          <td style="background:{sec_bg};text-align:center">
+            <span style="color:{sec_txt};font-weight:700;font-size:.72rem">{sec_label}</span>
+          </td>
+          <td class="num" style="color:#ff5252">{currency}{sl:,.2f}</td>
+          <td class="num" style="color:#00e676">{currency}{tgt:,.2f}</td>
+          <td class="num" style="color:{rr_col};font-weight:700">{rr:.1f}x</td>
+          <td>
+            <div class="bw">
+              <div class="bt"><div class="b" style="width:{pct:.0f}%;background:{bc}"></div></div>
+              <span class="bl">{sc:.1f}</span>
+            </div>
+          </td>
+        </tr>"""
+    return rows
+
+
 def _summary_cards(top_df: pd.DataFrame, total_scanned: int, tab_id: str) -> str:
     if top_df.empty or "BTST_Score" not in top_df.columns:
         strong = moderate = weak = 0
@@ -832,6 +1092,8 @@ def generate_html_report(
     india_top, india_full, india_ok, india_chg, india_vix,
     usa_top,   usa_full,   usa_ok,   usa_chg,   usa_vix,
     date_str: str,
+    orb_india_df: pd.DataFrame | None = None,
+    orb_usa_df:   pd.DataFrame | None = None,
 ):
     now_ist  = datetime.now(tz=IST)
     now_est  = datetime.now(tz=EST)
@@ -841,6 +1103,15 @@ def generate_html_report(
 
     india_rows = _rows(india_top, "₹", _load_prev_scores("india", date_str)) if not india_top.empty else "<tr><td colspan='18' style='text-align:center;color:var(--muted);padding:30px'>No candidates found today</td></tr>"
     usa_rows   = _rows(usa_top,   "$", _load_prev_scores("usa",   date_str)) if not usa_top.empty   else "<tr><td colspan='18' style='text-align:center;color:var(--muted);padding:30px'>No candidates found today</td></tr>"
+
+    # ── ORB rows ──────────────────────────────────────────────
+    _orb_empty = "<tr><td colspan='15' style='text-align:center;color:var(--muted);padding:30px'>No ORB breakouts detected — market may not be open yet, or no confirmed breakouts this session.</td></tr>"
+    orb_india  = orb_india_df if orb_india_df is not None else pd.DataFrame()
+    orb_usa    = orb_usa_df   if orb_usa_df   is not None else pd.DataFrame()
+    orb_india_rows = _rows_orb(orb_india, "₹") if not orb_india.empty else _orb_empty
+    orb_usa_rows   = _rows_orb(orb_usa,   "$") if not orb_usa.empty   else _orb_empty
+    orb_india_count = len(orb_india)
+    orb_usa_count   = len(orb_usa)
 
     india_cards = _summary_cards(india_top, len(india_full), "india")
     usa_cards   = _summary_cards(usa_top,   len(usa_full),   "usa")
@@ -1024,6 +1295,16 @@ def generate_html_report(
     <div class="pill"><div class="dot" style="background:#7d8590"></div>Scanned:&nbsp;<strong style="color:#e6edf3">{len(usa_full)}</strong></div>
     <div class="pill"><div class="dot" style="background:#7d8590"></div>Candidates:&nbsp;<strong style="color:#e6edf3">{len(usa_top)}</strong></div>
   </div>
+
+  <!-- ORB status pills -->
+  <div class="market-pills" id="pills-orb">
+    <div class="pill"><div class="dot live" style="background:#f9a825"></div>Mode:&nbsp;<strong style="color:#f9a825">INTRADAY</strong></div>
+    <div class="pill"><div class="dot" style="background:#f9a825"></div>Strategy:&nbsp;<strong style="color:#e6edf3">Opening Range Breakout</strong></div>
+    <div class="pill"><div class="dot" style="background:#7d8590"></div>Interval:&nbsp;<strong style="color:#e6edf3">5-min bars</strong></div>
+    <div class="pill"><div class="dot" style="background:#7d8590"></div>ORB Window:&nbsp;<strong style="color:#e6edf3">First 15 min</strong></div>
+    <div class="pill"><div class="dot" style="background:#7d8590"></div>🇮🇳 Breakouts:&nbsp;<strong style="color:#e6edf3">{orb_india_count}</strong></div>
+    <div class="pill"><div class="dot" style="background:#7d8590"></div>🇺🇸 Breakouts:&nbsp;<strong style="color:#e6edf3">{orb_usa_count}</strong></div>
+  </div>
 </div>
 
 <!-- CONTENT -->
@@ -1036,6 +1317,9 @@ def generate_html_report(
     </button>
     <button class="tab-btn usa-btn" onclick="switchTab('usa')">
       <span class="flag">🇺🇸</span> USA &nbsp;<span style="font-size:.65rem;opacity:.6">S&amp;P 500 TOP 100</span>
+    </button>
+    <button class="tab-btn orb-btn" onclick="switchTab('orb')">
+      <span class="flag">📊</span> ORB &nbsp;<span style="font-size:.65rem;opacity:.6">INTRADAY 5-MIN</span>
     </button>
   </div>
 
@@ -1073,6 +1357,83 @@ def generate_html_report(
       </table>
     </div>
     {_legend()}
+  </div>
+
+  <!-- ORB PANEL -->
+  <style>
+    .tab-btn.active.orb-btn{{color:#f9a825}}
+    .orb-sub{{margin:20px 0 10px;padding:10px 14px;background:rgba(249,168,37,.05);border:1px solid rgba(249,168,37,.18);border-radius:8px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}}
+    .orb-sub-title{{font-family:var(--mono);font-size:.72rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#f9a825}}
+    .orb-chip{{font-family:var(--mono);font-size:.65rem;padding:2px 8px;border-radius:4px;background:rgba(249,168,37,.12);border:1px solid rgba(249,168,37,.25);color:#f9a825}}
+    .orb-info{{font-size:.72rem;color:var(--muted);line-height:1.5;margin-top:8px;padding:9px 13px;background:var(--surf);border:1px solid var(--border);border-radius:7px}}
+    .orb-info strong{{color:var(--text)}}
+  </style>
+
+  <div class="tab-panel" id="panel-orb">
+
+    <!-- ORB explainer banner -->
+    <div class="orb-info">
+      <strong>⚡ Opening Range Breakout (ORB) — Intraday Strategy</strong><br>
+      Opening Range = first 15 min of trading (3 × 5-min bars).
+      &nbsp;·&nbsp; <strong>Buy</strong> when price breaks above ORB High with volume confirmation.
+      &nbsp;·&nbsp; <strong>Target</strong> = ORB High + 1.5 × ORB Range.
+      &nbsp;·&nbsp; <strong>Stop Loss</strong> = ORB Low (or price − ATR, whichever is tighter).
+      &nbsp;·&nbsp; Entry window: <strong>9:30–10:30 AM IST / EST</strong> &nbsp;·&nbsp; Exit by: <strong>3:00 PM IST / 3:30 PM EST</strong>.
+    </div>
+
+    <!-- India ORB -->
+    <div class="orb-sub" style="margin-top:16px">
+      <span class="orb-sub-title">🇮🇳 India ORB</span>
+      <span class="orb-chip">Nifty 100 · 5-min</span>
+      <span class="orb-chip">{orb_india_count} breakout(s)</span>
+      <span style="font-family:var(--mono);font-size:.62rem;color:var(--muted);margin-left:auto">ORB Window: 9:15–9:30 AM IST</span>
+    </div>
+    <p class="scroll-hint">← swipe to see all columns</p>
+    <div class="tw">
+      <table>
+        <thead><tr>
+          <th>#</th><th>Symbol</th><th>Price (₹)</th>
+          <th>ORB High</th><th>ORB Low</th><th>ORB Range%</th>
+          <th>Brk Above</th><th>Vol Ratio</th><th>RSI 5m</th><th>ADX 5m</th>
+          <th>Sector</th><th>Stop Loss</th><th>Target</th><th>R:R</th><th>ORB Score</th>
+        </tr></thead>
+        <tbody>{orb_india_rows}</tbody>
+      </table>
+    </div>
+
+    <!-- USA ORB -->
+    <div class="orb-sub" style="margin-top:24px">
+      <span class="orb-sub-title">🇺🇸 USA ORB</span>
+      <span class="orb-chip">S&amp;P 500 · 5-min</span>
+      <span class="orb-chip">{orb_usa_count} breakout(s)</span>
+      <span style="font-family:var(--mono);font-size:.62rem;color:var(--muted);margin-left:auto">ORB Window: 9:30–9:45 AM EST</span>
+    </div>
+    <p class="scroll-hint">← swipe to see all columns</p>
+    <div class="tw">
+      <table>
+        <thead><tr>
+          <th>#</th><th>Symbol</th><th>Price ($)</th>
+          <th>ORB High</th><th>ORB Low</th><th>ORB Range%</th>
+          <th>Brk Above</th><th>Vol Ratio</th><th>RSI 5m</th><th>ADX 5m</th>
+          <th>Sector</th><th>Stop Loss</th><th>Target</th><th>R:R</th><th>ORB Score</th>
+        </tr></thead>
+        <tbody>{orb_usa_rows}</tbody>
+      </table>
+    </div>
+
+    <!-- ORB legend -->
+    <div class="legend" style="margin-top:16px">
+      <div class="li"><div class="ld" style="background:#f9a825"></div>ORB Score ≥60 — Strong breakout signal</div>
+      <div class="li"><div class="ld" style="background:var(--yellow)"></div>Score 40–59 — Moderate breakout</div>
+      <div class="li"><div class="ld" style="background:var(--red)"></div>Score &lt;40 — Weak / avoid</div>
+      <div class="li"><div class="ld" style="background:var(--green)"></div>ORB High — Resistance turned support on breakout</div>
+      <div class="li"><div class="ld" style="background:var(--red)"></div>ORB Low — Invalidation / stop level</div>
+      <div class="li"><div class="ld" style="background:var(--green)"></div>Brk Above — % price is above ORB High</div>
+      <div class="li"><div class="ld" style="background:var(--blue)"></div>Vol Ratio ≥2× = Strong institutional buying</div>
+      <div class="li"><div class="ld" style="background:var(--muted)"></div>ADX 5m &gt;25 = Intraday trend confirmed</div>
+      <div class="li"><div class="ld" style="background:var(--muted)"></div>Tight ORB Range (&lt;1%) = Cleaner, more reliable breakout</div>
+    </div>
+
   </div>
 
   <div class="sh" style="margin-top:36px">
@@ -1252,10 +1613,11 @@ def generate_html_report(
 </div>
 
 <script>
-  // Set correct timestamp based on active tab
+  // Timestamps per BTST tab; ORB shows both market times
   const times = {{
     india: {{ time: "{now_ist.strftime('%I:%M %p')}", tz: "IST", date: "{now_ist.strftime('%d %b %Y')}" }},
-    usa:   {{ time: "{now_est.strftime('%I:%M %p')}", tz: "EST", date: "{now_est.strftime('%d %b %Y')}" }}
+    usa:   {{ time: "{now_est.strftime('%I:%M %p')}", tz: "EST", date: "{now_est.strftime('%d %b %Y')}" }},
+    orb:   {{ time: "{now_ist.strftime('%I:%M %p')}", tz: "IST/EST", date: "{now_ist.strftime('%d %b %Y')}" }}
   }};
 
   function updateTime(tab) {{
@@ -1272,9 +1634,10 @@ def generate_html_report(
     // buttons
     document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
     document.querySelector('.' + tab + '-btn').classList.add('active');
-    // pills
+    // pills — only show pills row that exists for this tab
     document.querySelectorAll('.market-pills').forEach(p => p.classList.remove('active'));
-    document.getElementById('pills-' + tab).classList.add('active');
+    const pillEl = document.getElementById('pills-' + tab);
+    if (pillEl) pillEl.classList.add('active');
     // time
     updateTime(tab);
   }}
@@ -1549,8 +1912,8 @@ def print_disclaimer():
 # MAIN
 # ══════════════════════════════════════════════════════════
 
-def _scan_india(date_str: str):
-    """Run India scan and return (ok, chg, vix, top_df, full_df)."""
+def _scan_india(date_str: str, run_orb: bool = True):
+    """Run India BTST scan (+ optional ORB scan). Returns (ok, chg, vix, top_df, full_df, orb_df)."""
     ok, chg, vix = check_market("india")
     full = run_screener(NIFTY100_SYMBOLS, "Nifty 100", chg)
     top  = pd.DataFrame()
@@ -1559,11 +1922,19 @@ def _scan_india(date_str: str):
         print_report(top, "INDIA", ok, chg)
         save_csv(top, full, "india", date_str)
         save_meta("india", date_str, ok, chg, vix)
-    return ok, chg, vix, top, full
+    # ORB scan (independent — does not affect BTST results)
+    orb_top = pd.DataFrame()
+    if run_orb:
+        orb_raw = run_orb_screener(NIFTY100_SYMBOLS, "Nifty 100")
+        orb_top = filter_and_rank_orb(orb_raw)
+        if not orb_top.empty:
+            orb_top.to_csv(f"orb_india_{date_str}.csv", index=False)
+            print(f"  💾  ORB India CSV saved → orb_india_{date_str}.csv")
+    return ok, chg, vix, top, full, orb_top
 
 
-def _scan_usa(date_str: str):
-    """Run USA scan and return (ok, chg, vix, top_df, full_df)."""
+def _scan_usa(date_str: str, run_orb: bool = True):
+    """Run USA BTST scan (+ optional ORB scan). Returns (ok, chg, vix, top_df, full_df, orb_df)."""
     ok, chg, vix = check_market("usa")
     full = run_screener(SP500_TOP100_SYMBOLS, "S&P 500 Top 100", chg)
     top  = pd.DataFrame()
@@ -1572,13 +1943,22 @@ def _scan_usa(date_str: str):
         print_report(top, "USA", ok, chg)
         save_csv(top, full, "usa", date_str)
         save_meta("usa", date_str, ok, chg, vix)
-    return ok, chg, vix, top, full
+    # ORB scan (independent — does not affect BTST results)
+    orb_top = pd.DataFrame()
+    if run_orb:
+        orb_raw = run_orb_screener(SP500_TOP100_SYMBOLS, "S&P 500 Top 100")
+        orb_top = filter_and_rank_orb(orb_raw)
+        if not orb_top.empty:
+            orb_top.to_csv(f"orb_usa_{date_str}.csv", index=False)
+            print(f"  💾  ORB USA CSV saved → orb_usa_{date_str}.csv")
+    return ok, chg, vix, top, full, orb_top
 
 
 def main():
     parser = argparse.ArgumentParser(description="BTST Screener — India + USA")
     parser.add_argument("--india",     action="store_true", help="Scan India only")
     parser.add_argument("--usa",       action="store_true", help="Scan USA only")
+    parser.add_argument("--no-orb",    action="store_true", help="Skip ORB intraday scan")
     parser.add_argument("--html-only", action="store_true",
                         help="Skip scanning — read existing CSVs and regenerate HTML report")
     parser.add_argument("--backtest",  action="store_true",
@@ -1588,6 +1968,7 @@ def main():
     args      = parser.parse_args()
     run_india = not args.usa   or args.india
     run_usa   = not args.india or args.usa
+    do_orb    = not args.no_orb   # True by default; False when --no-orb passed
 
     print(f"\n{Fore.CYAN}{'='*62}")
     print("   BTST SCREENER  |  India (Nifty 100)  +  USA (S&P 500 Top 100)")
@@ -1606,8 +1987,6 @@ def main():
         return
 
     # ── HTML-ONLY MODE (used by CI commit job) ─────────────
-    # Reads CSVs + metadata written by the parallel scan jobs,
-    # then regenerates the combined HTML report — no yfinance calls.
     if args.html_only:
         hdr("HTML-ONLY MODE — reading saved CSVs + metadata")
 
@@ -1623,52 +2002,60 @@ def main():
                 print(f"  ⚠️   {prefix.upper()} CSVs not found for {date_str} — using empty")
                 return pd.DataFrame(), pd.DataFrame()
 
+        def _load_orb_csv(prefix):
+            try:
+                df = pd.read_csv(f"orb_{prefix}_{date_str}.csv")
+                print(f"  ✅  Loaded ORB {prefix.upper()} CSV ({len(df)} picks)")
+                return df
+            except FileNotFoundError:
+                return pd.DataFrame()
+
         india_top,  india_full = _load_csv("india")
         usa_top,    usa_full   = _load_csv("usa")
         india_ok,   india_chg, india_vix = load_meta("india", date_str)
         usa_ok,     usa_chg,   usa_vix   = load_meta("usa",   date_str)
+        orb_india = _load_orb_csv("india")
+        orb_usa   = _load_orb_csv("usa")
 
         generate_html_report(
             india_top, india_full, india_ok, india_chg, india_vix,
             usa_top,   usa_full,   usa_ok,   usa_chg,   usa_vix,
             date_str,
+            orb_india_df=orb_india,
+            orb_usa_df=orb_usa,
         )
         print_disclaimer()
         return
 
     # ── LIVE SCAN MODE ─────────────────────────────────────
-    # When called with --india or --usa (parallel CI jobs),
-    # only that market runs.  When called with no flags (local),
-    # both run in parallel threads.
     india_ok, india_chg, india_vix = True, 0.0, 0.0
     india_full = india_top = pd.DataFrame()
     usa_ok,    usa_chg,   usa_vix   = True, 0.0, 0.0
     usa_full   = usa_top  = pd.DataFrame()
+    orb_india  = orb_usa  = pd.DataFrame()
 
     if run_india and run_usa:
-        # ── Both markets: run in parallel (local / manual run) ──
         hdr("Running India + USA scans in PARALLEL")
         with ThreadPoolExecutor(max_workers=2) as pool:
-            f_india = pool.submit(_scan_india, date_str)
-            f_usa   = pool.submit(_scan_usa,   date_str)
-            india_ok, india_chg, india_vix, india_top, india_full = f_india.result()
-            usa_ok,   usa_chg,   usa_vix,   usa_top,   usa_full   = f_usa.result()
+            f_india = pool.submit(_scan_india, date_str, do_orb)
+            f_usa   = pool.submit(_scan_usa,   date_str, do_orb)
+            india_ok, india_chg, india_vix, india_top, india_full, orb_india = f_india.result()
+            usa_ok,   usa_chg,   usa_vix,   usa_top,   usa_full,   orb_usa   = f_usa.result()
 
     elif run_india:
-        # ── India only (CI parallel job) ────────────────────
-        india_ok, india_chg, india_vix, india_top, india_full = _scan_india(date_str)
+        india_ok, india_chg, india_vix, india_top, india_full, orb_india = _scan_india(date_str, do_orb)
 
     elif run_usa:
-        # ── USA only (CI parallel job) ──────────────────────
-        usa_ok, usa_chg, usa_vix, usa_top, usa_full = _scan_usa(date_str)
+        usa_ok, usa_chg, usa_vix, usa_top, usa_full, orb_usa = _scan_usa(date_str, do_orb)
 
-    # ── HTML (only generated in single-run / local mode) ───
-    # In CI the commit job runs --html-only after both scans finish.
+    # ── HTML ───────────────────────────────────────────────
     if run_india and run_usa:
         generate_html_report(
             india_top, india_full, india_ok, india_chg, india_vix,
             usa_top,   usa_full,   usa_ok,   usa_chg,   usa_vix,
             date_str,
+            orb_india_df=orb_india,
+            orb_usa_df=orb_usa,
         )
 
     print_disclaimer()
