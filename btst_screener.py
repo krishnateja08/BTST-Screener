@@ -46,7 +46,7 @@ NIFTY100_SYMBOLS = [
     "INFY.NS", "SBIN.NS", "HINDUNILVR.NS", "ITC.NS", "KOTAKBANK.NS",
     "LT.NS", "AXISBANK.NS", "BAJFINANCE.NS", "ASIANPAINT.NS", "MARUTI.NS",
     "SUNPHARMA.NS", "TITAN.NS", "ULTRACEMCO.NS", "WIPRO.NS", "ADANIENT.NS",
-    "NESTLEIND.NS", "JSWSTEEL.NS", "TATAMOTORS.NS", "POWERGRID.NS", "NTPC.NS",
+    "NESTLEIND.NS", "JSWSTEEL.NS", "POWERGRID.NS", "NTPC.NS",
     "ONGC.NS", "COALINDIA.NS", "BAJAJFINSV.NS", "TECHM.NS", "HCLTECH.NS",
     "TATASTEEL.NS", "HINDALCO.NS", "GRASIM.NS", "DRREDDY.NS", "CIPLA.NS",
     "BPCL.NS", "EICHERMOT.NS", "HEROMOTOCO.NS", "DIVISLAB.NS", "APOLLOHOSP.NS",
@@ -95,7 +95,7 @@ INDIA_SECTOR_MAP: dict[str, str] = {
     ]},
     # IT → Nifty IT
     **{s: "^CNXIT" for s in [
-        "TCS.NS","INFOSYS.NS","WIPRO.NS","TECHM.NS","HCLTECH.NS","NAUKRI.NS",
+        "TCS.NS","INFY.NS","WIPRO.NS","TECHM.NS","HCLTECH.NS","NAUKRI.NS",
     ]},
     # Pharma → Nifty Pharma
     **{s: "^CNXPHARMA" for s in [
@@ -104,7 +104,7 @@ INDIA_SECTOR_MAP: dict[str, str] = {
     ]},
     # Auto → Nifty Auto
     **{s: "^CNXAUTO" for s in [
-        "MARUTI.NS","TATAMOTORS.NS","BAJAJ-AUTO.NS","HEROMOTOCO.NS",
+        "MARUTI.NS","TMCV.NS","TMPV.NS","BAJAJ-AUTO.NS","HEROMOTOCO.NS",
         "M&M.NS","EICHERMOT.NS",
     ]},
     # Metal → Nifty Metal
@@ -1080,22 +1080,157 @@ def generate_html_report(
     <div class="sh-line"></div>
     <div class="sh-sub">Max score ≈ 138 pts · base 100 + sector (7) + candle (10) + RS (5) + weekly MTF (8) + gap-up (8)</div>
   </div>
-  <div class="pg">
-    <div class="pc"><div class="pn">Volume Surge<span class="pw">20 pts</span></div><div class="pd">Volume &gt;1.5× 10-day average confirms institutional participation.</div></div>
-    <div class="pc"><div class="pn">RSI Zone<span class="pw">15 pts</span></div><div class="pd">RSI 55–75 signals strong momentum without being overbought.</div></div>
-    <div class="pc"><div class="pn">MACD Signal<span class="pw">15 pts</span></div><div class="pd">Positive histogram or fresh bullish crossover signals continuation.</div></div>
-    <div class="pc"><div class="pn">EMA Alignment<span class="pw">15 pts</span></div><div class="pd">Price above both 20 EMA and 50 EMA confirms bullish structure.</div></div>
-    <div class="pc"><div class="pn">Price Breakout<span class="pw">15 pts</span></div><div class="pd">Closing in top 5–10% of day's range shows buyer dominance at close.</div></div>
-    <div class="pc"><div class="pn">52-Week High<span class="pw">10 pts</span></div><div class="pd">Within 5% of 52W high = breakout zone (full). Within 10% = approaching (half).</div></div>
-    <div class="pc"><div class="pn">ADX Trend<span class="pw">10 pts</span></div><div class="pd">ADX &gt;25 confirms strong trend, reducing overnight whipsaw risk.</div></div>
-    <div class="pc"><div class="pn">Gap-Up &amp; Hold<span class="pw">+5–8 pts</span></div><div class="pd">Open gapped above prior close and held: strong (+8) if ≥1% gap + range pos ≥60%; mild (+5) if ≥0.5% gap held.</div></div>
-    <div class="pc"><div class="pn">Sector Alignment<span class="pw">+7 pts</span></div><div class="pd">Bonus when the stock's sector index (e.g. Nifty Bank, XLK) is also green on the day.</div></div>
-    <div class="pc"><div class="pn">Candlestick Pattern<span class="pw">+6–10 pts</span></div><div class="pd">Morning Star (+10), Bullish Engulfing (+8), Hammer (+6) — high-confidence reversal/continuation candles.</div></div>
-    <div class="pc"><div class="pn">Relative Strength<span class="pw">+5 pts</span></div><div class="pd">Stock's daily gain exceeded the broader index — showing outperformance vs the market.</div></div>
-    <div class="pc"><div class="pn">Weekly MTF Confirm<span class="pw">+8 pts</span></div><div class="pd">Daily close above weekly EMA20 — weekly and daily trends aligned, reduces overnight reversal risk.</div></div>
-    <div class="pc"><div class="pn">ATR Penalty<span class="pw">−40%</span></div><div class="pd">Score penalized if day's move exceeds 1.5× ATR — avoids chasing overextended stocks.</div></div>
-    <div class="pc"><div class="pn">Stop Loss<span class="pw">dynamic</span></div><div class="pd">max(Today's Low, Close − 1×ATR). Tighter of the two — limits overnight gap risk.</div></div>
-    <div class="pc"><div class="pn">Target<span class="pw">dynamic</span></div><div class="pd">Close + 1.5×ATR. Respects each stock's typical daily volatility range.</div></div>
+
+  <!-- ── Compact 4-col scoring params ── -->
+  <style>
+    .sp-grid{{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin-top:16px}}
+    @media(max-width:900px){{.sp-grid{{grid-template-columns:repeat(2,1fr)}}}}
+    @media(max-width:480px){{.sp-grid{{grid-template-columns:1fr}}}}
+    .sp-section{{grid-column:1/-1;font-family:var(--mono);font-size:.58rem;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);padding:2px 0 5px;border-bottom:1px solid var(--border);margin-top:6px}}
+    .sp-card{{background:var(--surf);border:1px solid var(--border);border-radius:8px;padding:9px 11px;position:relative;overflow:hidden;transition:border-color .15s}}
+    .sp-card:hover{{border-color:#2a3245}}
+    .sp-card::before{{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--sp-accent,transparent);opacity:.75}}
+    .sp-card.sg{{--sp-accent:var(--green)}} .sp-card.sr{{--sp-accent:var(--red)}} .sp-card.sc{{--sp-accent:var(--blue)}} .sp-card.sy{{--sp-accent:var(--yellow)}}
+    .sp-top{{display:flex;align-items:flex-start;justify-content:space-between;gap:5px;margin-bottom:3px}}
+    .sp-name{{font-family:var(--mono);font-size:.62rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#dde6f8}}
+    .sp-badge{{font-family:var(--mono);font-size:.68rem;font-weight:700;padding:1px 6px;border-radius:4px;white-space:nowrap;flex-shrink:0}}
+    .sp-badge.sg{{color:var(--green);background:rgba(0,230,118,.12)}} .sp-badge.sr{{color:var(--red);background:rgba(255,82,82,.12)}}
+    .sp-badge.sc{{color:var(--blue);background:rgba(64,196,255,.12)}} .sp-badge.sy{{color:var(--yellow);background:rgba(255,202,40,.1)}}
+    .sp-desc{{font-size:.72rem;color:var(--muted);line-height:1.4;margin-bottom:4px}}
+    .sp-tags{{display:flex;flex-wrap:wrap;gap:3px}}
+    .sp-tag{{font-family:var(--mono);font-size:.58rem;padding:1px 5px;border-radius:3px;background:var(--surf2);border:1px solid var(--border);color:var(--text);white-space:nowrap}}
+    .sp-tag.tg{{color:var(--green);border-color:rgba(0,230,118,.25);background:rgba(0,230,118,.06)}}
+    .sp-tag.tr{{color:var(--red);border-color:rgba(255,82,82,.25);background:rgba(255,82,82,.06)}}
+    .sp-tag.tc{{color:var(--blue);border-color:rgba(64,196,255,.2);background:rgba(64,196,255,.06)}}
+    .sp-formula{{font-family:var(--mono);font-size:.62rem;color:var(--blue);background:rgba(64,196,255,.1);border:1px solid rgba(64,196,255,.2);padding:2px 7px;border-radius:4px;display:inline-block;margin-top:4px}}
+    .sp-footer{{margin-top:10px;padding:9px 13px;background:var(--surf);border:1px solid var(--border);border-radius:8px;display:flex;align-items:center;gap:6px;flex-wrap:wrap}}
+    .sp-footer-lbl{{font-family:var(--mono);font-size:.58rem;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-right:4px}}
+    .sp-chip{{font-family:var(--mono);font-size:.65rem;font-weight:600;padding:2px 8px;border-radius:5px;border:1px solid}}
+    .sp-chip.sg{{color:var(--green);background:rgba(0,230,118,.1);border-color:rgba(0,230,118,.2)}}
+    .sp-chip.sr{{color:var(--red);background:rgba(255,82,82,.1);border-color:rgba(255,82,82,.2)}}
+    .sp-chip.sc{{color:var(--blue);background:rgba(64,196,255,.1);border-color:rgba(64,196,255,.2)}}
+    .sp-sep{{color:var(--border);margin:0 1px}}
+  </style>
+
+  <div class="sp-grid">
+
+    <!-- MOMENTUM & TREND -->
+    <div class="sp-section">📈 Momentum &amp; Trend</div>
+
+    <div class="sp-card sg">
+      <div class="sp-top"><span class="sp-name">Volume Surge</span><span class="sp-badge sg">20 PTS</span></div>
+      <div class="sp-desc">Confirms institutional participation.</div>
+      <div class="sp-tags"><span class="sp-tag tg">Vol &gt;1.5× 10-day avg</span></div>
+    </div>
+
+    <div class="sp-card sg">
+      <div class="sp-top"><span class="sp-name">EMA Alignment</span><span class="sp-badge sg">15 PTS</span></div>
+      <div class="sp-desc">Confirms bullish structure.</div>
+      <div class="sp-tags"><span class="sp-tag tg">Above 20 EMA</span><span class="sp-tag tg">Above 50 EMA</span></div>
+    </div>
+
+    <div class="sp-card sg">
+      <div class="sp-top"><span class="sp-name">RSI Zone</span><span class="sp-badge sg">15 PTS</span></div>
+      <div class="sp-desc">Strong momentum without being overbought.</div>
+      <div class="sp-tags"><span class="sp-tag tg">RSI 55 – 75</span></div>
+    </div>
+
+    <div class="sp-card sg">
+      <div class="sp-top"><span class="sp-name">MACD Signal</span><span class="sp-badge sg">15 PTS</span></div>
+      <div class="sp-desc">Signals continuation.</div>
+      <div class="sp-tags"><span class="sp-tag tg">+ve histogram</span><span class="sp-tag tg">Fresh bull crossover</span></div>
+    </div>
+
+    <div class="sp-card sg">
+      <div class="sp-top"><span class="sp-name">ADX Trend</span><span class="sp-badge sg">10 PTS</span></div>
+      <div class="sp-desc">Reduces overnight whipsaw risk.</div>
+      <div class="sp-tags"><span class="sp-tag tg">ADX &gt; 25</span></div>
+    </div>
+
+    <div class="sp-card sg">
+      <div class="sp-top"><span class="sp-name">52-Week High</span><span class="sp-badge sg">10 PTS</span></div>
+      <div class="sp-desc">Proximity to breakout zone.</div>
+      <div class="sp-tags"><span class="sp-tag tg">Within 5% → Full</span><span class="sp-tag">Within 10% → Half</span></div>
+    </div>
+
+    <!-- PRICE ACTION -->
+    <div class="sp-section">🕯 Price Action &amp; Structure</div>
+
+    <div class="sp-card sg">
+      <div class="sp-top"><span class="sp-name">Price Breakout</span><span class="sp-badge sg">15 PTS</span></div>
+      <div class="sp-desc">Buyer dominance at close.</div>
+      <div class="sp-tags"><span class="sp-tag tg">Close in top 5–10% of range</span></div>
+    </div>
+
+    <div class="sp-card sg">
+      <div class="sp-top"><span class="sp-name">Candlestick Pattern</span><span class="sp-badge sg">+6–10 PTS</span></div>
+      <div class="sp-desc">High-confidence reversal/continuation candles.</div>
+      <div class="sp-tags"><span class="sp-tag tg">M-Star +10</span><span class="sp-tag tg">Engulfing +8</span><span class="sp-tag tg">Hammer +6</span></div>
+    </div>
+
+    <div class="sp-card sg">
+      <div class="sp-top"><span class="sp-name">Gap-Up &amp; Hold</span><span class="sp-badge sg">+5–8 PTS</span></div>
+      <div class="sp-desc">Open gapped above prior close and held.</div>
+      <div class="sp-tags"><span class="sp-tag tg">≥1% gap + pos ≥60% → +8</span><span class="sp-tag">≥0.5% held → +5</span></div>
+    </div>
+
+    <div class="sp-card sg">
+      <div class="sp-top"><span class="sp-name">Relative Strength</span><span class="sp-badge sg">+5 PTS</span></div>
+      <div class="sp-desc">Outperformance vs the broader index.</div>
+      <div class="sp-tags"><span class="sp-tag tg">Daily gain &gt; Index</span></div>
+    </div>
+
+    <!-- CONFIRMATION -->
+    <div class="sp-section">🔗 Confirmation &amp; Alignment</div>
+
+    <div class="sp-card sy">
+      <div class="sp-top"><span class="sp-name">Sector Alignment</span><span class="sp-badge sy">+7 PTS</span></div>
+      <div class="sp-desc">Bonus when sector index is also green on the day.</div>
+      <div class="sp-tags"><span class="sp-tag">e.g. Nifty Bank, XLK</span></div>
+    </div>
+
+    <div class="sp-card sy">
+      <div class="sp-top"><span class="sp-name">Weekly MTF Confirm</span><span class="sp-badge sy">+8 PTS</span></div>
+      <div class="sp-desc">Weekly &amp; daily trends aligned. Reduces reversal risk.</div>
+      <div class="sp-tags"><span class="sp-tag">Daily close &gt; Weekly EMA20</span></div>
+    </div>
+
+    <!-- RISK -->
+    <div class="sp-section">⚠ Risk &amp; Dynamic Levels</div>
+
+    <div class="sp-card sr">
+      <div class="sp-top"><span class="sp-name">ATR Penalty</span><span class="sp-badge sr">−40%</span></div>
+      <div class="sp-desc">Avoids chasing overextended stocks. Triggered if day's move exceeds 1.5× ATR.</div>
+      <div class="sp-tags"><span class="sp-tag tr">Move &gt; 1.5× ATR → penalty</span></div>
+    </div>
+
+    <div class="sp-card sc">
+      <div class="sp-top"><span class="sp-name">Stop Loss</span><span class="sp-badge sc">DYNAMIC</span></div>
+      <div class="sp-desc">Limits overnight gap risk. Tighter of the two values.</div>
+      <div class="sp-formula">max( Today's Low,  Close − 1×ATR )</div>
+    </div>
+
+    <div class="sp-card sc">
+      <div class="sp-top"><span class="sp-name">Target</span><span class="sp-badge sc">DYNAMIC</span></div>
+      <div class="sp-desc">Respects each stock's typical daily volatility range.</div>
+      <div class="sp-formula">Close + 1.5× ATR</div>
+    </div>
+
+  </div>
+
+  <!-- Score breakdown footer -->
+  <div class="sp-footer">
+    <span class="sp-footer-lbl">Score Breakdown</span>
+    <span class="sp-chip sg">Base 100</span><span class="sp-sep">+</span>
+    <span class="sp-chip sg">Sector +7</span><span class="sp-sep">+</span>
+    <span class="sp-chip sg">Candle +10</span><span class="sp-sep">+</span>
+    <span class="sp-chip sg">RS +5</span><span class="sp-sep">+</span>
+    <span class="sp-chip sg">Weekly MTF +8</span><span class="sp-sep">+</span>
+    <span class="sp-chip sg">Gap-Up +8</span><span class="sp-sep">=</span>
+    <span class="sp-chip sg" style="font-size:.72rem;padding:3px 10px">Max 138 PTS</span>
+    <span class="sp-chip sr" style="margin-left:auto">ATR Penalty −40%</span>
+    <span class="sp-chip sc">SL: Dynamic</span>
+    <span class="sp-chip sc">Target: Dynamic</span>
   </div>
 
   <!-- DISCLAIMER -->
