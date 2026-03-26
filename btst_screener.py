@@ -10,6 +10,9 @@ Usage:
     python btst_screener.py              # scans both markets
     python btst_screener.py --india      # India only
     python btst_screener.py --usa        # USA only
+    python btst_screener.py --backtest   # replay past CSV picks (last 30 days)
+    python btst_screener.py --backtest --days 60   # extend backtest window
+    python btst_screener.py --backtest --india      # India backtest only
 
 Output:
     btst_report_YYYY-MM-DD.html    (combined HTML with toggle)
@@ -24,7 +27,7 @@ import pandas_ta as ta
 import warnings
 import sys
 import argparse
-from datetime import datetime
+from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo          # stdlib — Python 3.9+
 from tabulate import tabulate
 from colorama import Fore, Style, init
@@ -39,10 +42,10 @@ init(autoreset=True)
 
 NIFTY100_SYMBOLS = [
     "RELIANCE.NS", "TCS.NS", "HDFCBANK.NS", "BHARTIARTL.NS", "ICICIBANK.NS",
-    "INFY.NS", "SBIN.NS", "HINDUNILVR.NS", "ITC.NS", "KOTAKBANK.NS",
+    "INFOSYS.NS", "SBIN.NS", "HINDUNILVR.NS", "ITC.NS", "KOTAKBANK.NS",
     "LT.NS", "AXISBANK.NS", "BAJFINANCE.NS", "ASIANPAINT.NS", "MARUTI.NS",
     "SUNPHARMA.NS", "TITAN.NS", "ULTRACEMCO.NS", "WIPRO.NS", "ADANIENT.NS",
-    "NESTLEIND.NS", "JSWSTEEL.NS", "TMCV.NS", "TMPV.NS", "POWERGRID.NS", "NTPC.NS",
+    "NESTLEIND.NS", "JSWSTEEL.NS", "TATAMOTORS.NS", "POWERGRID.NS", "NTPC.NS",
     "ONGC.NS", "COALINDIA.NS", "BAJAJFINSV.NS", "TECHM.NS", "HCLTECH.NS",
     "TATASTEEL.NS", "HINDALCO.NS", "GRASIM.NS", "DRREDDY.NS", "CIPLA.NS",
     "BPCL.NS", "EICHERMOT.NS", "HEROMOTOCO.NS", "DIVISLAB.NS", "APOLLOHOSP.NS",
@@ -52,7 +55,7 @@ NIFTY100_SYMBOLS = [
     "TORNTPHARM.NS", "MUTHOOTFIN.NS", "SHREECEM.NS", "AMBUJACEM.NS", "GAIL.NS",
     "IOC.NS", "INDUSINDBK.NS", "BANDHANBNK.NS", "PNB.NS", "CANBK.NS",
     "BANKBARODA.NS", "FEDERALBNK.NS", "IDFCFIRSTB.NS", "HDFCAMC.NS", "NAUKRI.NS",
-    "DMART.NS", "ETERNAL.NS", "PAYTM.NS", "IRCTC.NS", "HAL.NS",
+    "DMART.NS", "ZOMATO.NS", "PAYTM.NS", "IRCTC.NS", "HAL.NS",
     "BEL.NS", "BHEL.NS", "DLF.NS", "GODREJCP.NS", "COLPAL.NS",
     "PGHH.NS", "CONCOR.NS", "ADANIGREEN.NS", "ADANIPOWER.NS", "TATAPOWER.NS",
     "NHPC.NS", "RECLTD.NS", "PFC.NS", "INDIANB.NS", "UNIONBANK.NS",
@@ -80,7 +83,108 @@ INDIA_VIX    = "^INDIAVIX"
 USA_INDEX    = "^GSPC"      # S&P 500
 USA_VIX      = "^VIX"       # CBOE VIX
 
-LOOKBACK_DAYS  = 60
+# ── Sector index / ETF maps ────────────────────────────────
+# Maps each stock symbol → its sector benchmark ticker
+INDIA_SECTOR_MAP: dict[str, str] = {
+    # Banking → Nifty Bank
+    **{s: "^NSEBANK" for s in [
+        "HDFCBANK.NS","ICICIBANK.NS","SBIN.NS","KOTAKBANK.NS","AXISBANK.NS",
+        "INDUSINDBK.NS","BANDHANBNK.NS","PNB.NS","CANBK.NS","BANKBARODA.NS",
+        "FEDERALBNK.NS","IDFCFIRSTB.NS","INDIANB.NS","UNIONBANK.NS",
+    ]},
+    # IT → Nifty IT
+    **{s: "^CNXIT" for s in [
+        "TCS.NS","INFOSYS.NS","WIPRO.NS","TECHM.NS","HCLTECH.NS","NAUKRI.NS",
+    ]},
+    # Pharma → Nifty Pharma
+    **{s: "^CNXPHARMA" for s in [
+        "SUNPHARMA.NS","DRREDDY.NS","CIPLA.NS","DIVISLAB.NS","LUPIN.NS",
+        "TORNTPHARM.NS","APOLLOHOSP.NS",
+    ]},
+    # Auto → Nifty Auto
+    **{s: "^CNXAUTO" for s in [
+        "MARUTI.NS","TATAMOTORS.NS","BAJAJ-AUTO.NS","HEROMOTOCO.NS",
+        "M&M.NS","EICHERMOT.NS",
+    ]},
+    # Metal → Nifty Metal
+    **{s: "^CNXMETAL" for s in [
+        "JSWSTEEL.NS","TATASTEEL.NS","HINDALCO.NS","VEDL.NS","SAIL.NS","NMDC.NS",
+    ]},
+    # FMCG → Nifty FMCG
+    **{s: "^CNXFMCG" for s in [
+        "HINDUNILVR.NS","ITC.NS","NESTLEIND.NS","TATACONSUM.NS","BRITANNIA.NS",
+        "DABUR.NS","MARICO.NS","COLPAL.NS","GODREJCP.NS","PGHH.NS",
+    ]},
+    # Energy / Oil & Gas → Nifty Energy
+    **{s: "^CNXENERGY" for s in [
+        "RELIANCE.NS","ONGC.NS","BPCL.NS","IOC.NS","HINDPETRO.NS",
+        "GAIL.NS","PETRONET.NS","IGL.NS","MGL.NS","TATAPOWER.NS",
+        "ADANIGREEN.NS","ADANIPOWER.NS","COALINDIA.NS","NHPC.NS",
+        "RECLTD.NS","PFC.NS","NTPC.NS","POWERGRID.NS",
+    ]},
+    # Finance (non-bank) → Nifty Financial Services
+    **{s: "^CNXFINANCE" for s in [
+        "BAJFINANCE.NS","BAJAJFINSV.NS","HDFCAMC.NS","MUTHOOTFIN.NS",
+        "LICHSGFIN.NS","CHOLAFIN.NS","SBICARD.NS","ICICIPRULI.NS",
+        "SBILIFE.NS","HDFCLIFE.NS",
+    ]},
+    # Infra / Capital Goods → Nifty Infra
+    **{s: "^CNXINFRA" for s in [
+        "LT.NS","SIEMENS.NS","HAVELLS.NS","BEL.NS","BHEL.NS","HAL.NS",
+        "CONCOR.NS","ADANIPORTS.NS","DLF.NS",
+    ]},
+    # Cement / Materials
+    **{s: "^CNXCMDT" for s in [
+        "ULTRACEMCO.NS","SHREECEM.NS","AMBUJACEM.NS","GRASIM.NS",
+        "ASIANPAINT.NS","BERGER.NS","PIDILITIND.NS",
+    ]},
+}
+
+USA_SECTOR_MAP: dict[str, str] = {
+    # Technology → XLK
+    **{s: "XLK" for s in [
+        "AAPL","MSFT","NVDA","AVGO","AMD","ADBE","CRM","QCOM","INTU",
+        "NOW","PANW","AMAT","LRCX","ADI","KLAC","IBM","ACN","APH",
+    ]},
+    # Financials → XLF
+    **{s: "XLF" for s in [
+        "JPM","BAC","WFC","GS","MS","V","MA","AXP","BLK","SCHW",
+        "SPGI","CB","MMC","ICE","CME","MCO","AON","BRK-B",
+    ]},
+    # Healthcare → XLV
+    **{s: "XLV" for s in [
+        "UNH","LLY","JNJ","ABBV","MRK","TMO","DHR","ISRG","BMY",
+        "AMGN","GILD","VRTX","PFE","SYK","ZTS","ELV","CI","BSX",
+    ]},
+    # Energy → XLE
+    **{s: "XLE" for s in ["XOM","CVX"]},
+    # Consumer Discretionary → XLY
+    **{s: "XLY" for s in [
+        "AMZN","TSLA","HD","MCD","LOW","TJX","BKNG","UBER",
+    ]},
+    # Consumer Staples → XLP
+    **{s: "XLP" for s in [
+        "WMT","PG","KO","PEP","COST","MDLZ","MO","CL",
+    ]},
+    # Industrials → XLI
+    **{s: "XLI" for s in [
+        "GE","CAT","HON","UNP","RTX","ETN","DE","ADP","BA","PH",
+    ]},
+    # Communication Services → XLC
+    **{s: "XLC" for s in [
+        "GOOGL","META","NFLX","CMCSA","T","VZ",
+    ]},
+    # Utilities → XLU
+    **{s: "XLU" for s in ["NEE","SO","DUK","CEG"]},
+    # Real Estate → XLRE
+    **{s: "XLRE" for s in ["PLD"]},
+    # Materials → XLB
+    **{s: "XLB" for s in ["LIN","SHW"]},
+}
+
+SECTOR_BONUS_PTS = 7   # bonus added when stock's sector index is green on the day
+
+LOOKBACK_DAYS  = 365          # extended to 1 year for 52-week high calculation
 AVG_VOL_PERIOD = 10
 
 WEIGHTS = {
@@ -89,8 +193,13 @@ WEIGHTS = {
     "macd_bullish":   15,
     "above_ema":      15,
     "price_breakout": 15,
-    "delivery_pct":   10,   # placeholder
+    "near_52w_high":  10,
     "adx_trend":      10,
+    "sector_bonus":    7,   # sector index green today
+    "candle_pattern": 10,   # Morning Star=10, Engulfing=8, Hammer=6
+    "rel_strength":    5,   # stock beats index % change today
+    "weekly_confirm":  8,   # close > weekly EMA20 (multi-timeframe)
+    "gap_up":          8,   # gap-up open that held by close (+5 mild / +8 strong)
 }
 
 IST = ZoneInfo("Asia/Kolkata")
@@ -109,6 +218,26 @@ def _flatten(df):
     if isinstance(df.columns, pd.MultiIndex):
         df.columns = df.columns.get_level_values(0)
     return df
+
+
+def _load_prev_scores(prefix: str, date_str: str) -> dict[str, float]:
+    """
+    Load the most recent previous day's top CSV to get prior BTST scores.
+    Walks back up to 4 days (handles weekends / holidays).
+    Returns {Symbol: BTST_Score} or {} if no file found.
+    """
+    base = datetime.strptime(date_str, "%Y-%m-%d")
+    for days_back in range(1, 5):
+        prev = (base - timedelta(days=days_back)).strftime("%Y-%m-%d")
+        try:
+            df = pd.read_csv(f"btst_{prefix}_{prev}.csv")
+            if "Symbol" in df.columns and "BTST_Score" in df.columns:
+                return dict(zip(df["Symbol"].astype(str), df["BTST_Score"].astype(float)))
+        except FileNotFoundError:
+            continue
+        except Exception:
+            break
+    return {}
 
 
 # ══════════════════════════════════════════════════════════
@@ -159,124 +288,27 @@ def check_market(market: str = "india") -> tuple[bool, float, float]:
 
 
 # ══════════════════════════════════════════════════════════
-# SCORE A SINGLE STOCK
+# BATCH DOWNLOAD — all tickers in one request
 # ══════════════════════════════════════════════════════════
 
-def score_stock(symbol: str) -> dict | None:
-    try:
-        df = yf.download(symbol, period=f"{LOOKBACK_DAYS}d", interval="1d",
-                         progress=False, auto_adjust=True)
-        if df is None or len(df) < 20:
-            return None
-        df = _flatten(df).dropna()
-
-        close  = float(df["Close"].iloc[-1])
-        high   = float(df["High"].iloc[-1])
-        low    = float(df["Low"].iloc[-1])
-        volume = float(df["Volume"].iloc[-1])
-
-        # Volume surge
-        avg_vol   = df["Volume"].iloc[-AVG_VOL_PERIOD-1:-1].mean()
-        vol_ratio = volume / avg_vol if avg_vol > 0 else 0
-        s_vol     = (WEIGHTS["volume_surge"] if vol_ratio >= 1.5 else
-                     WEIGHTS["volume_surge"] * 0.5 if vol_ratio >= 1.2 else 0)
-
-        # RSI
-        rsi_s = ta.rsi(df["Close"], length=14)
-        rsi   = float(rsi_s.iloc[-1]) if rsi_s is not None else 50
-        s_rsi = (WEIGHTS["rsi_zone"] if 55 <= rsi <= 75 else
-                 WEIGHTS["rsi_zone"] * 0.5 if 50 <= rsi < 55 else 0)
-
-        # MACD
-        macd_df   = ta.macd(df["Close"], fast=12, slow=26, signal=9)
-        s_macd    = 0
-        macd_hist = None
-        if macd_df is not None and not macd_df.empty:
-            hcol = [c for c in macd_df.columns if "MACDh" in c]
-            if hcol:
-                macd_hist = float(macd_df[hcol[0]].iloc[-1])
-                prev_h    = float(macd_df[hcol[0]].iloc[-2])
-                s_macd    = (WEIGHTS["macd_bullish"] if macd_hist > 0 and prev_h <= 0
-                             else WEIGHTS["macd_bullish"] * 0.7 if macd_hist > 0 else 0)
-
-        # EMA
-        ema20 = float(ta.ema(df["Close"], length=20).iloc[-1])
-        ema50 = float(ta.ema(df["Close"], length=50).iloc[-1])
-        s_ema = (WEIGHTS["above_ema"] if close > ema20 and close > ema50
-                 else WEIGHTS["above_ema"] * 0.5 if close > ema20 else 0)
-
-        # Price breakout
-        rng      = high - low
-        pos      = (close - low) / rng if rng > 0 else 0
-        s_brk    = (WEIGHTS["price_breakout"] if pos >= 0.90
-                    else WEIGHTS["price_breakout"] * 0.6 if pos >= 0.75 else 0)
-
-        # ADX
-        adx_df  = ta.adx(df["High"], df["Low"], df["Close"], length=14)
-        adx_val = 0.0
-        s_adx   = 0
-        if adx_df is not None and not adx_df.empty:
-            ac = [c for c in adx_df.columns if c.startswith("ADX_")]
-            if ac:
-                adx_val = float(adx_df[ac[0]].iloc[-1])
-                s_adx   = (WEIGHTS["adx_trend"] if adx_val >= 25
-                            else WEIGHTS["adx_trend"] * 0.5 if adx_val >= 20 else 0)
-
-        prev_close = float(df["Close"].iloc[-2])
-        day_chg    = (close - prev_close) / prev_close * 100
-
-        total = s_vol + s_rsi + s_macd + s_ema + s_brk + s_adx
-        if day_chg > 4.0:
-            total *= 0.6
-
-        clean_sym = (symbol.replace(".NS", "")
-                           .replace("-", ".")
-                           .replace("BRK.B", "BRK-B"))
-
-        return {
-            "Symbol":       clean_sym,
-            "Close":        round(close, 2),
-            "Change%":      round(day_chg, 2),
-            "Volume_Ratio": round(vol_ratio, 2),
-            "RSI":          round(rsi, 1),
-            "MACD_Hist":    round(macd_hist, 4) if macd_hist is not None else None,
-            "EMA20":        round(ema20, 2),
-            "EMA50":        round(ema50, 2),
-            "ADX":          round(adx_val, 1),
-            "Range_Pos%":   round(pos * 100, 1),
-            "BTST_Score":   round(total, 1),
-        }
-    except Exception as e:
-        print(f"  {Fore.YELLOW}⚠  Skipping {symbol}: {e}{Style.RESET_ALL}")
-        return None
-
-
-# ══════════════════════════════════════════════════════════
-# RUN SCREENER
-# ══════════════════════════════════════════════════════════
-
-def _batch_download(symbols: list) -> dict[str, pd.DataFrame]:
+def _batch_download(symbols: list) -> dict:
     """
-    Download all symbols in one yf.download() call (much faster than
-    one-by-one). Returns a dict {symbol: single-ticker DataFrame}.
+    Download 1 year of OHLCV for all symbols in a single yf.download() call.
+    Returns dict {symbol: DataFrame}.  1 year needed for 52-week high check.
     """
     raw = yf.download(
         symbols,
-        period=f"{LOOKBACK_DAYS}d",
+        period="1y",
         interval="1d",
         progress=False,
         auto_adjust=True,
         group_by="ticker",
-        threads=True,         # yfinance uses internal threading per batch
+        threads=True,
     )
     result = {}
     for sym in symbols:
         try:
-            if isinstance(raw.columns, pd.MultiIndex):
-                df = raw[sym].dropna()
-            else:
-                # Only one symbol was passed — raw IS the df
-                df = raw.dropna()
+            df = raw[sym].dropna() if isinstance(raw.columns, pd.MultiIndex) else raw.dropna()
             if len(df) >= 20:
                 result[sym] = df
         except Exception:
@@ -284,11 +316,56 @@ def _batch_download(symbols: list) -> dict[str, pd.DataFrame]:
     return result
 
 
-def score_stock_from_df(symbol: str, df: pd.DataFrame) -> dict | None:
-    """Score a stock using a pre-downloaded DataFrame (no network call)."""
+# ══════════════════════════════════════════════════════════
+# SECTOR PERFORMANCE  — fetch all relevant sector indices/ETFs
+# ══════════════════════════════════════════════════════════
+
+def fetch_sector_perf(market: str) -> dict[str, bool]:
+    """
+    Returns {sector_ticker: is_up_today} for all sector benchmarks used
+    in the given market.  'is_up_today' = True if today's close > prev close.
+    """
+    sector_map = INDIA_SECTOR_MAP if market == "india" else USA_SECTOR_MAP
+    tickers    = list(set(sector_map.values()))
+
+    print(f"  📊  Fetching sector data ({len(tickers)} indices/ETFs) …", flush=True)
+    try:
+        raw = yf.download(
+            tickers,
+            period="5d",
+            interval="1d",
+            progress=False,
+            auto_adjust=True,
+            group_by="ticker",
+            threads=True,
+        )
+    except Exception:
+        return {}
+
+    result: dict[str, bool] = {}
+    for ticker in tickers:
+        try:
+            df = raw[ticker].dropna() if isinstance(raw.columns, pd.MultiIndex) else raw.dropna()
+            if len(df) >= 2:
+                chg = float(df["Close"].iloc[-1]) - float(df["Close"].iloc[-2])
+                result[ticker] = chg > 0
+        except Exception:
+            pass
+
+    up_count = sum(1 for v in result.values() if v)
+    print(f"  ✅  Sectors: {up_count}/{len(result)} green today.")
+    return result
+
+
+# ══════════════════════════════════════════════════════════
+# SCORE A SINGLE STOCK (from pre-downloaded DataFrame)
+# ══════════════════════════════════════════════════════════
+
+def score_stock_from_df(symbol: str, df: pd.DataFrame,
+                        sector_bonus: float = 0.0,
+                        index_chg: float = 0.0) -> dict | None:
     try:
         df = df.copy()
-        # Flatten MultiIndex columns if present
         if isinstance(df.columns, pd.MultiIndex):
             df.columns = df.columns.get_level_values(0)
 
@@ -297,19 +374,19 @@ def score_stock_from_df(symbol: str, df: pd.DataFrame) -> dict | None:
         low    = float(df["Low"].iloc[-1])
         volume = float(df["Volume"].iloc[-1])
 
-        # Volume surge
+        # ── Volume surge ──────────────────────────────────────────
         avg_vol   = df["Volume"].iloc[-AVG_VOL_PERIOD-1:-1].mean()
         vol_ratio = volume / avg_vol if avg_vol > 0 else 0
         s_vol     = (WEIGHTS["volume_surge"] if vol_ratio >= 1.5 else
                      WEIGHTS["volume_surge"] * 0.5 if vol_ratio >= 1.2 else 0)
 
-        # RSI
+        # ── RSI ───────────────────────────────────────────────────
         rsi_s = ta.rsi(df["Close"], length=14)
         rsi   = float(rsi_s.iloc[-1]) if rsi_s is not None else 50
         s_rsi = (WEIGHTS["rsi_zone"] if 55 <= rsi <= 75 else
                  WEIGHTS["rsi_zone"] * 0.5 if 50 <= rsi < 55 else 0)
 
-        # MACD
+        # ── MACD ──────────────────────────────────────────────────
         macd_df   = ta.macd(df["Close"], fast=12, slow=26, signal=9)
         s_macd    = 0
         macd_hist = None
@@ -321,19 +398,19 @@ def score_stock_from_df(symbol: str, df: pd.DataFrame) -> dict | None:
                 s_macd    = (WEIGHTS["macd_bullish"] if macd_hist > 0 and prev_h <= 0
                              else WEIGHTS["macd_bullish"] * 0.7 if macd_hist > 0 else 0)
 
-        # EMA
+        # ── EMA ───────────────────────────────────────────────────
         ema20 = float(ta.ema(df["Close"], length=20).iloc[-1])
         ema50 = float(ta.ema(df["Close"], length=50).iloc[-1])
         s_ema = (WEIGHTS["above_ema"] if close > ema20 and close > ema50
                  else WEIGHTS["above_ema"] * 0.5 if close > ema20 else 0)
 
-        # Price breakout
+        # ── Price breakout (intraday range position) ──────────────
         rng   = high - low
         pos   = (close - low) / rng if rng > 0 else 0
         s_brk = (WEIGHTS["price_breakout"] if pos >= 0.90
                  else WEIGHTS["price_breakout"] * 0.6 if pos >= 0.75 else 0)
 
-        # ADX
+        # ── ADX ───────────────────────────────────────────────────
         adx_df  = ta.adx(df["High"], df["Low"], df["Close"], length=14)
         adx_val = 0.0
         s_adx   = 0
@@ -344,48 +421,187 @@ def score_stock_from_df(symbol: str, df: pd.DataFrame) -> dict | None:
                 s_adx   = (WEIGHTS["adx_trend"] if adx_val >= 25
                            else WEIGHTS["adx_trend"] * 0.5 if adx_val >= 20 else 0)
 
+        # ── 52-Week High Proximity ────────────────────────────────
+        w52_high   = float(df["High"].max())
+        proximity  = close / w52_high if w52_high > 0 else 0
+        near_52w   = proximity >= 0.95
+        s_52w      = (WEIGHTS["near_52w_high"] if proximity >= 0.95 else
+                      WEIGHTS["near_52w_high"] * 0.5 if proximity >= 0.90 else 0)
+
+        # ── ATR (used for penalty + SL/Target) ───────────────────
+        atr_s   = ta.atr(df["High"], df["Low"], df["Close"], length=14)
+        atr_val = float(atr_s.iloc[-1]) if atr_s is not None and not atr_s.empty else (rng * 0.5)
+
+        # ── Day change ────────────────────────────────────────────
         prev_close = float(df["Close"].iloc[-2])
         day_chg    = (close - prev_close) / prev_close * 100
 
-        total = s_vol + s_rsi + s_macd + s_ema + s_brk + s_adx
-        if day_chg > 4.0:
+        # ── Candlestick Pattern Detection ────────────────────────
+        # Uses today ([-1]), yesterday ([-2]), day before ([-3])
+        candle_name = ""
+        s_candle    = 0
+        try:
+            o0 = float(df["Open"].iloc[-1])   # today open
+            o1 = float(df["Open"].iloc[-2])   # yesterday open
+            c1 = prev_close                    # yesterday close
+            o2 = float(df["Open"].iloc[-3])   # 2 days ago open
+            c2 = float(df["Close"].iloc[-3])  # 2 days ago close
+            body0 = abs(close - o0)
+            body1 = abs(c1 - o1)
+            body2 = abs(c2 - o2)
+            lower_shadow0 = min(o0, close) - low
+            upper_shadow0 = high - max(o0, close)
+
+            # Morning Star (3-candle, strongest reversal)
+            # Day-2: big red | Day-1: small body indecision | Today: big green > midpoint of day-2
+            morning_star = (
+                c2 < o2 and                    # day-2 red (bearish)
+                body1 <= body2 * 0.4 and       # day-1 small body (indecision/doji)
+                close > o0 and                 # today green
+                close > (o2 + c2) / 2 and     # closes above midpoint of day-2
+                body0 >= body2 * 0.5           # today's body substantial
+            )
+            # Bullish Engulfing: prev red candle fully engulfed by today's green candle
+            bullish_engulfing = (
+                c1 < o1 and       # yesterday red
+                close > o0 and    # today green
+                o0 <= c1 and      # today open at/below yesterday close
+                close >= o1       # today close at/above yesterday open
+            )
+            # Hammer: small body in upper portion, long lower wick, appears after decline
+            hammer = (
+                rng > 0 and
+                body0 <= rng * 0.35 and             # small body
+                lower_shadow0 >= 2.0 * body0 and    # long lower wick
+                upper_shadow0 <= body0 * 0.6 and    # tiny upper wick
+                close > o0                           # green preferred
+            )
+
+            if morning_star:
+                s_candle, candle_name = WEIGHTS["candle_pattern"],       "Morning Star"
+            elif bullish_engulfing:
+                s_candle, candle_name = WEIGHTS["candle_pattern"] * 0.8, "Engulfing"
+            elif hammer:
+                s_candle, candle_name = WEIGHTS["candle_pattern"] * 0.6, "Hammer"
+        except Exception:
+            pass   # fewer than 3 rows or missing Open — just skip pattern
+
+        # ── Relative Strength vs Index ────────────────────────────
+        # +5 pts if stock outperformed the broader index today
+        s_rs = WEIGHTS["rel_strength"] if day_chg > index_chg else 0.0
+
+        # ── Multi-Timeframe Confirmation (weekly) ─────────────────
+        # Resample daily → weekly, compute weekly EMA20.
+        # +8 pts if daily close is above weekly EMA20 (trend alignment).
+        s_mtf        = 0.0
+        weekly_align = False
+        try:
+            weekly_close = df["Close"].resample("W").last().dropna()
+            if len(weekly_close) >= 20:
+                wema20       = float(ta.ema(weekly_close, length=20).iloc[-1])
+                weekly_align = close > wema20
+                s_mtf        = WEIGHTS["weekly_confirm"] if weekly_align else 0.0
+        except Exception:
+            pass
+
+        # ── ATR-based dynamic penalty ─────────────────────────────
+        total   = s_vol + s_rsi + s_macd + s_ema + s_brk + s_52w + s_adx
+        atr_pct = (atr_val / close * 100) if close > 0 else 4.0
+        if day_chg > max(1.5 * atr_pct, 4.0):
             total *= 0.6
+
+        # ── Gap-up and hold ───────────────────────────────────────
+        # Gap-up: today's open > yesterday's close → bullish overnight demand
+        # Held: close did not fill the gap (close stays above prev_close)
+        # Strong: gap ≥1% AND close held AND range position ≥60% (buyers in control)
+        # Mild  : gap ≥0.5% AND close held
+        gap_pct  = 0.0
+        gap_held = False
+        s_gap    = 0.0
+        try:
+            open0   = float(df["Open"].iloc[-1])
+            gap_pct = (open0 - prev_close) / prev_close * 100 if prev_close > 0 else 0.0
+            gap_held = close > prev_close   # gap not filled by end of day
+            if gap_pct >= 1.0 and gap_held and pos >= 0.60:
+                s_gap = WEIGHTS["gap_up"]          # strong gap-and-hold: +8
+            elif gap_pct >= 0.5 and gap_held:
+                s_gap = WEIGHTS["gap_up"] * 0.625  # mild gap-and-hold: +5
+        except Exception:
+            pass
+
+        # ── Additive bonuses (applied after penalty) ─────────────
+        total += sector_bonus + s_candle + s_rs + s_mtf + s_gap
+
+        # ── Stop-Loss and Target ──────────────────────────────────
+        stop_loss = round(max(low, close - atr_val), 2)
+        target    = round(close + 1.5 * atr_val, 2)
+        risk      = close - stop_loss
+        reward    = target - close
+        rr_ratio  = round(reward / risk, 2) if risk > 0 else 0.0
 
         clean_sym = (symbol.replace(".NS", "")
                            .replace("-", ".")
                            .replace("BRK.B", "BRK-B"))
 
         return {
-            "Symbol":       clean_sym,
-            "Close":        round(close, 2),
-            "Change%":      round(day_chg, 2),
-            "Volume_Ratio": round(vol_ratio, 2),
-            "RSI":          round(rsi, 1),
-            "MACD_Hist":    round(macd_hist, 4) if macd_hist is not None else None,
-            "EMA20":        round(ema20, 2),
-            "EMA50":        round(ema50, 2),
-            "ADX":          round(adx_val, 1),
-            "Range_Pos%":   round(pos * 100, 1),
-            "BTST_Score":   round(total, 1),
+            "Symbol":        clean_sym,
+            "Close":         round(close, 2),
+            "Change%":       round(day_chg, 2),
+            "Volume_Ratio":  round(vol_ratio, 2),
+            "RSI":           round(rsi, 1),
+            "MACD_Hist":     round(macd_hist, 4) if macd_hist is not None else None,
+            "EMA20":         round(ema20, 2),
+            "EMA50":         round(ema50, 2),
+            "ADX":           round(adx_val, 1),
+            "Range_Pos%":    round(pos * 100, 1),
+            "ATR":           round(atr_val, 2),
+            "52W_High":      round(w52_high, 2),
+            "Near_52W_High": near_52w,
+            "Candle":        candle_name,
+            "RS_Beat":       day_chg > index_chg,
+            "Weekly_Align":  weekly_align,
+            "Gap_Up":        gap_pct >= 0.5 and gap_held,  # True = gap-up held
+            "Gap_Pct":       round(gap_pct, 2),
+            "Sector_Align":  sector_bonus > 0,
+            "Stop_Loss":     stop_loss,
+            "Target":        target,
+            "RR_Ratio":      rr_ratio,
+            "BTST_Score":    round(total, 1),
         }
     except Exception as e:
         print(f"  {Fore.YELLOW}⚠  Skipping {symbol}: {e}{Style.RESET_ALL}")
         return None
 
 
-def run_screener(symbols: list, label: str) -> pd.DataFrame:
+# ══════════════════════════════════════════════════════════
+# RUN SCREENER  — batch download + parallel scoring
+# ══════════════════════════════════════════════════════════
+
+def run_screener(symbols: list, label: str, index_chg: float = 0.0) -> pd.DataFrame:
     hdr(f"Scanning {len(symbols)} {label} stocks (batch + parallel) …")
 
-    # ── Step 1: Batch-download all OHLCV data in one request ──────
-    print(f"  📥  Downloading all {len(symbols)} tickers in one batch …", flush=True)
+    # Step 1: download all tickers in one HTTP batch
+    print(f"  📥  Fetching 1-year OHLCV for {len(symbols)} tickers …", flush=True)
     cache = _batch_download(symbols)
-    print(f"  ✅  Downloaded {len(cache)}/{len(symbols)} tickers. Scoring …", flush=True)
+    print(f"  ✅  Downloaded {len(cache)}/{len(symbols)}. Scoring …", flush=True)
 
-    # ── Step 2: Score all stocks in parallel (CPU-bound TA calcs) ─
+    # Step 2: fetch sector performance for bonus calculation
+    market = "india" if any(s.endswith(".NS") for s in symbols) else "usa"
+    sector_map  = INDIA_SECTOR_MAP if market == "india" else USA_SECTOR_MAP
+    sector_perf = fetch_sector_perf(market)   # {sector_ticker: is_up_today}
+
+    def _sector_bonus(sym: str) -> float:
+        """Return SECTOR_BONUS_PTS if this stock's sector index is green, else 0."""
+        sec_ticker = sector_map.get(sym)
+        if sec_ticker and sector_perf.get(sec_ticker, False):
+            return float(SECTOR_BONUS_PTS)
+        return 0.0
+
+    # Step 3: score all stocks in parallel (TA calcs are CPU-bound)
     results = []
     with ThreadPoolExecutor(max_workers=16) as pool:
         futures = {
-            pool.submit(score_stock_from_df, sym, df): sym
+            pool.submit(score_stock_from_df, sym, df, _sector_bonus(sym), index_chg): sym
             for sym, df in cache.items()
         }
         done = 0
@@ -436,8 +652,11 @@ def print_report(df: pd.DataFrame, label: str, market_ok: bool, idx_chg: float):
         print(f"\n  {Fore.YELLOW}No strong candidates found.{Style.RESET_ALL}")
         return
 
-    cols = ["Symbol", "Close", "Change%", "Volume_Ratio", "RSI", "ADX", "Range_Pos%", "BTST_Score"]
-    disp = df[cols].reset_index(drop=True)
+    cols = ["Symbol", "Close", "Change%", "Volume_Ratio", "RSI", "ADX",
+            "Range_Pos%", "Near_52W_High", "Gap_Up", "Candle", "RS_Beat",
+            "Weekly_Align", "Sector_Align", "Stop_Loss", "Target", "RR_Ratio", "BTST_Score"]
+    available = [c for c in cols if c in df.columns]
+    disp = df[available].reset_index(drop=True)
     disp.index += 1
     print(f"\n{Fore.CYAN}  TOP BTST CANDIDATES{Style.RESET_ALL}\n")
     print(tabulate(disp, headers="keys", tablefmt="fancy_grid", floatfmt=".2f", showindex=True))
@@ -458,9 +677,12 @@ def save_csv(top_df: pd.DataFrame, full_df: pd.DataFrame, prefix: str, date_str:
 # HTML TABLE ROWS BUILDER
 # ══════════════════════════════════════════════════════════
 
-def _rows(df: pd.DataFrame, currency: str = "₹") -> str:
+def _rows(df: pd.DataFrame, currency: str = "₹",
+          prev_scores: dict | None = None) -> str:
     medals = {1: "🥇", 2: "🥈", 3: "🥉"}
     rows   = ""
+    prev_scores = prev_scores or {}
+
     for rank, (_, row) in enumerate(df.iterrows(), 1):
         medal  = medals.get(rank, f"#{rank}")
         chg_c  = "#00e676" if row["Change%"] >= 0 else "#ff5252"
@@ -471,22 +693,95 @@ def _rows(df: pd.DataFrame, currency: str = "₹") -> str:
 
         sc  = row["BTST_Score"]
         bc  = "#00e676" if sc >= 70 else "#ffca28" if sc >= 50 else "#ff5252"
-        pct = min(sc, 100)
+        pct = min(sc / 130 * 100, 100)   # new max ≈130 pts
+
+        # ── 52W high badge ───────────────────────────────────────
+        near52  = row.get("Near_52W_High", False)
+        badge52 = '<span class="badge bg">🚀 52W</span>' if near52 else '<span class="badge br">—</span>'
+
+        # ── Sector alignment — colour-coded TD background ────────
+        sec_align = row.get("Sector_Align", False)
+        sec_bg    = "rgba(0,230,118,0.10)" if sec_align else "rgba(255,82,82,0.08)"
+        sec_txt   = "#00e676"              if sec_align else "#ff5252"
+        sec_label = "✅ Green"             if sec_align else "❌ Red"
+        badge_sec = (f'<td style="background:{sec_bg};text-align:center">'
+                     f'<span style="color:{sec_txt};font-weight:700;font-size:.72rem">'
+                     f'{sec_label}</span></td>')
+
+        # ── Gap-up badge ─────────────────────────────────────────
+        gap_up  = row.get("Gap_Up", False)
+        gap_pct_val = row.get("Gap_Pct", 0.0)
+        if gap_up and gap_pct_val >= 1.0:
+            badge_gap = f'<span class="badge bg">⬆ {gap_pct_val:+.1f}%</span>'
+        elif gap_up:
+            badge_gap = f'<span class="badge by">⬆ {gap_pct_val:+.1f}%</span>'
+        else:
+            badge_gap = '<span class="badge br" style="color:var(--muted)">—</span>'
+
+        # ── Candlestick pattern badge ────────────────────────────
+        candle = str(row.get("Candle", "")) if row.get("Candle") else ""
+        if candle == "Morning Star":
+            badge_candle = '<span class="badge bg">⭐ M-Star</span>'
+        elif candle == "Engulfing":
+            badge_candle = '<span class="badge bg">🕯 Engulf</span>'
+        elif candle == "Hammer":
+            badge_candle = '<span class="badge by">🔨 Hammer</span>'
+        else:
+            badge_candle = '<span class="badge br" style="color:var(--muted)">—</span>'
+
+        # ── Relative Strength badge ──────────────────────────────
+        rs_beat = row.get("RS_Beat", False)
+        badge_rs = ('<span class="badge bg">📈 RS+</span>' if rs_beat
+                    else '<span class="badge br" style="color:var(--muted)">—</span>')
+
+        # ── Weekly MTF badge ─────────────────────────────────────
+        w_align   = row.get("Weekly_Align", False)
+        badge_mtf = ('<span class="badge bg">✅ W</span>' if w_align
+                     else '<span class="badge br" style="color:var(--muted)">—</span>')
+
+        # ── Score trend arrow ────────────────────────────────────
+        sym = str(row.get("Symbol", ""))
+        prev_sc = prev_scores.get(sym)
+        if prev_sc is not None:
+            diff = sc - prev_sc
+            if diff >= 2:
+                arrow = f'<span style="color:#00e676;font-size:.7rem"> ▲{diff:+.0f}</span>'
+            elif diff <= -2:
+                arrow = f'<span style="color:#ff5252;font-size:.7rem"> ▼{diff:+.0f}</span>'
+            else:
+                arrow = '<span style="color:var(--muted);font-size:.7rem"> ●</span>'
+        else:
+            arrow = ""
+
+        # ── Stop-loss / Target / R:R ─────────────────────────────
+        sl     = row.get("Stop_Loss", 0)
+        tgt    = row.get("Target", 0)
+        rr     = row.get("RR_Ratio", 0)
+        rr_col = "#00e676" if rr >= 2 else "#ffca28" if rr >= 1.5 else "#ff5252"
 
         rows += f"""
         <tr>
           <td class="rnk">{medal}</td>
-          <td class="sym">{row['Symbol']}</td>
+          <td class="sym">{sym}</td>
           <td class="num">{currency}{row['Close']:,.2f}</td>
           <td><span style="color:{chg_c};font-weight:700">{chg_a} {abs(row['Change%']):.2f}%</span></td>
           <td><span class="badge {vol_cls}">{row['Volume_Ratio']:.2f}x</span></td>
           <td><span class="badge {rsi_cls}">{row['RSI']:.1f}</span></td>
           <td class="num">{row['ADX']:.1f}</td>
           <td class="num">{row['Range_Pos%']:.1f}%</td>
+          <td>{badge52}</td>
+          <td>{badge_gap}</td>
+          <td>{badge_candle}</td>
+          <td>{badge_rs}</td>
+          <td>{badge_mtf}</td>
+          {badge_sec}
+          <td class="num" style="color:#ff5252">{currency}{sl:,.2f}</td>
+          <td class="num" style="color:#00e676">{currency}{tgt:,.2f}</td>
+          <td class="num" style="color:{rr_col};font-weight:700">{rr:.1f}x</td>
           <td>
             <div class="bw">
-              <div class="bt"><div class="b" style="width:{pct}%;background:{bc}"></div></div>
-              <span class="bl">{sc:.1f}</span>
+              <div class="bt"><div class="b" style="width:{pct:.0f}%;background:{bc}"></div></div>
+              <span class="bl">{sc:.1f}{arrow}</span>
             </div>
           </td>
         </tr>"""
@@ -525,8 +820,8 @@ def generate_html_report(
     time_est = now_est.strftime("%d %b %Y, %I:%M %p EST")
     html_file = f"btst_report_{date_str}.html"
 
-    india_rows = _rows(india_top, "₹") if not india_top.empty else "<tr><td colspan='9' style='text-align:center;color:var(--muted);padding:30px'>No candidates found today</td></tr>"
-    usa_rows   = _rows(usa_top,   "$") if not usa_top.empty   else "<tr><td colspan='9' style='text-align:center;color:var(--muted);padding:30px'>No candidates found today</td></tr>"
+    india_rows = _rows(india_top, "₹", _load_prev_scores("india", date_str)) if not india_top.empty else "<tr><td colspan='18' style='text-align:center;color:var(--muted);padding:30px'>No candidates found today</td></tr>"
+    usa_rows   = _rows(usa_top,   "$", _load_prev_scores("usa",   date_str)) if not usa_top.empty   else "<tr><td colspan='18' style='text-align:center;color:var(--muted);padding:30px'>No candidates found today</td></tr>"
 
     india_cards = _summary_cards(india_top, len(india_full), "india")
     usa_cards   = _summary_cards(usa_top,   len(usa_full),   "usa")
@@ -736,7 +1031,7 @@ def generate_html_report(
     <p class="scroll-hint">← swipe to see all columns</p>
     <div class="tw">
       <table>
-        <thead><tr><th>#</th><th>Symbol</th><th>Close (₹)</th><th>Change</th><th>Vol Ratio</th><th>RSI</th><th>ADX</th><th>Range Pos</th><th>BTST Score</th></tr></thead>
+        <thead><tr><th>#</th><th>Symbol</th><th>Close (₹)</th><th>Change</th><th>Vol Ratio</th><th>RSI</th><th>ADX</th><th>Range Pos</th><th>52W High</th><th>Gap</th><th>Candle</th><th>RS</th><th>Weekly</th><th>Sector</th><th>Stop Loss</th><th>Target</th><th>R:R</th><th>BTST Score</th></tr></thead>
         <tbody>{india_rows}</tbody>
       </table>
     </div>
@@ -754,18 +1049,17 @@ def generate_html_report(
     <p class="scroll-hint">← swipe to see all columns</p>
     <div class="tw">
       <table>
-        <thead><tr><th>#</th><th>Symbol</th><th>Close ($)</th><th>Change</th><th>Vol Ratio</th><th>RSI</th><th>ADX</th><th>Range Pos</th><th>BTST Score</th></tr></thead>
+        <thead><tr><th>#</th><th>Symbol</th><th>Close ($)</th><th>Change</th><th>Vol Ratio</th><th>RSI</th><th>ADX</th><th>Range Pos</th><th>52W High</th><th>Gap</th><th>Candle</th><th>RS</th><th>Weekly</th><th>Sector</th><th>Stop Loss</th><th>Target</th><th>R:R</th><th>BTST Score</th></tr></thead>
         <tbody>{usa_rows}</tbody>
       </table>
     </div>
     {_legend()}
   </div>
 
-  <!-- SCORING PARAMS (shared) -->
   <div class="sh" style="margin-top:36px">
     <div class="sh-title">⚙️ Scoring Parameters</div>
     <div class="sh-line"></div>
-    <div class="sh-sub">Max score = 100 pts · applies to both markets</div>
+    <div class="sh-sub">Max score ≈ 138 pts · base 100 + sector (7) + candle (10) + RS (5) + weekly MTF (8) + gap-up (8)</div>
   </div>
   <div class="pg">
     <div class="pc"><div class="pn">Volume Surge<span class="pw">20 pts</span></div><div class="pd">Volume &gt;1.5× 10-day average confirms institutional participation.</div></div>
@@ -773,7 +1067,16 @@ def generate_html_report(
     <div class="pc"><div class="pn">MACD Signal<span class="pw">15 pts</span></div><div class="pd">Positive histogram or fresh bullish crossover signals continuation.</div></div>
     <div class="pc"><div class="pn">EMA Alignment<span class="pw">15 pts</span></div><div class="pd">Price above both 20 EMA and 50 EMA confirms bullish structure.</div></div>
     <div class="pc"><div class="pn">Price Breakout<span class="pw">15 pts</span></div><div class="pd">Closing in top 5–10% of day's range shows buyer dominance at close.</div></div>
+    <div class="pc"><div class="pn">52-Week High<span class="pw">10 pts</span></div><div class="pd">Within 5% of 52W high = breakout zone (full). Within 10% = approaching (half).</div></div>
     <div class="pc"><div class="pn">ADX Trend<span class="pw">10 pts</span></div><div class="pd">ADX &gt;25 confirms strong trend, reducing overnight whipsaw risk.</div></div>
+    <div class="pc"><div class="pn">Gap-Up &amp; Hold<span class="pw">+5–8 pts</span></div><div class="pd">Open gapped above prior close and held: strong (+8) if ≥1% gap + range pos ≥60%; mild (+5) if ≥0.5% gap held.</div></div>
+    <div class="pc"><div class="pn">Sector Alignment<span class="pw">+7 pts</span></div><div class="pd">Bonus when the stock's sector index (e.g. Nifty Bank, XLK) is also green on the day.</div></div>
+    <div class="pc"><div class="pn">Candlestick Pattern<span class="pw">+6–10 pts</span></div><div class="pd">Morning Star (+10), Bullish Engulfing (+8), Hammer (+6) — high-confidence reversal/continuation candles.</div></div>
+    <div class="pc"><div class="pn">Relative Strength<span class="pw">+5 pts</span></div><div class="pd">Stock's daily gain exceeded the broader index — showing outperformance vs the market.</div></div>
+    <div class="pc"><div class="pn">Weekly MTF Confirm<span class="pw">+8 pts</span></div><div class="pd">Daily close above weekly EMA20 — weekly and daily trends aligned, reduces overnight reversal risk.</div></div>
+    <div class="pc"><div class="pn">ATR Penalty<span class="pw">−40%</span></div><div class="pd">Score penalized if day's move exceeds 1.5× ATR — avoids chasing overextended stocks.</div></div>
+    <div class="pc"><div class="pn">Stop Loss<span class="pw">dynamic</span></div><div class="pd">max(Today's Low, Close − 1×ATR). Tighter of the two — limits overnight gap risk.</div></div>
+    <div class="pc"><div class="pn">Target<span class="pw">dynamic</span></div><div class="pd">Close + 1.5×ATR. Respects each stock's typical daily volatility range.</div></div>
   </div>
 
   <!-- DISCLAIMER -->
@@ -791,7 +1094,7 @@ def generate_html_report(
   Generated by BTST Screener · Python + yfinance + pandas-ta
   &nbsp;|&nbsp; India: {time_ist} &nbsp;·&nbsp; USA: {time_est}
   <br>
-  Parameters: Volume Surge (20) · RSI Zone (15) · MACD Signal (15) · EMA Alignment (15) · Price Breakout (15) · ADX Trend (10)
+  Parameters: Vol Surge (20) · RSI (15) · MACD (15) · EMA (15) · Breakout (15) · ADX (10) · 52W (10) · Gap (+8) · Sector (+7) · Candle (+10) · RS (+5) · Weekly MTF (+8)
 </div>
 
 <script>
@@ -844,7 +1147,230 @@ def _legend() -> str:
       <div class="li"><div class="ld" style="background:var(--muted)"></div>RSI 55–75 = Ideal momentum zone</div>
       <div class="li"><div class="ld" style="background:var(--muted)"></div>ADX &gt;25 = Confirmed trend</div>
       <div class="li"><div class="ld" style="background:var(--muted)"></div>Range Pos &gt;90% = Closing near high</div>
+      <div class="li"><div class="ld" style="background:var(--green)"></div>⬆ = Gap-up open that held by close</div>
+      <div class="li"><div class="ld" style="background:var(--green)"></div>⭐/🕯/🔨 = Candle pattern detected</div>
+      <div class="li"><div class="ld" style="background:var(--green)"></div>RS+ = Stock beat index today</div>
+      <div class="li"><div class="ld" style="background:var(--green)"></div>✅ W = Above weekly EMA20</div>
+      <div class="li"><div class="ld" style="background:var(--muted)"></div>▲/▼ in score = vs previous session</div>
     </div>"""
+
+
+# ══════════════════════════════════════════════════════════
+# BACKTEST — replay past CSV picks against next-day actuals
+# ══════════════════════════════════════════════════════════
+
+def run_backtest(prefix: str, days: int = 30):
+    """
+    For each past btst_{prefix}_YYYY-MM-DD.csv found in the last `days` calendar days:
+      - Load picks: Symbol, Close (entry), Stop_Loss, Target, BTST_Score
+      - Download next trading day's OHLC via yfinance
+      - Classify each pick: WIN (High ≥ Target), LOSS (Low ≤ SL or gap-down open ≤ SL),
+        NEUTRAL (neither touched)
+    Prints hit rate, score-stratified stats, score↔return correlation,
+    top-5 wins / worst-5 losses, and saves a backtest CSV.
+    """
+    tz_now   = datetime.now(tz=IST if prefix == "india" else EST)
+    today    = tz_now.date()
+    sym_sfx  = ".NS" if prefix == "india" else ""
+
+    hdr(f"BACKTEST — {prefix.upper()} | Scanning last {days} calendar days")
+
+    # ── 1. Collect all available past CSVs ───────────────────
+    all_rows: list[dict] = []
+    dates_found: list[str] = []
+
+    for d in range(1, days + 1):
+        date      = today - timedelta(days=d)
+        date_str  = date.strftime("%Y-%m-%d")
+        csv_path  = f"btst_{prefix}_{date_str}.csv"
+        try:
+            df = pd.read_csv(csv_path)
+            if df.empty or "Symbol" not in df.columns:
+                continue
+            for _, row in df.iterrows():
+                all_rows.append({
+                    "date_str": date_str,
+                    "Symbol":   str(row.get("Symbol", "")),
+                    "Entry":    float(row.get("Close", 0)),
+                    "SL":       float(row.get("Stop_Loss", 0)),
+                    "Target":   float(row.get("Target", 0)),
+                    "Score":    float(row.get("BTST_Score", 0)),
+                })
+            dates_found.append(date_str)
+        except FileNotFoundError:
+            continue
+        except Exception:
+            continue
+
+    if not all_rows:
+        print(f"\n  {Fore.YELLOW}No past CSVs found in the last {days} days.")
+        print(f"  Run the screener daily for a few sessions first, then backtest.{Style.RESET_ALL}")
+        return
+
+    print(f"  📂  Found {len(dates_found)} past session(s), "
+          f"{len(all_rows)} total pick(s) to evaluate.")
+
+    # ── 2. Batch-download price history for all unique symbols ─
+    raw_syms  = list({r["Symbol"] for r in all_rows if r["Symbol"]})
+    dl_syms   = [s + sym_sfx for s in raw_syms]
+
+    print(f"  📥  Downloading 1-year history for {len(dl_syms)} symbols …", flush=True)
+    cache_raw = _batch_download(dl_syms)
+
+    # Normalise keys → clean symbol (same logic as score_stock_from_df)
+    norm_cache: dict[str, pd.DataFrame] = {}
+    for sym, df in cache_raw.items():
+        clean = sym.replace(".NS", "").replace("-", ".").replace("BRK.B", "BRK-B")
+        df_copy = df.copy()
+        df_copy.index = pd.to_datetime(df_copy.index)
+        norm_cache[clean] = df_copy
+
+    print(f"  ✅  History loaded for {len(norm_cache)} symbols. Evaluating picks …")
+
+    # ── 3. Evaluate each pick against the next trading day ────
+    results: list[dict] = []
+
+    for r in all_rows:
+        sym   = r["Symbol"]
+        entry = r["Entry"]
+        sl    = r["SL"]
+        tgt   = r["Target"]
+        score = r["Score"]
+        pick_date = pd.Timestamp(r["date_str"])
+
+        if sym not in norm_cache or entry <= 0 or sl <= 0 or tgt <= 0:
+            continue
+
+        df_sym     = norm_cache[sym]
+        future     = df_sym[df_sym.index > pick_date]
+        if future.empty:
+            continue          # no next-day data yet (picked today)
+
+        nxt        = future.iloc[0]
+        nxt_open   = float(nxt.get("Open",  nxt["Close"]))
+        nxt_high   = float(nxt["High"])
+        nxt_low    = float(nxt["Low"])
+        nxt_close  = float(nxt["Close"])
+        nxt_date   = future.index[0].strftime("%Y-%m-%d")
+
+        # Gap-down through SL at open → instant loss
+        if nxt_open <= sl:
+            outcome = "LOSS"
+        elif nxt_high >= tgt:
+            outcome = "WIN"
+        elif nxt_low <= sl:
+            outcome = "LOSS"
+        else:
+            outcome = "NEUTRAL"
+
+        actual_chg = (nxt_close - entry) / entry * 100 if entry > 0 else 0.0
+
+        results.append({
+            "Date":       r["date_str"],
+            "Symbol":     sym,
+            "Score":      round(score, 1),
+            "Entry":      round(entry, 2),
+            "SL":         round(sl,    2),
+            "Target":     round(tgt,   2),
+            "Next_Open":  round(nxt_open,  2),
+            "Next_High":  round(nxt_high,  2),
+            "Next_Low":   round(nxt_low,   2),
+            "Next_Close": round(nxt_close, 2),
+            "Actual_%":   round(actual_chg, 2),
+            "Outcome":    outcome,
+            "Next_Date":  nxt_date,
+        })
+
+    if not results:
+        print(f"  {Fore.YELLOW}No picks could be evaluated "
+              f"(next-day data unavailable — try again tomorrow).{Style.RESET_ALL}")
+        return
+
+    res_df = pd.DataFrame(results)
+
+    # ── 4. Aggregate stats ────────────────────────────────────
+    total   = len(res_df)
+    wins    = (res_df["Outcome"] == "WIN").sum()
+    losses  = (res_df["Outcome"] == "LOSS").sum()
+    neutral = (res_df["Outcome"] == "NEUTRAL").sum()
+    hit_rt  = wins / total * 100 if total else 0.0
+    avg_chg = res_df["Actual_%"].mean()
+
+    # Score-stratified: ≥70 vs <70
+    hs      = res_df[res_df["Score"] >= 70]
+    hs_hits = (hs["Outcome"] == "WIN").sum()
+    hs_rt   = hs_hits / len(hs) * 100 if len(hs) else 0.0
+
+    ls      = res_df[res_df["Score"] < 70]
+    ls_hits = (ls["Outcome"] == "WIN").sum()
+    ls_rt   = ls_hits / len(ls) * 100 if len(ls) else 0.0
+
+    # Score ↔ return correlation
+    corr = (res_df[["Score", "Actual_%"]].corr().iloc[0, 1]
+            if len(res_df) >= 5 else float("nan"))
+
+    hdr(f"BACKTEST RESULTS — {prefix.upper()}")
+    print(f"  Sessions analysed  : {len(dates_found)}  ({dates_found[-1]} → {dates_found[0]})")
+    print(f"  Total picks        : {total}")
+    print()
+
+    w_col = Fore.GREEN if hit_rt >= 55 else Fore.YELLOW if hit_rt >= 45 else Fore.RED
+    print(f"  {'Wins  (Target hit)':<22}: {Fore.GREEN}{wins:>4}{Style.RESET_ALL}")
+    print(f"  {'Losses (SL hit)':<22}: {Fore.RED}{losses:>4}{Style.RESET_ALL}")
+    print(f"  {'Neutral (neither)':<22}: {Fore.YELLOW}{neutral:>4}{Style.RESET_ALL}")
+    print(f"  {'Overall Hit Rate':<22}: {w_col}{hit_rt:>6.1f}%{Style.RESET_ALL}")
+    c_col = Fore.GREEN if avg_chg > 0 else Fore.RED
+    print(f"  {'Avg Next-Day Chg':<22}: {c_col}{avg_chg:>+6.2f}%{Style.RESET_ALL}")
+    print()
+
+    # Score-stratified table
+    strat_rows = [
+        ["Score ≥ 70", len(hs), hs_hits, f"{hs_rt:.1f}%",
+         f"{hs['Actual_%'].mean():+.2f}%" if len(hs) else "—"],
+        ["Score < 70", len(ls), ls_hits, f"{ls_rt:.1f}%",
+         f"{ls['Actual_%'].mean():+.2f}%" if len(ls) else "—"],
+    ]
+    print(tabulate(strat_rows,
+                   headers=["Tier", "Picks", "Wins", "Hit Rate", "Avg Chg"],
+                   tablefmt="simple"))
+    print()
+
+    if not pd.isna(corr):
+        corr_col = Fore.GREEN if corr > 0.15 else Fore.YELLOW if corr > 0 else Fore.RED
+        corr_lbl = ("✅ Score predicts returns"  if corr > 0.15 else
+                    "↔ Weak positive link"       if corr > 0    else
+                    "⚠ Score not yet predictive")
+        print(f"  Score ↔ Return corr : {corr_col}{corr:+.3f}  {corr_lbl}{Style.RESET_ALL}")
+        print()
+
+    # Top-5 wins
+    top_wins = (res_df[res_df["Outcome"] == "WIN"]
+                .nlargest(5, "Actual_%")
+                [["Date", "Symbol", "Score", "Entry", "Target", "Actual_%"]]
+                .reset_index(drop=True))
+    if not top_wins.empty:
+        print(f"  {Fore.GREEN}── Top 5 Winning Picks ──{Style.RESET_ALL}")
+        print(tabulate(top_wins,
+                       headers=["Date", "Symbol", "Score", "Entry", "Target", "Actual %"],
+                       tablefmt="simple", floatfmt=".2f"))
+        print()
+
+    # Worst-5 losses
+    worst = (res_df[res_df["Outcome"] == "LOSS"]
+             .nsmallest(5, "Actual_%")
+             [["Date", "Symbol", "Score", "Entry", "SL", "Actual_%"]]
+             .reset_index(drop=True))
+    if not worst.empty:
+        print(f"  {Fore.RED}── Worst 5 Losses ──{Style.RESET_ALL}")
+        print(tabulate(worst,
+                       headers=["Date", "Symbol", "Score", "Entry", "SL", "Actual %"],
+                       tablefmt="simple", floatfmt=".2f"))
+        print()
+
+    # Save backtest CSV
+    out_path = f"btst_{prefix}_backtest_{today}.csv"
+    res_df.to_csv(out_path, index=False)
+    print(f"  💾  Full backtest results → {Fore.CYAN}{out_path}{Style.RESET_ALL}")
 
 
 # ══════════════════════════════════════════════════════════
@@ -864,18 +1390,31 @@ def print_disclaimer():
 
 def main():
     parser = argparse.ArgumentParser(description="BTST Screener — India + USA")
-    parser.add_argument("--india", action="store_true", help="Scan India only")
-    parser.add_argument("--usa",   action="store_true", help="Scan USA only")
-    args   = parser.parse_args()
+    parser.add_argument("--india",    action="store_true", help="Scan India only")
+    parser.add_argument("--usa",      action="store_true", help="Scan USA only")
+    parser.add_argument("--backtest", action="store_true",
+                        help="Replay past CSV picks against next-day actuals")
+    parser.add_argument("--days",     type=int, default=30,
+                        help="Calendar days to look back for backtest (default: 30)")
+    args      = parser.parse_args()
     run_india = not args.usa   or args.india
     run_usa   = not args.india or args.usa
-
-    IST_NOW  = datetime.now(tz=IST)
-    date_str = IST_NOW.strftime("%Y-%m-%d")
 
     print(f"\n{Fore.CYAN}{'='*62}")
     print("   BTST SCREENER  |  India (Nifty 100)  +  USA (S&P 500 Top 100)")
     print(f"{'='*62}{Style.RESET_ALL}")
+
+    # ── BACKTEST MODE (skip live scan) ─────────────────────
+    if args.backtest:
+        if run_india:
+            run_backtest("india", args.days)
+        if run_usa:
+            run_backtest("usa", args.days)
+        print_disclaimer()
+        return
+
+    IST_NOW  = datetime.now(tz=IST)
+    date_str = IST_NOW.strftime("%Y-%m-%d")
 
     # ── INDIA ──────────────────────────────────────────────
     india_ok, india_chg, india_vix = True, 0.0, 0.0
@@ -884,7 +1423,7 @@ def main():
 
     if run_india:
         india_ok, india_chg, india_vix = check_market("india")
-        india_full = run_screener(NIFTY100_SYMBOLS, "Nifty 100")
+        india_full = run_screener(NIFTY100_SYMBOLS, "Nifty 100", india_chg)
         if not india_full.empty:
             india_top = filter_and_rank(india_full)
             print_report(india_top, "INDIA", india_ok, india_chg)
@@ -897,7 +1436,7 @@ def main():
 
     if run_usa:
         usa_ok, usa_chg, usa_vix = check_market("usa")
-        usa_full = run_screener(SP500_TOP100_SYMBOLS, "S&P 500 Top 100")
+        usa_full = run_screener(SP500_TOP100_SYMBOLS, "S&P 500 Top 100", usa_chg)
         if not usa_full.empty:
             usa_top = filter_and_rank(usa_full)
             print_report(usa_top, "USA", usa_ok, usa_chg)
