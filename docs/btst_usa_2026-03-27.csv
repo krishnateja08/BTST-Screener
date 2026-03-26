@@ -1,2 +1,2 @@
-Symbol,Close,Change%,Volume_Ratio,RSI,MACD_Hist,EMA20,EMA50,ADX,Range_Pos%,BTST_Score
-NFLX,93.71,1.55,1.26,55.7,-0.6345,92.36,89.01,24.7,55.7,45.0
+Symbol,Close,Change%,Volume_Ratio,RSI,MACD_Hist,EMA20,EMA50,ADX,Range_Pos%,ATR,52W_High,Near_52W_High,Candle,RS_Beat,Weekly_Align,Gap_Up,Gap_Pct,Sector_Align,Stop_Loss,Target,RR_Ratio,BTST_Score
+NFLX,93.32,1.13,1.7,54.6,-0.6668,92.32,91.17,25.1,47.6,2.8,134.12,False,Morning Star,True,False,False,-0.81,False,91.01,97.52,1.82,67.5
