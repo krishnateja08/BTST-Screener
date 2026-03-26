@@ -3,12 +3,12 @@ name: BTST Stock Screener — India + USA
 # ─────────────────────────────────────────────────────────────────
 # SCHEDULE STRATEGY
 #
-#  Two runs per weekday:
+#  Two auto-runs per weekday:
 #
 #  1) India run  — 3:15 PM IST  = 09:45 UTC  (near NSE market close)
 #  2) USA run    — 3:30 PM EST  = 20:30 UTC  (near NYSE market close)
 #
-#  Both jobs also run on manual trigger (workflow_dispatch).
+#  Manual trigger available from the GitHub Actions tab.
 # ─────────────────────────────────────────────────────────────────
 
 on:
@@ -18,7 +18,7 @@ on:
     # ── USA: 3:30 PM EST = 20:30 UTC (Mon–Fri) ────────────────────
     - cron: "30 20 * * 1-5"
 
-  # ── Manual trigger from GitHub Actions tab ────────────────────
+  # ── Manual trigger — pick which market to scan ────────────────
   workflow_dispatch:
     inputs:
       market:
@@ -37,36 +37,36 @@ on:
 jobs:
 
   # ══════════════════════════════════════════════════════════════
-  # JOB 1 — INDIA  (runs at 09:45 UTC on schedule, or on demand)
+  # JOB 1 — INDIA  (auto at 09:45 UTC  OR  manual india/both)
   # ══════════════════════════════════════════════════════════════
   india-screener:
     name: 🇮🇳 India — Nifty 100 BTST Scan
     runs-on: ubuntu-latest
 
-    # Run if: manually triggered with "india" or "both",
-    #         OR if triggered by the 09:45 UTC cron
-    if: |
-      github.event_name == 'workflow_dispatch' && 
-      (github.event.inputs.market == 'india' || github.event.inputs.market == 'both') ||
-      (github.event_name == 'schedule' && github.event.schedule == '45 9 * * 1-5')
+    if: >-
+      (github.event_name == 'schedule' && github.event.schedule == '45 9 * * 1-5') ||
+      (github.event_name == 'workflow_dispatch' && (github.event.inputs.market == 'india' || github.event.inputs.market == 'both'))
 
     steps:
+      # ── 1. Checkout ──────────────────────────────────────────────
       - name: ⬇️  Checkout Repository
         uses: actions/checkout@v4
 
+      # ── 2. Python (no pip cache — avoids requirements.txt lookup) ─
       - name: 🐍  Setup Python 3.11
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-          cache: "pip"
 
+      # ── 3. Install deps ──────────────────────────────────────────
       - name: 📦  Install Dependencies
         run: pip install -r requirements.txt
 
-      - name: 🇮🇳  Run India Screener
+      # ── 4. Run ───────────────────────────────────────────────────
+      - name: 🇮🇳  Run India BTST Screener
         run: python btst_screener.py --india
 
-      # Upload all India outputs as a downloadable artifact
+      # ── 5. Upload artifacts (downloadable from Actions UI) ───────
       - name: 📤  Upload India Reports
         uses: actions/upload-artifact@v4
         with:
@@ -77,7 +77,7 @@ jobs:
             btst_report_*.html
           retention-days: 7
 
-      # Commit outputs back into the repo under reports/
+      # ── 6. Commit reports into repo under reports/ folder ────────
       - name: 💾  Commit India Reports to Repo
         run: |
           mkdir -p reports
@@ -92,16 +92,15 @@ jobs:
           git push || true
 
   # ══════════════════════════════════════════════════════════════
-  # JOB 2 — USA  (runs at 20:30 UTC on schedule, or on demand)
+  # JOB 2 — USA  (auto at 20:30 UTC  OR  manual usa/both)
   # ══════════════════════════════════════════════════════════════
   usa-screener:
     name: 🇺🇸 USA — S&P 500 Top 100 BTST Scan
     runs-on: ubuntu-latest
 
-    if: |
-      github.event_name == 'workflow_dispatch' &&
-      (github.event.inputs.market == 'usa' || github.event.inputs.market == 'both') ||
-      (github.event_name == 'schedule' && github.event.schedule == '30 20 * * 1-5')
+    if: >-
+      (github.event_name == 'schedule' && github.event.schedule == '30 20 * * 1-5') ||
+      (github.event_name == 'workflow_dispatch' && (github.event.inputs.market == 'usa' || github.event.inputs.market == 'both'))
 
     steps:
       - name: ⬇️  Checkout Repository
@@ -111,12 +110,11 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-          cache: "pip"
 
       - name: 📦  Install Dependencies
         run: pip install -r requirements.txt
 
-      - name: 🇺🇸  Run USA Screener
+      - name: 🇺🇸  Run USA BTST Screener
         run: python btst_screener.py --usa
 
       - name: 📤  Upload USA Reports
@@ -143,15 +141,14 @@ jobs:
           git push || true
 
   # ══════════════════════════════════════════════════════════════
-  # JOB 3 — BOTH  (manual "both" trigger — runs India + USA together)
+  # JOB 3 — BOTH  (manual "both" only — scans India + USA together)
   # ══════════════════════════════════════════════════════════════
   both-screener:
     name: 🌏 Both Markets — Full BTST Scan
     runs-on: ubuntu-latest
 
-    if: |
-      github.event_name == 'workflow_dispatch' &&
-      github.event.inputs.market == 'both'
+    if: >-
+      github.event_name == 'workflow_dispatch' && github.event.inputs.market == 'both'
 
     steps:
       - name: ⬇️  Checkout Repository
@@ -161,7 +158,6 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-          cache: "pip"
 
       - name: 📦  Install Dependencies
         run: pip install -r requirements.txt
@@ -184,7 +180,7 @@ jobs:
       - name: 💾  Commit All Reports to Repo
         run: |
           mkdir -p reports
-          cp btst_*.csv        reports/ 2>/dev/null || true
+          cp btst_*.csv         reports/ 2>/dev/null || true
           cp btst_report_*.html reports/ 2>/dev/null || true
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
