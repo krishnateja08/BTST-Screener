@@ -98,12 +98,21 @@ jobs:
           cp btst_india_*.csv      docs/ 2>/dev/null || true
           cp btst_india_full_*.csv docs/ 2>/dev/null || true
           cp btst_report_*.html    docs/ 2>/dev/null || true
+          # Generate index.html pointing to latest report
+          LATEST=$(ls -t docs/btst_report_*.html 2>/dev/null | head -1 | xargs basename 2>/dev/null || echo "")
+          if [ -n "$LATEST" ]; then
+            echo "<meta http-equiv=\"refresh\" content=\"0; url=$LATEST\">" > docs/index.html
+          fi
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add docs/ || true
           git diff --cached --quiet || \
             git commit -m "📊 [India] BTST Report $(TZ='Asia/Kolkata' date +'%Y-%m-%d %I:%M %p IST')"
-          git push || true
+          for i in 1 2 3; do
+            git pull --rebase origin main && git push && break
+            echo "Push attempt $i failed, retrying in 5s..."
+            sleep 5
+          done
 
   # ══════════════════════════════════════════════════════════════
   # JOB 2 — USA  (auto at 20:30 UTC  OR  manual usa/both)
@@ -155,9 +164,18 @@ jobs:
           cp btst_usa_*.csv      docs/ 2>/dev/null || true
           cp btst_usa_full_*.csv docs/ 2>/dev/null || true
           cp btst_report_*.html  docs/ 2>/dev/null || true
+          # Generate index.html pointing to latest report
+          LATEST=$(ls -t docs/btst_report_*.html 2>/dev/null | head -1 | xargs basename 2>/dev/null || echo "")
+          if [ -n "$LATEST" ]; then
+            echo "<meta http-equiv=\"refresh\" content=\"0; url=$LATEST\">" > docs/index.html
+          fi
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add docs/ || true
           git diff --cached --quiet || \
             git commit -m "📊 [USA] BTST Report $(TZ='America/New_York' date +'%Y-%m-%d %I:%M %p EST')"
-          git push || true
+          for i in 1 2 3; do
+            git pull --rebase origin main && git push && break
+            echo "Push attempt $i failed, retrying in 5s..."
+            sleep 5
+          done
