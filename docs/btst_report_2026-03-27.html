@@ -174,6 +174,16 @@
     <div class="pill"><div class="dot" style="background:#7d8590"></div>Scanned:&nbsp;<strong style="color:#e6edf3">99</strong></div>
     <div class="pill"><div class="dot" style="background:#7d8590"></div>Candidates:&nbsp;<strong style="color:#e6edf3">1</strong></div>
   </div>
+
+  <!-- ORB status pills -->
+  <div class="market-pills" id="pills-orb">
+    <div class="pill"><div class="dot live" style="background:#f9a825"></div>Mode:&nbsp;<strong style="color:#f9a825">INTRADAY</strong></div>
+    <div class="pill"><div class="dot" style="background:#f9a825"></div>Strategy:&nbsp;<strong style="color:#e6edf3">Opening Range Breakout</strong></div>
+    <div class="pill"><div class="dot" style="background:#7d8590"></div>Interval:&nbsp;<strong style="color:#e6edf3">5-min bars</strong></div>
+    <div class="pill"><div class="dot" style="background:#7d8590"></div>ORB Window:&nbsp;<strong style="color:#e6edf3">First 15 min</strong></div>
+    <div class="pill"><div class="dot" style="background:#7d8590"></div>🇮🇳 Breakouts:&nbsp;<strong style="color:#e6edf3">0</strong></div>
+    <div class="pill"><div class="dot" style="background:#7d8590"></div>🇺🇸 Breakouts:&nbsp;<strong style="color:#e6edf3">0</strong></div>
+  </div>
 </div>
 
 <!-- CONTENT -->
@@ -186,6 +196,9 @@
     </button>
     <button class="tab-btn usa-btn" onclick="switchTab('usa')">
       <span class="flag">🇺🇸</span> USA &nbsp;<span style="font-size:.65rem;opacity:.6">S&amp;P 500 TOP 100</span>
+    </button>
+    <button class="tab-btn orb-btn" onclick="switchTab('orb')">
+      <span class="flag">📊</span> ORB &nbsp;<span style="font-size:.65rem;opacity:.6">INTRADAY 5-MIN</span>
     </button>
   </div>
 
@@ -367,6 +380,83 @@
     </div>
   </div>
 
+  <!-- ORB PANEL -->
+  <style>
+    .tab-btn.active.orb-btn{color:#f9a825}
+    .orb-sub{margin:20px 0 10px;padding:10px 14px;background:rgba(249,168,37,.05);border:1px solid rgba(249,168,37,.18);border-radius:8px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+    .orb-sub-title{font-family:var(--mono);font-size:.72rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#f9a825}
+    .orb-chip{font-family:var(--mono);font-size:.65rem;padding:2px 8px;border-radius:4px;background:rgba(249,168,37,.12);border:1px solid rgba(249,168,37,.25);color:#f9a825}
+    .orb-info{font-size:.72rem;color:var(--muted);line-height:1.5;margin-top:8px;padding:9px 13px;background:var(--surf);border:1px solid var(--border);border-radius:7px}
+    .orb-info strong{color:var(--text)}
+  </style>
+
+  <div class="tab-panel" id="panel-orb">
+
+    <!-- ORB explainer banner -->
+    <div class="orb-info">
+      <strong>⚡ Opening Range Breakout (ORB) — Intraday Strategy</strong><br>
+      Opening Range = first 15 min of trading (3 × 5-min bars).
+      &nbsp;·&nbsp; <strong>Buy</strong> when price breaks above ORB High with volume confirmation.
+      &nbsp;·&nbsp; <strong>Target</strong> = ORB High + 1.5 × ORB Range.
+      &nbsp;·&nbsp; <strong>Stop Loss</strong> = ORB Low (or price − ATR, whichever is tighter).
+      &nbsp;·&nbsp; Entry window: <strong>9:30–10:30 AM IST / EST</strong> &nbsp;·&nbsp; Exit by: <strong>3:00 PM IST / 3:30 PM EST</strong>.
+    </div>
+
+    <!-- India ORB -->
+    <div class="orb-sub" style="margin-top:16px">
+      <span class="orb-sub-title">🇮🇳 India ORB</span>
+      <span class="orb-chip">Nifty 100 · 5-min</span>
+      <span class="orb-chip">0 breakout(s)</span>
+      <span style="font-family:var(--mono);font-size:.62rem;color:var(--muted);margin-left:auto">ORB Window: 9:15–9:30 AM IST</span>
+    </div>
+    <p class="scroll-hint">← swipe to see all columns</p>
+    <div class="tw">
+      <table>
+        <thead><tr>
+          <th>#</th><th>Symbol</th><th>Price (₹)</th>
+          <th>ORB High</th><th>ORB Low</th><th>ORB Range%</th>
+          <th>Brk Above</th><th>Vol Ratio</th><th>RSI 5m</th><th>ADX 5m</th>
+          <th>Sector</th><th>Stop Loss</th><th>Target</th><th>R:R</th><th>ORB Score</th>
+        </tr></thead>
+        <tbody><tr><td colspan='15' style='text-align:center;color:var(--muted);padding:30px'>No ORB breakouts detected — market may not be open yet, or no confirmed breakouts this session.</td></tr></tbody>
+      </table>
+    </div>
+
+    <!-- USA ORB -->
+    <div class="orb-sub" style="margin-top:24px">
+      <span class="orb-sub-title">🇺🇸 USA ORB</span>
+      <span class="orb-chip">S&amp;P 500 · 5-min</span>
+      <span class="orb-chip">0 breakout(s)</span>
+      <span style="font-family:var(--mono);font-size:.62rem;color:var(--muted);margin-left:auto">ORB Window: 9:30–9:45 AM EST</span>
+    </div>
+    <p class="scroll-hint">← swipe to see all columns</p>
+    <div class="tw">
+      <table>
+        <thead><tr>
+          <th>#</th><th>Symbol</th><th>Price ($)</th>
+          <th>ORB High</th><th>ORB Low</th><th>ORB Range%</th>
+          <th>Brk Above</th><th>Vol Ratio</th><th>RSI 5m</th><th>ADX 5m</th>
+          <th>Sector</th><th>Stop Loss</th><th>Target</th><th>R:R</th><th>ORB Score</th>
+        </tr></thead>
+        <tbody><tr><td colspan='15' style='text-align:center;color:var(--muted);padding:30px'>No ORB breakouts detected — market may not be open yet, or no confirmed breakouts this session.</td></tr></tbody>
+      </table>
+    </div>
+
+    <!-- ORB legend -->
+    <div class="legend" style="margin-top:16px">
+      <div class="li"><div class="ld" style="background:#f9a825"></div>ORB Score ≥60 — Strong breakout signal</div>
+      <div class="li"><div class="ld" style="background:var(--yellow)"></div>Score 40–59 — Moderate breakout</div>
+      <div class="li"><div class="ld" style="background:var(--red)"></div>Score &lt;40 — Weak / avoid</div>
+      <div class="li"><div class="ld" style="background:var(--green)"></div>ORB High — Resistance turned support on breakout</div>
+      <div class="li"><div class="ld" style="background:var(--red)"></div>ORB Low — Invalidation / stop level</div>
+      <div class="li"><div class="ld" style="background:var(--green)"></div>Brk Above — % price is above ORB High</div>
+      <div class="li"><div class="ld" style="background:var(--blue)"></div>Vol Ratio ≥2× = Strong institutional buying</div>
+      <div class="li"><div class="ld" style="background:var(--muted)"></div>ADX 5m &gt;25 = Intraday trend confirmed</div>
+      <div class="li"><div class="ld" style="background:var(--muted)"></div>Tight ORB Range (&lt;1%) = Cleaner, more reliable breakout</div>
+    </div>
+
+  </div>
+
   <div class="sh" style="margin-top:36px">
     <div class="sh-title">⚙️ Scoring Parameters</div>
     <div class="sh-line"></div>
@@ -538,16 +628,17 @@
 <!-- FOOTER -->
 <div class="footer">
   Generated by BTST Screener · Python + yfinance + pandas-ta
-  &nbsp;|&nbsp; India: 27 Mar 2026, 03:56 AM IST &nbsp;·&nbsp; USA: 26 Mar 2026, 06:26 PM EST
+  &nbsp;|&nbsp; India: 27 Mar 2026, 04:12 AM IST &nbsp;·&nbsp; USA: 26 Mar 2026, 06:42 PM EST
   <br>
   Parameters: Vol Surge (20) · RSI (15) · MACD (15) · EMA (15) · Breakout (15) · ADX (10) · 52W (10) · Gap (+8) · Sector (+7) · Candle (+10) · RS (+5) · Weekly MTF (+8)
 </div>
 
 <script>
-  // Set correct timestamp based on active tab
+  // Timestamps per BTST tab; ORB shows both market times
   const times = {
-    india: { time: "03:56 AM", tz: "IST", date: "27 Mar 2026" },
-    usa:   { time: "06:26 PM", tz: "EST", date: "26 Mar 2026" }
+    india: { time: "04:12 AM", tz: "IST", date: "27 Mar 2026" },
+    usa:   { time: "06:42 PM", tz: "EST", date: "26 Mar 2026" },
+    orb:   { time: "04:12 AM", tz: "IST/EST", date: "27 Mar 2026" }
   };
 
   function updateTime(tab) {
@@ -564,9 +655,10 @@
     // buttons
     document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
     document.querySelector('.' + tab + '-btn').classList.add('active');
-    // pills
+    // pills — only show pills row that exists for this tab
     document.querySelectorAll('.market-pills').forEach(p => p.classList.remove('active'));
-    document.getElementById('pills-' + tab).classList.add('active');
+    const pillEl = document.getElementById('pills-' + tab);
+    if (pillEl) pillEl.classList.add('active');
     // time
     updateTime(tab);
   }
