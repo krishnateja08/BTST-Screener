@@ -1134,6 +1134,13 @@ def generate_html_report(
     with open(html_file, "w", encoding="utf-8") as f:
         f.write(html)
     print(f"  🌐  HTML Report saved → {Fore.CYAN}{html_file}{Style.RESET_ALL}")
+
+    # Also save as index.html so GitHub Pages serves it at the root URL
+    # e.g. https://krishnateja08.github.io/BTST-Screener/ (no filename needed)
+    with open("index.html", "w", encoding="utf-8") as f:
+        f.write(html)
+    print(f"  🔗  index.html updated → root URL now serves latest report")
+
     return html_file
 
 
