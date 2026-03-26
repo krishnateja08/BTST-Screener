@@ -26,6 +26,7 @@ import pandas as pd
 import pandas_ta as ta
 import warnings
 import sys
+import json
 import argparse
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo          # stdlib — Python 3.9+
@@ -673,6 +674,24 @@ def save_csv(top_df: pd.DataFrame, full_df: pd.DataFrame, prefix: str, date_str:
     print(f"  💾  {prefix.upper()} CSVs saved.")
 
 
+def save_meta(prefix: str, date_str: str, ok: bool, chg: float, vix: float):
+    """Save market health metadata so --html-only can reconstruct the report."""
+    meta = {"ok": ok, "chg": round(chg, 4), "vix": round(vix, 4)}
+    with open(f"btst_{prefix}_meta_{date_str}.json", "w") as f:
+        json.dump(meta, f)
+    print(f"  📝  {prefix.upper()} metadata saved.")
+
+
+def load_meta(prefix: str, date_str: str) -> tuple[bool, float, float]:
+    """Load saved market health metadata. Returns (ok, chg, vix) or safe defaults."""
+    try:
+        with open(f"btst_{prefix}_meta_{date_str}.json") as f:
+            m = json.load(f)
+        return bool(m.get("ok", True)), float(m.get("chg", 0.0)), float(m.get("vix", 0.0))
+    except Exception:
+        return True, 0.0, 0.0
+
+
 # ══════════════════════════════════════════════════════════
 # HTML TABLE ROWS BUILDER
 # ══════════════════════════════════════════════════════════
@@ -1135,7 +1154,7 @@ def generate_html_report(
         f.write(html)
     print(f"  🌐  HTML Report saved → {Fore.CYAN}{html_file}{Style.RESET_ALL}")
 
-    # Also save as index.html so GitHub Pages serves it at the root URL
+    # Also save as index.html → GitHub Pages serves it at the root URL
     # e.g. https://krishnateja08.github.io/BTST-Screener/ (no filename needed)
     with open("index.html", "w", encoding="utf-8") as f:
         f.write(html)
@@ -1395,13 +1414,41 @@ def print_disclaimer():
 # MAIN
 # ══════════════════════════════════════════════════════════
 
+def _scan_india(date_str: str):
+    """Run India scan and return (ok, chg, vix, top_df, full_df)."""
+    ok, chg, vix = check_market("india")
+    full = run_screener(NIFTY100_SYMBOLS, "Nifty 100", chg)
+    top  = pd.DataFrame()
+    if not full.empty:
+        top = filter_and_rank(full)
+        print_report(top, "INDIA", ok, chg)
+        save_csv(top, full, "india", date_str)
+        save_meta("india", date_str, ok, chg, vix)
+    return ok, chg, vix, top, full
+
+
+def _scan_usa(date_str: str):
+    """Run USA scan and return (ok, chg, vix, top_df, full_df)."""
+    ok, chg, vix = check_market("usa")
+    full = run_screener(SP500_TOP100_SYMBOLS, "S&P 500 Top 100", chg)
+    top  = pd.DataFrame()
+    if not full.empty:
+        top = filter_and_rank(full)
+        print_report(top, "USA", ok, chg)
+        save_csv(top, full, "usa", date_str)
+        save_meta("usa", date_str, ok, chg, vix)
+    return ok, chg, vix, top, full
+
+
 def main():
     parser = argparse.ArgumentParser(description="BTST Screener — India + USA")
-    parser.add_argument("--india",    action="store_true", help="Scan India only")
-    parser.add_argument("--usa",      action="store_true", help="Scan USA only")
-    parser.add_argument("--backtest", action="store_true",
+    parser.add_argument("--india",     action="store_true", help="Scan India only")
+    parser.add_argument("--usa",       action="store_true", help="Scan USA only")
+    parser.add_argument("--html-only", action="store_true",
+                        help="Skip scanning — read existing CSVs and regenerate HTML report")
+    parser.add_argument("--backtest",  action="store_true",
                         help="Replay past CSV picks against next-day actuals")
-    parser.add_argument("--days",     type=int, default=30,
+    parser.add_argument("--days",      type=int, default=30,
                         help="Calendar days to look back for backtest (default: 30)")
     args      = parser.parse_args()
     run_india = not args.usa   or args.india
@@ -1411,7 +1458,10 @@ def main():
     print("   BTST SCREENER  |  India (Nifty 100)  +  USA (S&P 500 Top 100)")
     print(f"{'='*62}{Style.RESET_ALL}")
 
-    # ── BACKTEST MODE (skip live scan) ─────────────────────
+    IST_NOW  = datetime.now(tz=IST)
+    date_str = IST_NOW.strftime("%Y-%m-%d")
+
+    # ── BACKTEST MODE ──────────────────────────────────────
     if args.backtest:
         if run_india:
             run_backtest("india", args.days)
@@ -1420,41 +1470,71 @@ def main():
         print_disclaimer()
         return
 
-    IST_NOW  = datetime.now(tz=IST)
-    date_str = IST_NOW.strftime("%Y-%m-%d")
+    # ── HTML-ONLY MODE (used by CI commit job) ─────────────
+    # Reads CSVs + metadata written by the parallel scan jobs,
+    # then regenerates the combined HTML report — no yfinance calls.
+    if args.html_only:
+        hdr("HTML-ONLY MODE — reading saved CSVs + metadata")
 
-    # ── INDIA ──────────────────────────────────────────────
+        def _load_csv(prefix):
+            top_path  = f"btst_{prefix}_{date_str}.csv"
+            full_path = f"btst_{prefix}_full_{date_str}.csv"
+            try:
+                top  = pd.read_csv(top_path)
+                full = pd.read_csv(full_path)
+                print(f"  ✅  Loaded {prefix.upper()} CSVs ({len(top)} top / {len(full)} full)")
+                return top, full
+            except FileNotFoundError:
+                print(f"  ⚠️   {prefix.upper()} CSVs not found for {date_str} — using empty")
+                return pd.DataFrame(), pd.DataFrame()
+
+        india_top,  india_full = _load_csv("india")
+        usa_top,    usa_full   = _load_csv("usa")
+        india_ok,   india_chg, india_vix = load_meta("india", date_str)
+        usa_ok,     usa_chg,   usa_vix   = load_meta("usa",   date_str)
+
+        generate_html_report(
+            india_top, india_full, india_ok, india_chg, india_vix,
+            usa_top,   usa_full,   usa_ok,   usa_chg,   usa_vix,
+            date_str,
+        )
+        print_disclaimer()
+        return
+
+    # ── LIVE SCAN MODE ─────────────────────────────────────
+    # When called with --india or --usa (parallel CI jobs),
+    # only that market runs.  When called with no flags (local),
+    # both run in parallel threads.
     india_ok, india_chg, india_vix = True, 0.0, 0.0
-    india_full = pd.DataFrame()
-    india_top  = pd.DataFrame()
+    india_full = india_top = pd.DataFrame()
+    usa_ok,    usa_chg,   usa_vix   = True, 0.0, 0.0
+    usa_full   = usa_top  = pd.DataFrame()
 
-    if run_india:
-        india_ok, india_chg, india_vix = check_market("india")
-        india_full = run_screener(NIFTY100_SYMBOLS, "Nifty 100", india_chg)
-        if not india_full.empty:
-            india_top = filter_and_rank(india_full)
-            print_report(india_top, "INDIA", india_ok, india_chg)
-            save_csv(india_top, india_full, "india", date_str)
+    if run_india and run_usa:
+        # ── Both markets: run in parallel (local / manual run) ──
+        hdr("Running India + USA scans in PARALLEL")
+        with ThreadPoolExecutor(max_workers=2) as pool:
+            f_india = pool.submit(_scan_india, date_str)
+            f_usa   = pool.submit(_scan_usa,   date_str)
+            india_ok, india_chg, india_vix, india_top, india_full = f_india.result()
+            usa_ok,   usa_chg,   usa_vix,   usa_top,   usa_full   = f_usa.result()
 
-    # ── USA ────────────────────────────────────────────────
-    usa_ok, usa_chg, usa_vix = True, 0.0, 0.0
-    usa_full = pd.DataFrame()
-    usa_top  = pd.DataFrame()
+    elif run_india:
+        # ── India only (CI parallel job) ────────────────────
+        india_ok, india_chg, india_vix, india_top, india_full = _scan_india(date_str)
 
-    if run_usa:
-        usa_ok, usa_chg, usa_vix = check_market("usa")
-        usa_full = run_screener(SP500_TOP100_SYMBOLS, "S&P 500 Top 100", usa_chg)
-        if not usa_full.empty:
-            usa_top = filter_and_rank(usa_full)
-            print_report(usa_top, "USA", usa_ok, usa_chg)
-            save_csv(usa_top, usa_full, "usa", date_str)
+    elif run_usa:
+        # ── USA only (CI parallel job) ──────────────────────
+        usa_ok, usa_chg, usa_vix, usa_top, usa_full = _scan_usa(date_str)
 
-    # ── HTML ───────────────────────────────────────────────
-    generate_html_report(
-        india_top, india_full, india_ok, india_chg, india_vix,
-        usa_top,   usa_full,   usa_ok,   usa_chg,   usa_vix,
-        date_str,
-    )
+    # ── HTML (only generated in single-run / local mode) ───
+    # In CI the commit job runs --html-only after both scans finish.
+    if run_india and run_usa:
+        generate_html_report(
+            india_top, india_full, india_ok, india_chg, india_vix,
+            usa_top,   usa_full,   usa_ok,   usa_chg,   usa_vix,
+            date_str,
+        )
 
     print_disclaimer()
 
