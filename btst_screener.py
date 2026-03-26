@@ -315,11 +315,8 @@ def print_report(df: pd.DataFrame, label: str, market_ok: bool, idx_chg: float):
 
 def save_csv(top_df: pd.DataFrame, full_df: pd.DataFrame, prefix: str, date_str: str):
     top_df.to_csv(f"btst_{prefix}_{date_str}.csv", index=False)
-    if not full_df.empty and "BTST_Score" in full_df.columns:
-        full_df.sort_values("BTST_Score", ascending=False).to_csv(
-            f"btst_{prefix}_full_{date_str}.csv", index=False)
-    else:
-        full_df.to_csv(f"btst_{prefix}_full_{date_str}.csv", index=False)
+    full_df.sort_values("BTST_Score", ascending=False).to_csv(
+        f"btst_{prefix}_full_{date_str}.csv", index=False)
     print(f"  💾  {prefix.upper()} CSVs saved.")
 
 
@@ -748,7 +745,8 @@ def main():
 
     # ── INDIA ──────────────────────────────────────────────
     india_ok, india_chg, india_vix = True, 0.0, 0.0
-    india_full = india_top = pd.DataFrame()
+    india_full = pd.DataFrame()
+    india_top  = pd.DataFrame()
 
     if run_india:
         india_ok, india_chg, india_vix = check_market("india")
@@ -760,7 +758,8 @@ def main():
 
     # ── USA ────────────────────────────────────────────────
     usa_ok, usa_chg, usa_vix = True, 0.0, 0.0
-    usa_full = usa_top = pd.DataFrame()
+    usa_full = pd.DataFrame()
+    usa_top  = pd.DataFrame()
 
     if run_usa:
         usa_ok, usa_chg, usa_vix = check_market("usa")
