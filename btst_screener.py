@@ -315,8 +315,11 @@ def print_report(df: pd.DataFrame, label: str, market_ok: bool, idx_chg: float):
 
 def save_csv(top_df: pd.DataFrame, full_df: pd.DataFrame, prefix: str, date_str: str):
     top_df.to_csv(f"btst_{prefix}_{date_str}.csv", index=False)
-    full_df.sort_values("BTST_Score", ascending=False).to_csv(
-        f"btst_{prefix}_full_{date_str}.csv", index=False)
+    if not full_df.empty and "BTST_Score" in full_df.columns:
+        full_df.sort_values("BTST_Score", ascending=False).to_csv(
+            f"btst_{prefix}_full_{date_str}.csv", index=False)
+    else:
+        full_df.to_csv(f"btst_{prefix}_full_{date_str}.csv", index=False)
     print(f"  💾  {prefix.upper()} CSVs saved.")
 
 
@@ -360,9 +363,12 @@ def _rows(df: pd.DataFrame, currency: str = "₹") -> str:
 
 
 def _summary_cards(top_df: pd.DataFrame, total_scanned: int, tab_id: str) -> str:
-    strong   = len(top_df[top_df["BTST_Score"] >= 70])
-    moderate = len(top_df[(top_df["BTST_Score"] >= 50) & (top_df["BTST_Score"] < 70)])
-    weak     = len(top_df[top_df["BTST_Score"] < 50])
+    if top_df.empty or "BTST_Score" not in top_df.columns:
+        strong = moderate = weak = 0
+    else:
+        strong   = len(top_df[top_df["BTST_Score"] >= 70])
+        moderate = len(top_df[(top_df["BTST_Score"] >= 50) & (top_df["BTST_Score"] < 70)])
+        weak     = len(top_df[top_df["BTST_Score"] < 50])
     return f"""
     <div class="cards" id="cards-{tab_id}">
       <div class="card cg"><span class="card-ico">🟢</span><div class="card-val" style="color:var(--green)">{strong}</div><div class="card-lbl">Strong Picks (≥70)</div></div>
