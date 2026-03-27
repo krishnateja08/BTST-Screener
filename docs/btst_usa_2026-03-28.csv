@@ -1,0 +1,2 @@
+Symbol,Close,Change%,Volume_Ratio,RSI,MACD_Hist,EMA20,EMA50,ADX,Range_Pos%,ATR,52W_High,Near_52W_High,Candle,RS_Beat,Weekly_Align,Gap_Up,Gap_Pct,Sector_Align,Stop_Loss,Target,RR_Ratio,BTST_Score
+MDLZ,58.27,1.2,1.22,53.3,0.1772,57.51,57.76,13.9,66.2,1.44,69.94,False,,True,True,False,0.03,True,57.28,60.43,2.18,63.0
