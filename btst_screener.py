@@ -281,8 +281,21 @@ def check_market(market: str = "india") -> tuple[bool, float, float]:
     hdr(f"Market Health — {label.upper()}")
 
     try:
-        idx = _flatten(yf.download(idx_sym, period="5d", interval="1d", progress=False))
-        vix = _flatten(yf.download(vix_sym, period="5d", interval="1d", progress=False))
+        combined = yf.download(
+            [idx_sym, vix_sym],
+            period="5d",
+            interval="1d",
+            progress=False,
+            auto_adjust=True,
+            group_by="ticker",
+            threads=True,
+        )
+        if isinstance(combined.columns, pd.MultiIndex):
+            idx = combined[idx_sym].dropna()
+            vix = combined[vix_sym].dropna()
+        else:
+            idx = combined.dropna()
+            vix = pd.DataFrame()
     except Exception:
         print(f"  {Fore.YELLOW}⚠  Could not fetch market data{Style.RESET_ALL}")
         return True, 0.0, 0.0
@@ -734,25 +747,29 @@ def score_orb_stock(symbol: str, sector_bonus: float = 0.0) -> dict | None:
 # RUN SCREENER  — batch download + parallel scoring
 # ══════════════════════════════════════════════════════════
 
-def run_screener(symbols: list, label: str, index_chg: float = 0.0) -> pd.DataFrame:
+def run_screener(symbols: list, label: str,
+                 index_chg: float = 0.0) -> tuple[pd.DataFrame, dict]:
+    """
+    Returns (results_df, sector_perf) so the caller can pass sector_perf
+    to run_orb_screener and avoid a duplicate fetch.
+    """
     hdr(f"Scanning {len(symbols)} {label} stocks (batch + parallel) …")
 
-    # Step 1: download all tickers in one HTTP batch
-    print(f"  📥  Fetching 1-year OHLCV for {len(symbols)} tickers …", flush=True)
-    cache = _batch_download(symbols)
+    market     = "india" if any(s.endswith(".NS") for s in symbols) else "usa"
+    sector_map = INDIA_SECTOR_MAP if market == "india" else USA_SECTOR_MAP
+
+    # Step 1+2 in PARALLEL: batch OHLCV download + sector perf fetch overlap
+    print(f"  📥  Fetching 1-year OHLCV + sector data in parallel …", flush=True)
+    with ThreadPoolExecutor(max_workers=2) as pre:
+        f_cache  = pre.submit(_batch_download, symbols)
+        f_sector = pre.submit(fetch_sector_perf, market)
+        cache       = f_cache.result()
+        sector_perf = f_sector.result()
     print(f"  ✅  Downloaded {len(cache)}/{len(symbols)}. Scoring …", flush=True)
 
-    # Step 2: fetch sector performance for bonus calculation
-    market = "india" if any(s.endswith(".NS") for s in symbols) else "usa"
-    sector_map  = INDIA_SECTOR_MAP if market == "india" else USA_SECTOR_MAP
-    sector_perf = fetch_sector_perf(market)   # {sector_ticker: is_up_today}
-
     def _sector_bonus(sym: str) -> float:
-        """Return SECTOR_BONUS_PTS if this stock's sector index is green, else 0."""
         sec_ticker = sector_map.get(sym)
-        if sec_ticker and sector_perf.get(sec_ticker, False):
-            return float(SECTOR_BONUS_PTS)
-        return 0.0
+        return float(SECTOR_BONUS_PTS) if sec_ticker and sector_perf.get(sec_ticker, False) else 0.0
 
     # Step 3: score all stocks in parallel (TA calcs are CPU-bound)
     results = []
@@ -771,36 +788,179 @@ def run_screener(symbols: list, label: str, index_chg: float = 0.0) -> pd.DataFr
 
     print(" " * 60, end="\r")
     print(f"  ✅  Scored {len(results)} stocks successfully.")
-    return pd.DataFrame(results)
+    return pd.DataFrame(results), sector_perf
 
 
 # ══════════════════════════════════════════════════════════
-# RUN ORB SCREENER  — live 5-min intraday scan (parallel)
+# BATCH INTRADAY DOWNLOAD — all tickers in ONE 5-min call
 # ══════════════════════════════════════════════════════════
 
-def run_orb_screener(symbols: list, label: str) -> pd.DataFrame:
+def _batch_download_intraday(symbols: list) -> dict:
+    """
+    Download today's 5-min bars for ALL symbols in a single yf.download() call.
+    Returns {symbol: DataFrame} with today's bars only, tz-aware index.
+    """
+    is_india = any(s.endswith(".NS") for s in symbols)
+    tz = IST if is_india else EST
+
+    print(f"  📥  Batch-fetching 5-min bars for {len(symbols)} tickers …", flush=True)
+    try:
+        raw = yf.download(
+            symbols,
+            period="2d",
+            interval="5m",
+            progress=False,
+            auto_adjust=True,
+            group_by="ticker",
+            threads=True,
+        )
+    except Exception as e:
+        print(f"  ⚠  Intraday batch download failed: {e}")
+        return {}
+
+    today_date = datetime.now(tz=tz).date()
+    result = {}
+    for sym in symbols:
+        try:
+            df = raw[sym].dropna() if isinstance(raw.columns, pd.MultiIndex) else raw.dropna()
+            if df.empty:
+                continue
+            if df.index.tzinfo is None:
+                df.index = df.index.tz_localize("UTC")
+            df.index = df.index.tz_convert(tz)
+            df = df[df.index.date == today_date]
+            if len(df) >= ORB_BARS + 1:
+                result[sym] = df
+        except Exception:
+            pass
+
+    print(f"  ✅  Intraday data: {len(result)}/{len(symbols)} symbols with enough bars.")
+    return result
+
+
+def score_orb_stock_from_df(symbol: str, df: pd.DataFrame, sector_bonus: float = 0.0) -> dict | None:
+    """
+    Score ORB for a single stock using pre-downloaded 5-min DataFrame.
+    Same logic as score_orb_stock() but no network I/O.
+    """
+    try:
+        is_india  = symbol.endswith(".NS")
+        orb       = df.iloc[:ORB_BARS]
+        orb_high  = float(orb["High"].max())
+        orb_low   = float(orb["Low"].min())
+        orb_range = orb_high - orb_low
+        orb_range_pct = (orb_range / orb_high * 100) if orb_high > 0 else 0.0
+
+        cur_bar = df.iloc[-1]
+        price   = float(cur_bar["Close"])
+        cur_vol = float(cur_bar["Volume"])
+
+        if price <= orb_high:
+            return None   # no breakout
+
+        brk_pct = (price - orb_high) / orb_high * 100
+        s_brk   = (ORB_WEIGHTS["breakout_strength"]        if brk_pct >= 1.0 else
+                   ORB_WEIGHTS["breakout_strength"] * 0.72 if brk_pct >= 0.5 else
+                   ORB_WEIGHTS["breakout_strength"] * 0.48)
+
+        orb_avg_vol = float(orb["Volume"].mean())
+        vol_ratio   = cur_vol / orb_avg_vol if orb_avg_vol > 0 else 1.0
+        s_vol = (ORB_WEIGHTS["volume_surge"]        if vol_ratio >= 2.0 else
+                 ORB_WEIGHTS["volume_surge"] * 0.70 if vol_ratio >= 1.5 else
+                 ORB_WEIGHTS["volume_surge"] * 0.40 if vol_ratio >= 1.2 else 0)
+
+        rsi_s = ta.rsi(df["Close"], length=14)
+        rsi   = float(rsi_s.iloc[-1]) if rsi_s is not None and not rsi_s.empty else 50.0
+        s_rsi = (ORB_WEIGHTS["rsi_5m"]        if rsi >= 55 else
+                 ORB_WEIGHTS["rsi_5m"] * 0.53 if rsi >= 50 else 0)
+
+        adx_df  = ta.adx(df["High"], df["Low"], df["Close"], length=14)
+        adx_val = 0.0
+        s_adx   = 0
+        if adx_df is not None and not adx_df.empty:
+            ac = [c for c in adx_df.columns if c.startswith("ADX_")]
+            if ac:
+                adx_val = float(adx_df[ac[0]].iloc[-1])
+                s_adx   = (ORB_WEIGHTS["adx_5m"]        if adx_val >= 25 else
+                           ORB_WEIGHTS["adx_5m"] * 0.50 if adx_val >= 20 else 0)
+
+        s_range = (ORB_WEIGHTS["orb_range_tight"]        if orb_range_pct <= 1.0 else
+                   ORB_WEIGHTS["orb_range_tight"] * 0.70 if orb_range_pct <= 1.5 else
+                   ORB_WEIGHTS["orb_range_tight"] * 0.40 if orb_range_pct <= 2.0 else 0)
+
+        first    = df.iloc[0]
+        s_candle = (ORB_WEIGHTS["open_candle_bull"]
+                    if float(first["Close"]) > float(first["Open"]) else 0)
+
+        total = s_brk + s_vol + s_rsi + s_adx + s_range + s_candle + sector_bonus
+
+        atr_s   = ta.atr(df["High"], df["Low"], df["Close"], length=14)
+        atr_val = (float(atr_s.iloc[-1])
+                   if atr_s is not None and not atr_s.empty else orb_range)
+
+        stop_loss = round(max(orb_low, price - atr_val), 2)
+        target    = round(orb_high + 1.5 * orb_range, 2)
+        risk      = price - stop_loss
+        reward    = target - price
+        rr_ratio  = round(reward / risk, 2) if risk > 0 else 0.0
+
+        clean_sym = (symbol.replace(".NS", "")
+                           .replace("-", ".")
+                           .replace("BRK.B", "BRK-B"))
+
+        return {
+            "Symbol":       clean_sym,
+            "Price":        round(price, 2),
+            "ORB_High":     round(orb_high, 2),
+            "ORB_Low":      round(orb_low, 2),
+            "ORB_Range%":   round(orb_range_pct, 2),
+            "Brk_Pct":      round(brk_pct, 2),
+            "Vol_Ratio":    round(vol_ratio, 2),
+            "RSI_5m":       round(rsi, 1),
+            "ADX_5m":       round(adx_val, 1),
+            "Sector_Align": sector_bonus > 0,
+            "Stop_Loss":    stop_loss,
+            "Target":       target,
+            "RR_Ratio":     rr_ratio,
+            "ORB_Score":    round(total, 1),
+        }
+    except Exception as e:
+        print(f"  {Fore.YELLOW}⚠  ORB skip {symbol}: {e}{Style.RESET_ALL}")
+        return None
+
+
+# ══════════════════════════════════════════════════════════
+# RUN ORB SCREENER  — batch intraday download + parallel score
+# ══════════════════════════════════════════════════════════
+
+def run_orb_screener(symbols: list, label: str,
+                     sector_perf: dict | None = None) -> pd.DataFrame:
     hdr(f"ORB Scan — {len(symbols)} {label} stocks (5-min bars) …")
 
-    market      = "india" if any(s.endswith(".NS") for s in symbols) else "usa"
-    sector_map  = INDIA_SECTOR_MAP if market == "india" else USA_SECTOR_MAP
-    sector_perf = fetch_sector_perf(market)
+    market     = "india" if any(s.endswith(".NS") for s in symbols) else "usa"
+    sector_map = INDIA_SECTOR_MAP if market == "india" else USA_SECTOR_MAP
+    if sector_perf is None:          # fallback: fetch if not passed in
+        sector_perf = fetch_sector_perf(market)
+    else:
+        print(f"  ♻️  Reusing sector perf from BTST scan (skipping re-fetch).")
 
     def _sector_bonus(sym: str) -> float:
         sec = sector_map.get(sym)
-        if sec and sector_perf.get(sec, False):
-            return float(SECTOR_BONUS_PTS)
-        return 0.0
+        return float(SECTOR_BONUS_PTS) if sec and sector_perf.get(sec, False) else 0.0
+
+    # One batch intraday download instead of N individual downloads
+    intraday_cache = _batch_download_intraday(symbols)
 
     results = []
     with ThreadPoolExecutor(max_workers=16) as pool:
         futures = {
-            pool.submit(score_orb_stock, sym, _sector_bonus(sym)): sym
-            for sym in symbols
+            pool.submit(score_orb_stock_from_df, sym, df, _sector_bonus(sym)): sym
+            for sym, df in intraday_cache.items()
         }
         done = 0
         for future in as_completed(futures):
             done += 1
-            print(f"  ⚙️  ORB [{done:>3}/{len(symbols)}]", end="\r", flush=True)
+            print(f"  ⚙️  ORB [{done:>3}/{len(intraday_cache)}]", end="\r", flush=True)
             r = future.result()
             if r:
                 results.append(r)
@@ -1915,17 +2075,17 @@ def print_disclaimer():
 def _scan_india(date_str: str, run_orb: bool = True):
     """Run India BTST scan (+ optional ORB scan). Returns (ok, chg, vix, top_df, full_df, orb_df)."""
     ok, chg, vix = check_market("india")
-    full = run_screener(NIFTY100_SYMBOLS, "Nifty 100", chg)
+    full, sector_perf = run_screener(NIFTY100_SYMBOLS, "Nifty 100", chg)
     top  = pd.DataFrame()
     if not full.empty:
         top = filter_and_rank(full)
         print_report(top, "INDIA", ok, chg)
         save_csv(top, full, "india", date_str)
         save_meta("india", date_str, ok, chg, vix)
-    # ORB scan (independent — does not affect BTST results)
+    # ORB scan — reuse sector_perf from BTST scan (no duplicate fetch)
     orb_top = pd.DataFrame()
     if run_orb:
-        orb_raw = run_orb_screener(NIFTY100_SYMBOLS, "Nifty 100")
+        orb_raw = run_orb_screener(NIFTY100_SYMBOLS, "Nifty 100", sector_perf=sector_perf)
         orb_top = filter_and_rank_orb(orb_raw)
         if not orb_top.empty:
             orb_top.to_csv(f"orb_india_{date_str}.csv", index=False)
@@ -1936,17 +2096,17 @@ def _scan_india(date_str: str, run_orb: bool = True):
 def _scan_usa(date_str: str, run_orb: bool = True):
     """Run USA BTST scan (+ optional ORB scan). Returns (ok, chg, vix, top_df, full_df, orb_df)."""
     ok, chg, vix = check_market("usa")
-    full = run_screener(SP500_TOP100_SYMBOLS, "S&P 500 Top 100", chg)
+    full, sector_perf = run_screener(SP500_TOP100_SYMBOLS, "S&P 500 Top 100", chg)
     top  = pd.DataFrame()
     if not full.empty:
         top = filter_and_rank(full)
         print_report(top, "USA", ok, chg)
         save_csv(top, full, "usa", date_str)
         save_meta("usa", date_str, ok, chg, vix)
-    # ORB scan (independent — does not affect BTST results)
+    # ORB scan — reuse sector_perf from BTST scan (no duplicate fetch)
     orb_top = pd.DataFrame()
     if run_orb:
-        orb_raw = run_orb_screener(SP500_TOP100_SYMBOLS, "S&P 500 Top 100")
+        orb_raw = run_orb_screener(SP500_TOP100_SYMBOLS, "S&P 500 Top 100", sector_perf=sector_perf)
         orb_top = filter_and_rank_orb(orb_raw)
         if not orb_top.empty:
             orb_top.to_csv(f"orb_usa_{date_str}.csv", index=False)
