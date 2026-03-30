@@ -1,0 +1,3 @@
+Symbol,Close,Change%,Volume_Ratio,RSI,MACD_Hist,EMA20,EMA50,ADX,Range_Pos%,ATR,52W_High,Near_52W_High,Candle,RS_Beat,Weekly_Align,Gap_Up,Gap_Pct,Sector_Align,Stop_Loss,Target,RR_Ratio,BTST_Score
+ONGC,281.95,4.35,3.18,64.4,0.0611,269.6,263.01,31.8,80.1,8.18,293.0,True,,True,True,False,0.11,False,273.77,294.22,1.5,107.0
+LICHSGFIN,506.05,1.96,2.22,50.7,-0.3038,500.53,513.18,23.0,56.6,15.78,635.31,False,,True,False,True,0.75,False,498.3,529.72,3.05,50.0
