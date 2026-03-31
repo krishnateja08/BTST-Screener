@@ -1,0 +1,2 @@
+Symbol,Close,Change%,Volume_Ratio,RSI,MACD_Hist,EMA20,EMA50,ADX,Range_Pos%,ATR,52W_High,Near_52W_High,Candle,RS_Beat,Weekly_Align,Gap_Up,Gap_Pct,Sector_Align,Stop_Loss,Target,RR_Ratio,BTST_Score
+NFLX,96.15,3.42,1.39,61.0,-0.3176,92.83,91.52,25.0,96.4,2.8,134.12,False,Morning Star,True,True,False,0.3,False,93.35,100.35,1.5,83.0
