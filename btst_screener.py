@@ -225,12 +225,12 @@ AD_RATIO_MIN = 1.5   # min Advance/Decline ratio for high-conviction BTST trades
 SECTOR_TOP_N = 3     # top-N sectors by % gain get the full sector bonus
 
 # ── Liquidity thresholds (absolute avg daily volume) ──────
-LIQUIDITY_MIN_INDIA = 200_000    # shares/day — filters illiquid NSE midcaps
+LIQUIDITY_MIN_INDIA = 100_000    # shares/day — filters truly illiquid stocks only
 LIQUIDITY_MIN_USA   = 1_000_000  # shares/day — S&P 500 should always pass
 
 # ── Entry quality thresholds ──────────────────────────────
-ENTRY_MAX_EMA_DIST_PCT  = 4.0    # avoid if close > 4% above EMA20 (overextended)
-ENTRY_MAX_DAY_CHG_PCT   = 6.0    # avoid if day change > 6% (unless high vol breakout)
+ENTRY_MAX_EMA_DIST_PCT  = 6.0    # avoid if close > 6% above EMA20 (overextended)
+ENTRY_MAX_DAY_CHG_PCT   = 8.0    # avoid if day change > 8% (unless high vol breakout)
 ENTRY_HIGH_VOL_EXEMPTION = 2.5   # vol_ratio >= this exempts the overextension check
 
 # ── Score conviction tiers ────────────────────────────────
@@ -1200,30 +1200,41 @@ def filter_and_rank(df: pd.DataFrame, min_score: float = 0.0) -> pd.DataFrame:
     """
     Filter and rank BTST candidates.
 
-    Filters applied (in order):
+    Hard filters (stocks excluded if they fail):
       1. RSI ≥ 48
       2. Volume ratio ≥ 1.1 (relative volume)
       3. Absolute liquidity — avg daily volume above market threshold
-      4. Day change in acceptable range (not too red, not overextended without vol)
+      4. Day change > –0.5% and ≤ 8.0%
       5. Close above EMA20
-      6. Entry not overextended (flagged by score_stock_from_df)
-      7. Optional minimum score threshold (--min-score arg)
+      6. Optional minimum score threshold (--min-score arg)
+
+    Soft signals (already baked into score via penalties):
+      - Entry_Overextended → 70% score penalty (ranks low, still visible)
+      - FinalHrFade        → 15% score penalty
+      - Market direction   → continuous scalar multiplier
 
     Stocks are ranked by BTST_Score descending; top 15 returned.
     """
     if df.empty:
         return df
 
-    is_india = df["Symbol"].iloc[0].endswith(".NS") if "Symbol" in df.columns else False
-    liq_min  = LIQUIDITY_MIN_INDIA if is_india else LIQUIDITY_MIN_USA
+    # Symbols are already cleaned (no .NS suffix) — detect market by avg volume scale.
+    # India stocks typically have avg daily volume in the hundreds of thousands;
+    # USA large-caps run in the millions. Use the Avg_Vol median to decide.
+    median_vol = df["Avg_Vol"].median() if "Avg_Vol" in df.columns else 0
+    is_india   = median_vol < 5_000_000   # India midcaps rarely exceed 5M shares/day
+    liq_min    = LIQUIDITY_MIN_INDIA if is_india else LIQUIDITY_MIN_USA
 
     f = df[
         (df["RSI"] >= 48) &
         (df["Volume_Ratio"] >= 1.1) &
-        (df["Avg_Vol"] >= liq_min) &           # ← liquidity filter
-        (df["Change%"] > -0.5) &
-        (df["Close"] > df["EMA20"]) &
-        (~df["Entry_Overextended"])             # ← entry quality filter
+        (df["Avg_Vol"] >= liq_min) &        # ← liquidity: absolute volume gate
+        (df["Change%"] > -0.5) &            # not too red
+        (df["Change%"] <= 8.0) &            # very extreme moves still excluded
+        (df["Close"] > df["EMA20"])
+        # Entry_Overextended is NOT a hard filter — it already applies a 70% score
+        # penalty inside score_stock_from_df(), so overextended stocks rank low
+        # naturally. Keeping it as a soft signal avoids over-filtering on weak days.
     ].copy()
 
     if min_score > 0:
@@ -1396,8 +1407,9 @@ def _rows(df: pd.DataFrame, currency: str = "₹",
         sl_pct  = row.get("SL%", 0.0)
         rr_col  = "#00ff88" if rr >= 2 else "#ffd740" if rr >= 1.5 else "#ff6b6b"
 
-        # ── Conviction badge ──────────────────────────────────────
-        conviction = str(row.get("Conviction", ""))
+        # ── Conviction badge (with overextended warning) ─────────
+        conviction   = str(row.get("Conviction", ""))
+        overextended = bool(row.get("Entry_Overextended", False))
         conv_map = {
             "HIGH":     ('<span class="badge bg" style="font-weight:800">🔥 HIGH</span>'),
             "GOOD":     ('<span class="badge bg">✅ GOOD</span>'),
@@ -1405,6 +1417,8 @@ def _rows(df: pd.DataFrame, currency: str = "₹",
             "WEAK":     ('<span class="badge br">— WEAK</span>'),
         }
         badge_conv = conv_map.get(conviction, "")
+        if overextended:
+            badge_conv += ' <span class="badge br" title="Price overextended vs EMA — lower quality entry">⚠ OX</span>'
 
         rows += f"""
         <tr>
