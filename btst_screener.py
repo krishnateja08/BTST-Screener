@@ -1070,7 +1070,7 @@ def _rows(df: pd.DataFrame, currency: str = "₹",
 
     for rank, (_, row) in enumerate(df.iterrows(), 1):
         medal  = medals.get(rank, f"#{rank}")
-        chg_c  = "#00e676" if row["Change%"] >= 0 else "#ff5252"
+        chg_c  = "#00ff88" if row["Change%"] >= 0 else "#ff6b6b"
         chg_a  = "▲" if row["Change%"] >= 0 else "▼"
 
         vol_cls = "bg" if row["Volume_Ratio"] >= 1.5 else "by" if row["Volume_Ratio"] >= 1.2 else "br"
@@ -1086,11 +1086,11 @@ def _rows(df: pd.DataFrame, currency: str = "₹",
 
         # ── Sector alignment — colour-coded TD background ────────
         sec_align = row.get("Sector_Align", False)
-        sec_bg    = "rgba(0,230,118,0.10)" if sec_align else "rgba(255,82,82,0.08)"
-        sec_txt   = "#00e676"              if sec_align else "#ff5252"
+        sec_bg    = "rgba(0,255,136,0.12)" if sec_align else "rgba(255,107,107,0.10)"
+        sec_txt   = "#00ff88"              if sec_align else "#ff6b6b"
         sec_label = "✅ Green"             if sec_align else "❌ Red"
         badge_sec = (f'<td style="background:{sec_bg};text-align:center">'
-                     f'<span style="color:{sec_txt};font-weight:700;font-size:.72rem">'
+                     f'<span style="color:{sec_txt};font-weight:700;font-size:.82rem">'
                      f'{sec_label}</span></td>')
 
         # ── Gap-up badge ─────────────────────────────────────────
@@ -1130,11 +1130,11 @@ def _rows(df: pd.DataFrame, currency: str = "₹",
         if prev_sc is not None:
             diff = sc - prev_sc
             if diff >= 2:
-                arrow = f'<span style="color:#00e676;font-size:.7rem"> ▲{diff:+.0f}</span>'
+                arrow = f'<span style="color:#00ff88;font-size:.8rem"> ▲{diff:+.0f}</span>'
             elif diff <= -2:
-                arrow = f'<span style="color:#ff5252;font-size:.7rem"> ▼{diff:+.0f}</span>'
+                arrow = f'<span style="color:#ff6b6b;font-size:.8rem"> ▼{diff:+.0f}</span>'
             else:
-                arrow = '<span style="color:var(--muted);font-size:.7rem"> ●</span>'
+                arrow = '<span style="color:var(--muted);font-size:.8rem"> ●</span>'
         else:
             arrow = ""
 
@@ -1142,7 +1142,7 @@ def _rows(df: pd.DataFrame, currency: str = "₹",
         sl     = row.get("Stop_Loss", 0)
         tgt    = row.get("Target", 0)
         rr     = row.get("RR_Ratio", 0)
-        rr_col = "#00e676" if rr >= 2 else "#ffca28" if rr >= 1.5 else "#ff5252"
+        rr_col = "#00ff88" if rr >= 2 else "#ffd740" if rr >= 1.5 else "#ff6b6b"
 
         rows += f"""
         <tr>
@@ -1160,8 +1160,8 @@ def _rows(df: pd.DataFrame, currency: str = "₹",
           <td>{badge_rs}</td>
           <td>{badge_mtf}</td>
           {badge_sec}
-          <td class="num" style="color:#ff5252">{currency}{sl:,.2f}</td>
-          <td class="num" style="color:#00e676">{currency}{tgt:,.2f}</td>
+          <td class="num" style="color:#ff6b6b">{currency}{sl:,.2f}</td>
+          <td class="num" style="color:#00ff88">{currency}{tgt:,.2f}</td>
           <td class="num" style="color:{rr_col};font-weight:700">{rr:.1f}x</td>
           <td>
             <div class="bw">
@@ -1180,24 +1180,24 @@ def _rows_orb(df: pd.DataFrame, currency: str = "₹") -> str:
     for rank, (_, row) in enumerate(df.iterrows(), 1):
         medal   = medals.get(rank, f"#{rank}")
         sc      = row["ORB_Score"]
-        bc      = "#00e676" if sc >= 60 else "#ffca28" if sc >= 40 else "#ff5252"
+        bc      = "#00ff88" if sc >= 60 else "#ffd740" if sc >= 40 else "#ff6b6b"
         pct     = min(sc / 95 * 100, 100)
 
         vol_cls = "bg" if row["Vol_Ratio"] >= 2.0 else "by" if row["Vol_Ratio"] >= 1.5 else "br"
         rsi_cls = "bg" if row["RSI_5m"] >= 55    else "by" if row["RSI_5m"] >= 50    else "br"
 
         sec_align = row.get("Sector_Align", False)
-        sec_bg    = "rgba(0,230,118,0.10)" if sec_align else "rgba(255,82,82,0.08)"
-        sec_txt   = "#00e676" if sec_align else "#ff5252"
+        sec_bg    = "rgba(0,255,136,0.12)" if sec_align else "rgba(255,107,107,0.10)"
+        sec_txt   = "#00ff88" if sec_align else "#ff6b6b"
         sec_label = "✅ Green" if sec_align else "❌ Red"
 
         rr     = row.get("RR_Ratio", 0)
-        rr_col = "#00e676" if rr >= 2 else "#ffca28" if rr >= 1.5 else "#ff5252"
+        rr_col = "#00ff88" if rr >= 2 else "#ffd740" if rr >= 1.5 else "#ff6b6b"
         sl     = row.get("Stop_Loss", 0)
         tgt    = row.get("Target", 0)
 
         brk_pct = row.get("Brk_Pct", 0)
-        brk_col = "#00e676" if brk_pct >= 1.0 else "#ffca28"
+        brk_col = "#00ff88" if brk_pct >= 1.0 else "#ffd740"
 
         rows += f"""
         <tr>
@@ -1289,9 +1289,9 @@ def generate_html_report(
 <style>
   :root {{
     --bg:     #080c10; --surf:  #0d1117; --surf2: #161b22;
-    --border: #21262d; --green: #00e676; --yellow:#ffca28;
-    --red:    #ff5252; --blue:  #40c4ff; --text:  #e6edf3;
-    --muted:  #7d8590; --r:     12px;
+    --border: #30363d; --green: #00ff88; --yellow:#ffd740;
+    --red:    #ff6b6b; --blue:  #60d4ff; --text:  #ffffff;
+    --muted:  #a0aab4; --r:     12px;
     --mono: 'Space Mono',monospace; --sans: 'Syne',sans-serif;
   }}
   *,*::before,*::after{{box-sizing:border-box;margin:0;padding:0}}
@@ -1303,16 +1303,16 @@ def generate_html_report(
   .header::before{{content:'';position:absolute;top:-80px;right:-80px;width:clamp(160px,28vw,300px);height:clamp(160px,28vw,300px);background:radial-gradient(circle,rgba(0,230,118,.07) 0%,transparent 70%);pointer-events:none}}
   .header::after{{content:'';position:absolute;bottom:-70px;left:25%;width:200px;height:200px;background:radial-gradient(circle,rgba(64,196,255,.05) 0%,transparent 70%);pointer-events:none}}
   .header-top{{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap}}
-  .logo h1{{font-size:clamp(1.35rem,4vw,2.2rem);font-weight:800;letter-spacing:-.5px;line-height:1.1}}
+  .logo h1{{font-size:clamp(1.6rem,4vw,2.5rem);font-weight:800;letter-spacing:-.5px;line-height:1.1}}
   .logo h1 span{{color:var(--green)}}
-  .logo p{{font-family:var(--mono);font-size:clamp(.58rem,1.3vw,.72rem);color:var(--muted);margin-top:5px;letter-spacing:1.5px;text-transform:uppercase}}
-  .ts{{font-family:var(--mono);font-size:clamp(.6rem,1.2vw,.72rem);color:var(--muted);text-align:right;line-height:1.7;flex-shrink:0}}
-  .ts-time{{display:block;font-size:clamp(.82rem,2vw,.95rem);font-weight:700;color:var(--blue);margin-bottom:2px;white-space:nowrap}}
-  .tz-tag{{display:inline-block;background:rgba(64,196,255,.12);color:var(--blue);border:1px solid rgba(64,196,255,.3);border-radius:4px;font-family:var(--mono);font-size:.58rem;padding:1px 6px;letter-spacing:1px;vertical-align:middle;margin-left:4px}}
+  .logo p{{font-family:var(--mono);font-size:clamp(.72rem,1.4vw,.86rem);color:var(--muted);margin-top:5px;letter-spacing:1.5px;text-transform:uppercase}}
+  .ts{{font-family:var(--mono);font-size:clamp(.72rem,1.3vw,.84rem);color:var(--muted);text-align:right;line-height:1.7;flex-shrink:0}}
+  .ts-time{{display:block;font-size:clamp(.95rem,2vw,1.1rem);font-weight:700;color:var(--blue);margin-bottom:2px;white-space:nowrap}}
+  .tz-tag{{display:inline-block;background:rgba(96,212,255,.15);color:var(--blue);border:1px solid rgba(96,212,255,.4);border-radius:4px;font-family:var(--mono);font-size:.68rem;padding:1px 6px;letter-spacing:1px;vertical-align:middle;margin-left:4px}}
 
   /* PILLS */
   .pills{{display:flex;gap:8px;margin-top:20px;flex-wrap:wrap}}
-  .pill{{display:flex;align-items:center;gap:7px;background:var(--surf2);border:1px solid var(--border);border-radius:999px;padding:5px 13px;font-family:var(--mono);font-size:clamp(.58rem,1.2vw,.72rem);color:var(--muted);white-space:nowrap}}
+  .pill{{display:flex;align-items:center;gap:7px;background:var(--surf2);border:1px solid var(--border);border-radius:999px;padding:6px 14px;font-family:var(--mono);font-size:clamp(.7rem,1.3vw,.82rem);color:var(--muted);white-space:nowrap}}
   .dot{{width:7px;height:7px;border-radius:50%;flex-shrink:0}}
   .dot.live{{animation:blink 2s infinite}}
   @keyframes blink{{0%,100%{{opacity:1}}50%{{opacity:.25}}}}
@@ -1329,12 +1329,12 @@ def generate_html_report(
   .tab-btn{{
     display:flex;align-items:center;gap:8px;
     background:transparent;border:none;border-radius:999px;
-    padding:9px 22px;cursor:pointer;
-    font-family:var(--mono);font-size:clamp(.68rem,1.4vw,.78rem);
+    padding:10px 24px;cursor:pointer;
+    font-family:var(--mono);font-size:clamp(.78rem,1.5vw,.9rem);
     font-weight:700;color:var(--muted);
     transition:all .25s ease;white-space:nowrap;
   }}
-  .tab-btn .flag{{font-size:1rem}}
+  .tab-btn .flag{{font-size:1.1rem}}
   .tab-btn.active{{background:var(--surf);color:var(--text);box-shadow:0 2px 8px rgba(0,0,0,.4)}}
   .tab-btn.active.india-btn{{color:var(--green)}}
   .tab-btn.active.usa-btn{{color:var(--blue)}}
@@ -1355,32 +1355,32 @@ def generate_html_report(
   .card.cr::after{{background:var(--red)}}   .card.cb::after{{background:var(--blue)}}
   .card.cm::after{{background:var(--muted)}}
   .card-ico{{font-size:1.15rem;margin-bottom:8px;display:block}}
-  .card-val{{font-family:var(--mono);line-height:1;font-size:clamp(1.5rem,3.5vw,2.4rem);font-weight:700}}
-  .card-lbl{{font-size:clamp(.58rem,1.2vw,.7rem);color:var(--muted);text-transform:uppercase;letter-spacing:.9px;margin-top:7px;line-height:1.4}}
+  .card-val{{font-family:var(--mono);line-height:1;font-size:clamp(1.7rem,3.8vw,2.6rem);font-weight:700}}
+  .card-lbl{{font-size:clamp(.68rem,1.3vw,.82rem);color:var(--muted);text-transform:uppercase;letter-spacing:.9px;margin-top:7px;line-height:1.4}}
   .card:nth-child(1){{animation-delay:.04s}} .card:nth-child(2){{animation-delay:.08s}}
   .card:nth-child(3){{animation-delay:.12s}} .card:nth-child(4){{animation-delay:.16s}}
   .card:nth-child(5){{animation-delay:.20s}}
 
   /* SECTION HEADER */
   .sh{{display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap}}
-  .sh-title{{font-size:clamp(.85rem,2vw,1rem);font-weight:700;white-space:nowrap}}
+  .sh-title{{font-size:clamp(1rem,2.2vw,1.2rem);font-weight:700;white-space:nowrap;color:var(--text)}}
   .sh-line{{flex:1;height:1px;background:var(--border);min-width:16px}}
-  .sh-sub{{font-family:var(--mono);font-size:clamp(.58rem,1.2vw,.68rem);color:var(--muted);white-space:nowrap}}
+  .sh-sub{{font-family:var(--mono);font-size:clamp(.68rem,1.3vw,.78rem);color:var(--muted);white-space:nowrap}}
 
   /* TABLE */
   .scroll-hint{{display:none;font-family:var(--mono);font-size:.62rem;color:var(--muted);text-align:right;margin-bottom:6px}}
   @media(max-width:680px){{.scroll-hint{{display:block}}}}
   .tw{{overflow-x:auto;border-radius:var(--r);border:1px solid var(--border);-webkit-overflow-scrolling:touch}}
-  table{{width:100%;border-collapse:collapse;font-size:clamp(.76rem,1.5vw,.875rem)}}
+  table{{width:100%;border-collapse:collapse;font-size:clamp(.85rem,1.6vw,.98rem)}}
   thead tr{{background:var(--surf2)}}
-  th{{font-family:var(--mono);font-size:clamp(.56rem,1.1vw,.63rem);text-transform:uppercase;letter-spacing:.9px;color:var(--muted);padding:clamp(10px,1.5vw,14px) clamp(10px,1.5vw,16px);text-align:left;white-space:nowrap;border-bottom:1px solid var(--border)}}
+  th{{font-family:var(--mono);font-size:clamp(.68rem,1.2vw,.76rem);text-transform:uppercase;letter-spacing:.9px;color:#c8d0db;padding:clamp(12px,1.6vw,16px) clamp(10px,1.5vw,16px);text-align:left;white-space:nowrap;border-bottom:1px solid var(--border)}}
   tbody tr{{background:var(--surf);border-bottom:1px solid var(--border);transition:background .15s;animation:fadeUp .3s ease both}}
   tbody tr:hover{{background:var(--surf2)}}
   tbody tr:last-child{{border-bottom:none}}
-  td{{padding:clamp(10px,1.5vw,13px) clamp(10px,1.5vw,16px);white-space:nowrap}}
-  td.rnk{{font-size:1.05rem;text-align:center;width:46px}}
-  td.sym{{font-family:var(--mono);font-weight:700;font-size:clamp(.76rem,1.5vw,.88rem);color:var(--blue);letter-spacing:.5px}}
-  td.num{{font-family:var(--mono);font-size:clamp(.72rem,1.4vw,.82rem)}}
+  td{{padding:clamp(11px,1.6vw,15px) clamp(10px,1.5vw,16px);white-space:nowrap;color:var(--text)}}
+  td.rnk{{font-size:1.15rem;text-align:center;width:46px}}
+  td.sym{{font-family:var(--mono);font-weight:700;font-size:clamp(.88rem,1.6vw,1rem);color:var(--blue);letter-spacing:.5px}}
+  td.num{{font-family:var(--mono);font-size:clamp(.82rem,1.5vw,.94rem);color:#dde4ed}}
   tbody tr:nth-child(1){{animation-delay:.05s}} tbody tr:nth-child(2){{animation-delay:.09s}}
   tbody tr:nth-child(3){{animation-delay:.13s}} tbody tr:nth-child(4){{animation-delay:.17s}}
   tbody tr:nth-child(5){{animation-delay:.21s}} tbody tr:nth-child(6){{animation-delay:.25s}}
@@ -1388,20 +1388,20 @@ def generate_html_report(
   tbody tr:nth-child(9){{animation-delay:.37s}} tbody tr:nth-child(10){{animation-delay:.41s}}
 
   /* BADGES */
-  .badge{{display:inline-block;padding:3px 9px;border-radius:999px;font-family:var(--mono);font-size:clamp(.6rem,1.1vw,.7rem);font-weight:700}}
-  .bg{{background:rgba(0,230,118,.12);color:var(--green);border:1px solid rgba(0,230,118,.3)}}
-  .by{{background:rgba(255,202,40,.12);color:var(--yellow);border:1px solid rgba(255,202,40,.3)}}
-  .br{{background:rgba(255,82,82,.12);color:var(--red);border:1px solid rgba(255,82,82,.3)}}
+  .badge{{display:inline-block;padding:4px 10px;border-radius:999px;font-family:var(--mono);font-size:clamp(.7rem,1.2vw,.8rem);font-weight:700}}
+  .bg{{background:rgba(0,255,136,.15);color:#00ff88;border:1px solid rgba(0,255,136,.4)}}
+  .by{{background:rgba(255,215,64,.15);color:#ffd740;border:1px solid rgba(255,215,64,.4)}}
+  .br{{background:rgba(255,107,107,.15);color:#ff6b6b;border:1px solid rgba(255,107,107,.4)}}
 
   /* SCORE BAR */
   .bw{{display:flex;align-items:center;gap:9px;min-width:115px}}
-  .bt{{flex:1;height:6px;background:var(--border);border-radius:99px;overflow:hidden}}
+  .bt{{flex:1;height:7px;background:var(--border);border-radius:99px;overflow:hidden}}
   .b{{height:100%;border-radius:99px}}
-  .bl{{font-family:var(--mono);font-size:clamp(.68rem,1.3vw,.78rem);font-weight:700;min-width:30px;text-align:right}}
+  .bl{{font-family:var(--mono);font-size:clamp(.78rem,1.4vw,.9rem);font-weight:700;min-width:34px;text-align:right;color:var(--text)}}
 
   /* LEGEND */
   .legend{{display:flex;flex-wrap:wrap;gap:10px 18px;margin-top:18px;padding:clamp(12px,2vw,18px) clamp(12px,2vw,20px);background:var(--surf);border:1px solid var(--border);border-radius:var(--r)}}
-  .li{{display:flex;align-items:center;gap:7px;font-family:var(--mono);font-size:clamp(.58rem,1.1vw,.68rem);color:var(--muted)}}
+  .li{{display:flex;align-items:center;gap:7px;font-family:var(--mono);font-size:clamp(.68rem,1.2vw,.78rem);color:#a8b3bf}}
   .ld{{width:9px;height:9px;border-radius:2px;flex-shrink:0}}
 
   /* PARAMS GRID */
@@ -1409,16 +1409,16 @@ def generate_html_report(
   @media(max-width:780px){{.pg{{grid-template-columns:repeat(2,1fr)}}}}
   @media(max-width:460px){{.pg{{grid-template-columns:1fr}}}}
   .pc{{background:var(--surf);border:1px solid var(--border);border-radius:10px;padding:clamp(11px,2vw,16px)}}
-  .pn{{font-family:var(--mono);font-size:clamp(.6rem,1.2vw,.72rem);color:var(--blue);text-transform:uppercase;letter-spacing:.9px;margin-bottom:5px;display:flex;justify-content:space-between;align-items:center}}
-  .pw{{font-family:var(--mono);font-size:clamp(.56rem,1.1vw,.65rem);color:var(--green);font-weight:700}}
-  .pd{{font-size:clamp(.7rem,1.3vw,.78rem);color:var(--muted);line-height:1.55}}
+  .pn{{font-family:var(--mono);font-size:clamp(.7rem,1.3vw,.82rem);color:var(--blue);text-transform:uppercase;letter-spacing:.9px;margin-bottom:5px;display:flex;justify-content:space-between;align-items:center}}
+  .pw{{font-family:var(--mono);font-size:clamp(.66rem,1.2vw,.76rem);color:var(--green);font-weight:700}}
+  .pd{{font-size:clamp(.78rem,1.4vw,.88rem);color:#b0bcc8;line-height:1.6}}
 
   /* DISCLAIMER */
-  .disc{{margin-top:26px;padding:clamp(12px,2vw,16px) clamp(13px,2vw,20px);background:rgba(255,202,40,.04);border:1px solid rgba(255,202,40,.18);border-radius:8px;font-size:clamp(.68rem,1.3vw,.74rem);color:var(--muted);line-height:1.75}}
+  .disc{{margin-top:26px;padding:clamp(12px,2vw,16px) clamp(13px,2vw,20px);background:rgba(255,215,64,.05);border:1px solid rgba(255,215,64,.22);border-radius:8px;font-size:clamp(.76rem,1.4vw,.84rem);color:#b0bcc8;line-height:1.75}}
   .disc strong{{color:var(--yellow)}}
 
   /* FOOTER */
-  .footer{{text-align:center;padding:clamp(18px,3vw,28px) clamp(14px,5vw,48px) 0;font-family:var(--mono);font-size:clamp(.56rem,1.1vw,.65rem);color:var(--muted);border-top:1px solid var(--border);margin-top:40px;line-height:2.2}}
+  .footer{{text-align:center;padding:clamp(18px,3vw,28px) clamp(14px,5vw,48px) 0;font-family:var(--mono);font-size:clamp(.66rem,1.2vw,.76rem);color:var(--muted);border-top:1px solid var(--border);margin-top:40px;line-height:2.2}}
 
   @keyframes fadeUp{{from{{opacity:0;transform:translateY(14px)}}to{{opacity:1;transform:translateY(0)}}}}
 </style>
