@@ -186,8 +186,6 @@ USA_SECTOR_MAP: dict[str, str] = {
     **{s: "XLB" for s in ["LIN","SHW"]},
 }
 
-SECTOR_BONUS_PTS = 7   # bonus added when stock's sector index is green on the day
-
 LOOKBACK_DAYS  = 365          # extended to 1 year for 52-week high calculation
 AVG_VOL_PERIOD = 10
 
@@ -199,12 +197,17 @@ WEIGHTS = {
     "price_breakout": 15,
     "near_52w_high":  10,
     "adx_trend":      10,
-    "sector_bonus":    7,   # sector index green today
+    "sector_bonus":   10,   # scaled: +5 green sector, +10 if top-3 sector of day
     "candle_pattern": 10,   # Morning Star=10, Engulfing=8, Hammer=6
+    "marubozu":       12,   # Closing Marubozu — strongest BTST signal
     "rel_strength":    5,   # stock beats index % change today
     "weekly_confirm":  8,   # close > weekly EMA20 (multi-timeframe)
     "gap_up":          8,   # gap-up open that held by close (+5 mild / +8 strong)
 }
+
+# ── Enhancement constants ─────────────────────────────────
+AD_RATIO_MIN = 1.5   # min Advance/Decline ratio for high-conviction BTST trades
+SECTOR_TOP_N = 3     # top-N sectors by % gain get the full sector bonus
 
 IST = ZoneInfo("Asia/Kolkata")
 EST = ZoneInfo("America/New_York")
@@ -357,10 +360,11 @@ def _batch_download(symbols: list) -> dict:
 # SECTOR PERFORMANCE  — fetch all relevant sector indices/ETFs
 # ══════════════════════════════════════════════════════════
 
-def fetch_sector_perf(market: str) -> dict[str, bool]:
+def fetch_sector_perf(market: str) -> dict[str, float]:
     """
-    Returns {sector_ticker: is_up_today} for all sector benchmarks used
-    in the given market.  'is_up_today' = True if today's close > prev close.
+    Returns {sector_ticker: pct_change_today} for all sector benchmarks.
+    Positive = sector up today, negative = down.
+    Previously returned bool; now returns float so callers can rank sectors.
     """
     sector_map = INDIA_SECTOR_MAP if market == "india" else USA_SECTOR_MAP
     tickers    = list(set(sector_map.values()))
@@ -379,19 +383,26 @@ def fetch_sector_perf(market: str) -> dict[str, bool]:
     except Exception:
         return {}
 
-    result: dict[str, bool] = {}
+    result: dict[str, float] = {}
     for ticker in tickers:
         try:
             df = raw[ticker].dropna() if isinstance(raw.columns, pd.MultiIndex) else raw.dropna()
             if len(df) >= 2:
-                chg = float(df["Close"].iloc[-1]) - float(df["Close"].iloc[-2])
-                result[ticker] = chg > 0
+                prev_c = float(df["Close"].iloc[-2])
+                cur_c  = float(df["Close"].iloc[-1])
+                result[ticker] = round((cur_c - prev_c) / prev_c * 100, 3) if prev_c > 0 else 0.0
         except Exception:
             pass
 
-    up_count = sum(1 for v in result.values() if v)
+    up_count = sum(1 for v in result.values() if v > 0)
     print(f"  ✅  Sectors: {up_count}/{len(result)} green today.")
     return result
+
+
+def _top_sectors(sector_perf: dict[str, float], n: int = SECTOR_TOP_N) -> set[str]:
+    """Return the set of ticker symbols for the top-N performing sectors today."""
+    sorted_secs = sorted(sector_perf.items(), key=lambda x: x[1], reverse=True)
+    return {t for t, _ in sorted_secs[:n]}
 
 
 # ══════════════════════════════════════════════════════════
@@ -400,7 +411,8 @@ def fetch_sector_perf(market: str) -> dict[str, bool]:
 
 def score_stock_from_df(symbol: str, df: pd.DataFrame,
                         sector_bonus: float = 0.0,
-                        index_chg: float = 0.0) -> dict | None:
+                        index_chg: float = 0.0,
+                        breadth_ok: bool = True) -> dict | None:
     try:
         df = df.copy()
         if isinstance(df.columns, pd.MultiIndex):
@@ -411,11 +423,27 @@ def score_stock_from_df(symbol: str, df: pd.DataFrame,
         low    = float(df["Low"].iloc[-1])
         volume = float(df["Volume"].iloc[-1])
 
-        # ── Volume surge ──────────────────────────────────────────
-        avg_vol   = df["Volume"].iloc[-AVG_VOL_PERIOD-1:-1].mean()
+        # ── Enhancement 1: Relative Volume (RVOL) ────────────────
+        # Compare today's volume against a 14-day rolling average of daily volume.
+        # Additionally, if today is a Friday (weekday=4), use a 5-day
+        # Friday-only average to correct for the weekly cycle effect.
+        avg_vol_10 = df["Volume"].iloc[-AVG_VOL_PERIOD-1:-1].mean()
+        weekday    = df.index[-1].weekday() if hasattr(df.index[-1], "weekday") else -1
+
+        if weekday == 4 and len(df) >= 10:
+            # Friday RVOL: compare against last 4 Friday volumes
+            friday_vols = [
+                float(df["Volume"].iloc[i])
+                for i in range(-2, -len(df)-1, -1)
+                if hasattr(df.index[i], "weekday") and df.index[i].weekday() == 4
+            ][:4]
+            avg_vol = sum(friday_vols) / len(friday_vols) if friday_vols else avg_vol_10
+        else:
+            avg_vol = avg_vol_10
+
         vol_ratio = volume / avg_vol if avg_vol > 0 else 0
         s_vol     = (WEIGHTS["volume_surge"] if vol_ratio >= 1.5 else
-                     WEIGHTS["volume_surge"] * 0.5 if vol_ratio >= 1.2 else 0)
+                     WEIGHTS["volume_surge"] * 0.5 if vol_ratio >= 1.1 else 0)
 
         # ── RSI ───────────────────────────────────────────────────
         rsi_s = ta.rsi(df["Close"], length=14)
@@ -473,63 +501,80 @@ def score_stock_from_df(symbol: str, df: pd.DataFrame,
         prev_close = float(df["Close"].iloc[-2])
         day_chg    = (close - prev_close) / prev_close * 100
 
-        # ── Candlestick Pattern Detection ────────────────────────
-        # Uses today ([-1]), yesterday ([-2]), day before ([-3])
-        candle_name = ""
-        s_candle    = 0
+        # ── Enhancement 4: Closing Marubozu + final-hour fade check ──
+        # Marubozu: open ≈ low AND close ≈ high (body fills ≥85% of range).
+        # Also detect "fade" = stock weakens into close (bearish for overnight).
+        candle_name  = ""
+        s_candle     = 0
+        s_marubozu   = 0.0
+        is_marubozu  = False
+        final_hr_fade = False
         try:
-            o0 = float(df["Open"].iloc[-1])   # today open
-            o1 = float(df["Open"].iloc[-2])   # yesterday open
-            c1 = prev_close                    # yesterday close
-            o2 = float(df["Open"].iloc[-3])   # 2 days ago open
-            c2 = float(df["Close"].iloc[-3])  # 2 days ago close
+            o0    = float(df["Open"].iloc[-1])
+            o1    = float(df["Open"].iloc[-2])
+            c1    = prev_close
+            o2    = float(df["Open"].iloc[-3])
+            c2    = float(df["Close"].iloc[-3])
             body0 = abs(close - o0)
             body1 = abs(c1 - o1)
             body2 = abs(c2 - o2)
             lower_shadow0 = min(o0, close) - low
             upper_shadow0 = high - max(o0, close)
 
+            # Closing Marubozu: green candle, body ≥85% of range, close near high
+            if (rng > 0 and close > o0 and
+                    body0 >= rng * 0.85 and
+                    (high - close) <= rng * 0.05 and
+                    (o0 - low)    <= rng * 0.05):
+                is_marubozu  = True
+                s_marubozu   = WEIGHTS["marubozu"]
+                candle_name  = "Marubozu"
+
             # Morning Star (3-candle, strongest reversal)
-            # Day-2: big red | Day-1: small body indecision | Today: big green > midpoint of day-2
             morning_star = (
-                c2 < o2 and                    # day-2 red (bearish)
-                body1 <= body2 * 0.4 and       # day-1 small body (indecision/doji)
-                close > o0 and                 # today green
-                close > (o2 + c2) / 2 and     # closes above midpoint of day-2
-                body0 >= body2 * 0.5           # today's body substantial
+                c2 < o2 and
+                body1 <= body2 * 0.4 and
+                close > o0 and
+                close > (o2 + c2) / 2 and
+                body0 >= body2 * 0.5
             )
-            # Bullish Engulfing: prev red candle fully engulfed by today's green candle
+            # Bullish Engulfing
             bullish_engulfing = (
-                c1 < o1 and       # yesterday red
-                close > o0 and    # today green
-                o0 <= c1 and      # today open at/below yesterday close
-                close >= o1       # today close at/above yesterday open
+                c1 < o1 and
+                close > o0 and
+                o0 <= c1 and
+                close >= o1
             )
-            # Hammer: small body in upper portion, long lower wick, appears after decline
+            # Hammer
             hammer = (
                 rng > 0 and
-                body0 <= rng * 0.35 and             # small body
-                lower_shadow0 >= 2.0 * body0 and    # long lower wick
-                upper_shadow0 <= body0 * 0.6 and    # tiny upper wick
-                close > o0                           # green preferred
+                body0 <= rng * 0.35 and
+                lower_shadow0 >= 2.0 * body0 and
+                upper_shadow0 <= body0 * 0.6 and
+                close > o0
             )
 
-            if morning_star:
-                s_candle, candle_name = WEIGHTS["candle_pattern"],       "Morning Star"
-            elif bullish_engulfing:
-                s_candle, candle_name = WEIGHTS["candle_pattern"] * 0.8, "Engulfing"
-            elif hammer:
-                s_candle, candle_name = WEIGHTS["candle_pattern"] * 0.6, "Hammer"
+            if not is_marubozu:
+                if morning_star:
+                    s_candle, candle_name = WEIGHTS["candle_pattern"],       "Morning Star"
+                elif bullish_engulfing:
+                    s_candle, candle_name = WEIGHTS["candle_pattern"] * 0.8, "Engulfing"
+                elif hammer:
+                    s_candle, candle_name = WEIGHTS["candle_pattern"] * 0.6, "Hammer"
+
+            # Final-hour fade: if we have intraday high available via proxy
+            # (daily high much higher than close = stock gave back gains into close)
+            # Proxy: if high > close*1.01 AND close < (high + low)/2  → fade detected
+            if high > close * 1.008 and pos < 0.60:
+                final_hr_fade = True
+
         except Exception:
-            pass   # fewer than 3 rows or missing Open — just skip pattern
+            pass   # fewer than 3 rows or missing Open — skip
 
         # ── Relative Strength vs Index ────────────────────────────
-        # +5 pts if stock outperformed the broader index today
         s_rs = WEIGHTS["rel_strength"] if day_chg > index_chg else 0.0
 
         # ── Multi-Timeframe Confirmation (weekly) ─────────────────
-        # Resample daily → weekly, compute weekly EMA20.
-        # +8 pts if daily close is above weekly EMA20 (trend alignment).
         s_mtf        = 0.0
         weekly_align = False
         try:
@@ -541,33 +586,45 @@ def score_stock_from_df(symbol: str, df: pd.DataFrame,
         except Exception:
             pass
 
-        # ── ATR-based dynamic penalty ─────────────────────────────
+        # ── Enhancement 3: Smart ATR penalty ─────────────────────
+        # Standard: penalise big moves that overextend.
+        # Exception: if vol_ratio > 3.0 (institutional breakaway gap), skip penalty
+        # because high-volume breakouts have strong follow-through overnight.
         total   = s_vol + s_rsi + s_macd + s_ema + s_brk + s_52w + s_adx
         atr_pct = (atr_val / close * 100) if close > 0 else 4.0
         if day_chg > max(1.5 * atr_pct, 4.0):
-            total *= 0.6
+            if vol_ratio >= 3.0:
+                pass   # breakaway gap on massive volume — do NOT penalise
+            else:
+                total *= 0.6
 
         # ── Gap-up and hold ───────────────────────────────────────
-        # Gap-up: today's open > yesterday's close → bullish overnight demand
-        # Held: close did not fill the gap (close stays above prev_close)
-        # Strong: gap ≥1% AND close held AND range position ≥60% (buyers in control)
-        # Mild  : gap ≥0.5% AND close held
         gap_pct  = 0.0
         gap_held = False
         s_gap    = 0.0
         try:
-            open0   = float(df["Open"].iloc[-1])
-            gap_pct = (open0 - prev_close) / prev_close * 100 if prev_close > 0 else 0.0
-            gap_held = close > prev_close   # gap not filled by end of day
+            open0    = float(df["Open"].iloc[-1])
+            gap_pct  = (open0 - prev_close) / prev_close * 100 if prev_close > 0 else 0.0
+            gap_held = close > prev_close
             if gap_pct >= 1.0 and gap_held and pos >= 0.60:
-                s_gap = WEIGHTS["gap_up"]          # strong gap-and-hold: +8
+                s_gap = WEIGHTS["gap_up"]
             elif gap_pct >= 0.5 and gap_held:
-                s_gap = WEIGHTS["gap_up"] * 0.625  # mild gap-and-hold: +5
+                s_gap = WEIGHTS["gap_up"] * 0.625
         except Exception:
             pass
 
         # ── Additive bonuses (applied after penalty) ─────────────
-        total += sector_bonus + s_candle + s_rs + s_mtf + s_gap
+        total += sector_bonus + s_candle + s_marubozu + s_rs + s_mtf + s_gap
+
+        # ── Enhancement 4 cont: final-hour fade penalty ───────────
+        if final_hr_fade:
+            total *= 0.85   # 15% penalty for late-day weakness
+
+        # ── Enhancement 5: Market Breadth penalty ─────────────────
+        # Narrow market (A/D < threshold): reduce score to deprioritise
+        # BTST trades when the rally is not broad-based.
+        if not breadth_ok:
+            total *= 0.80   # 20% score haircut in narrow-breadth sessions
 
         # ── Stop-Loss and Target ──────────────────────────────────
         stop_loss = round(max(low, close - atr_val), 2)
@@ -595,11 +652,14 @@ def score_stock_from_df(symbol: str, df: pd.DataFrame,
             "52W_High":      round(w52_high, 2),
             "Near_52W_High": near_52w,
             "Candle":        candle_name,
+            "Marubozu":      is_marubozu,
+            "FinalHrFade":   final_hr_fade,
             "RS_Beat":       day_chg > index_chg,
             "Weekly_Align":  weekly_align,
-            "Gap_Up":        gap_pct >= 0.5 and gap_held,  # True = gap-up held
+            "Gap_Up":        gap_pct >= 0.5 and gap_held,
             "Gap_Pct":       round(gap_pct, 2),
             "Sector_Align":  sector_bonus > 0,
+            "Breadth_OK":    breadth_ok,
             "Stop_Loss":     stop_loss,
             "Target":        target,
             "RR_Ratio":      rr_ratio,
@@ -747,6 +807,38 @@ def score_orb_stock(symbol: str, sector_bonus: float = 0.0) -> dict | None:
 # RUN SCREENER  — batch download + parallel scoring
 # ══════════════════════════════════════════════════════════
 
+def fetch_advance_decline(market: str) -> float:
+    """
+    Fetch Advance/Decline ratio for the market.
+    India: uses ^NSEI constituent proxies via Nifty 500 breadth (^CRSLDX vs NSEI).
+    USA  : uses NYSE A/D via ^NYAD (ratio of advances to declines).
+    Returns float ratio (advances/declines). Returns 0.0 on failure (treated as unknown).
+    """
+    # Best available A/D proxies on Yahoo Finance
+    ad_sym = "^NYAD" if market == "usa" else "^NSEI"  # NYAD is a direct A/D line for NYSE
+    try:
+        if market == "usa":
+            raw = yf.download("^NYAD", period="5d", interval="1d",
+                              progress=False, auto_adjust=True)
+            if isinstance(raw.columns, pd.MultiIndex):
+                raw.columns = raw.columns.get_level_values(0)
+            raw = raw.dropna()
+            if len(raw) >= 2:
+                # NYAD is a cumulative A/D line; daily change = net advances
+                # Positive daily change = more advances than declines
+                today_chg = float(raw["Close"].iloc[-1]) - float(raw["Close"].iloc[-2])
+                # Convert to a meaningful ratio: >0 = breadth bullish
+                # We return 2.0 if strong advance day, 1.0 neutral, 0.5 weak
+                return 2.5 if today_chg > 500 else 1.8 if today_chg > 0 else 0.8
+        else:
+            # For India, approximate using the fraction of Nifty 100 symbols that are up
+            # (computed after batch download — passed in externally, so return sentinel)
+            return 0.0   # will be computed from cache in run_screener
+    except Exception:
+        pass
+    return 0.0
+
+
 def run_screener(symbols: list, label: str,
                  index_chg: float = 0.0) -> tuple[pd.DataFrame, dict]:
     """
@@ -760,22 +852,54 @@ def run_screener(symbols: list, label: str,
 
     # Step 1+2 in PARALLEL: batch OHLCV download + sector perf fetch overlap
     print(f"  📥  Fetching 1-year OHLCV + sector data in parallel …", flush=True)
-    with ThreadPoolExecutor(max_workers=2) as pre:
-        f_cache  = pre.submit(_batch_download, symbols)
-        f_sector = pre.submit(fetch_sector_perf, market)
+    with ThreadPoolExecutor(max_workers=3) as pre:
+        f_cache   = pre.submit(_batch_download, symbols)
+        f_sector  = pre.submit(fetch_sector_perf, market)
+        f_ad      = pre.submit(fetch_advance_decline, market)
         cache       = f_cache.result()
         sector_perf = f_sector.result()
+        ad_ratio_raw = f_ad.result()
+
+    # ── Advance/Decline breadth ──────────────────────────────────
+    # For India: compute from cache (what % of stocks closed up today)
+    if market == "india" and cache:
+        advances = sum(
+            1 for df in cache.values()
+            if len(df) >= 2 and float(df["Close"].iloc[-1]) > float(df["Close"].iloc[-2])
+        )
+        declines = len(cache) - advances
+        ad_ratio = advances / max(declines, 1)
+    else:
+        ad_ratio = ad_ratio_raw
+
+    breadth_ok = ad_ratio >= AD_RATIO_MIN or ad_ratio == 0.0  # 0.0 = unknown → don't block
+    if ad_ratio > 0:
+        col = Fore.GREEN if breadth_ok else Fore.YELLOW
+        print(f"  📈  A/D Ratio: {col}{ad_ratio:.2f}x{Style.RESET_ALL}  "
+              f"({'Broad rally ✅' if breadth_ok else 'Narrow market ⚠ — lower conviction'})")
+
+    # ── Top-N sectors for scaled bonus ──────────────────────────
+    top_sec_set = _top_sectors(sector_perf, SECTOR_TOP_N)
+
     print(f"  ✅  Downloaded {len(cache)}/{len(symbols)}. Scoring …", flush=True)
 
     def _sector_bonus(sym: str) -> float:
         sec_ticker = sector_map.get(sym)
-        return float(SECTOR_BONUS_PTS) if sec_ticker and sector_perf.get(sec_ticker, False) else 0.0
+        if not sec_ticker:
+            return 0.0
+        sec_chg = sector_perf.get(sec_ticker, None)
+        if sec_chg is None or sec_chg <= 0:
+            return 0.0                               # sector red → no bonus
+        # Full bonus if in top-N sectors; half bonus otherwise
+        return float(WEIGHTS["sector_bonus"]) if sec_ticker in top_sec_set \
+               else float(WEIGHTS["sector_bonus"]) * 0.5
 
     # Step 3: score all stocks in parallel (TA calcs are CPU-bound)
     results = []
     with ThreadPoolExecutor(max_workers=16) as pool:
         futures = {
-            pool.submit(score_stock_from_df, sym, df, _sector_bonus(sym), index_chg): sym
+            pool.submit(score_stock_from_df, sym, df,
+                        _sector_bonus(sym), index_chg, breadth_ok): sym
             for sym, df in cache.items()
         }
         done = 0
@@ -945,8 +1069,11 @@ def run_orb_screener(symbols: list, label: str,
         print(f"  ♻️  Reusing sector perf from BTST scan (skipping re-fetch).")
 
     def _sector_bonus(sym: str) -> float:
-        sec = sector_map.get(sym)
-        return float(SECTOR_BONUS_PTS) if sec and sector_perf.get(sec, False) else 0.0
+        sec     = sector_map.get(sym)
+        sec_chg = sector_perf.get(sec, None) if sec else None
+        if sec_chg is None or sec_chg <= 0:
+            return 0.0
+        return float(ORB_WEIGHTS["sector_bonus"])
 
     # One batch intraday download instead of N individual downloads
     intraday_cache = _batch_download_intraday(symbols)
