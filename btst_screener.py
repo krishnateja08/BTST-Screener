@@ -11,8 +11,7 @@ Usage:
     python btst_screener.py --india      # India only
     python btst_screener.py --usa        # USA only
     python btst_screener.py --no-orb     # skip ORB intraday scan
-    python btst_screener.py --min-score 70   # GOOD picks only (score ≥ 70)
-    python btst_screener.py --min-score 80   # HIGH conviction only (score ≥ 80)
+    python btst_screener.py --min-score 70   # GOOD picks only (score ≥ 70)    python btst_screener.py --min-score 80   # HIGH conviction only (score ≥ 80)
     python btst_screener.py --backtest   # replay past CSV picks (last 30 days)
     python btst_screener.py --backtest --days 60   # extend backtest window
     python btst_screener.py --backtest --india      # India backtest only
