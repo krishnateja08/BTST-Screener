@@ -1,2 +1,4 @@
 Symbol,Close,Change%,Volume_Ratio,Avg_Vol,RSI,MACD_Hist,EMA20,EMA50,EMA_Dist%,ADX,Range_Pos%,ATR,52W_High,Near_52W_High,Candle,Marubozu,FinalHrFade,RS_Beat,Weekly_Align,Gap_Up,Gap_Pct,Sector_Align,Breadth_OK,Entry_Overextended,Stop_Loss,Target,Target%,SL%,RR_Ratio,Conviction,BTST_Score
+ONGC,284.65,0.96,1.96,22869092.0,66.4,0.8701,271.03,263.86,5.02,33.4,42.2,8.05,293.0,True,,False,True,True,True,False,0.28,False,False,False,281.95,293.19,3.0,0.95,3.16,WEAK,50.9
+DMART,3956.8,1.37,2.76,629535.0,57.7,8.6388,3849.31,3854.66,2.79,13.3,57.8,113.77,4949.5,False,,False,True,True,True,False,-0.14,False,False,False,3877.66,4075.5,3.0,2.0,1.5,WEAK,40.0
 COALINDIA,450.45,1.21,1.35,14163224.0,53.6,-2.1053,447.34,434.09,0.69,23.6,43.8,13.32,476.0,False,Engulfing,False,True,True,True,False,0.0,False,False,False,443.1,463.96,3.0,1.63,1.84,WEAK,34.5
