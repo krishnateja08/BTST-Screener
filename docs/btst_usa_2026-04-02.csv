@@ -1,5 +1,3 @@
 Symbol,Close,Change%,Volume_Ratio,RSI,MACD_Hist,EMA20,EMA50,ADX,Range_Pos%,ATR,52W_High,Near_52W_High,Candle,RS_Beat,Weekly_Align,Gap_Up,Gap_Pct,Sector_Align,Stop_Loss,Target,RR_Ratio,BTST_Score
-LLY,954.52,3.78,2.08,50.2,2.3624,940.96,977.83,23.2,56.3,29.34,1132.06,False,,True,False,True,0.77,False,925.99,998.53,1.54,65.0
-BA,207.32,4.17,1.31,48.1,0.5513,205.92,216.02,35.1,56.3,7.24,254.35,False,,True,False,True,2.25,True,203.5,218.18,2.84,59.5
-AMD,210.21,3.33,1.1,53.6,1.1479,203.8,207.76,11.6,54.7,10.02,267.08,False,,True,True,True,2.09,True,205.84,225.24,3.44,58.0
+BA,207.32,4.17,1.31,48.1,0.5513,205.92,216.02,35.1,56.3,7.24,254.35,False,,True,False,True,2.25,False,203.5,218.18,2.84,52.5
 GOOGL,297.39,3.42,1.11,48.9,-0.7737,295.94,303.75,30.6,69.0,8.47,348.75,False,,True,True,True,1.14,True,290.41,310.1,1.82,45.5
