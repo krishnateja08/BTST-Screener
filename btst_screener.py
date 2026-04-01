@@ -11,9 +11,19 @@ Usage:
     python btst_screener.py --india      # India only
     python btst_screener.py --usa        # USA only
     python btst_screener.py --no-orb     # skip ORB intraday scan
+    python btst_screener.py --min-score 70   # GOOD picks only (score ≥ 70)
+    python btst_screener.py --min-score 80   # HIGH conviction only (score ≥ 80)
     python btst_screener.py --backtest   # replay past CSV picks (last 30 days)
     python btst_screener.py --backtest --days 60   # extend backtest window
     python btst_screener.py --backtest --india      # India backtest only
+
+Enhancements v2:
+    ✅ Entry Quality Filter   — skips stocks >4% above EMA20 or >6% day-chg (no vol)
+    ✅ Next-day Exit Logic    — Target%, SL% columns; gap-down exit note in report
+    ✅ Score Threshold Filter — --min-score CLI arg; HIGH/GOOD/MODERATE/WEAK labels
+    ✅ Liquidity Filter       — abs avg-vol gate (200k India / 1M USA shares/day)
+    ✅ Market Direction Scalar — continuous score multiplier based on index % change
+    ✅ Backtest Improvements  — max drawdown, expectancy, 4-tier score stratification
 
 Output:
     btst_report_YYYY-MM-DD.html    (combined HTML with BTST + ORB tabs)
@@ -213,6 +223,26 @@ WEIGHTS = {
 # ── Enhancement constants ─────────────────────────────────
 AD_RATIO_MIN = 1.5   # min Advance/Decline ratio for high-conviction BTST trades
 SECTOR_TOP_N = 3     # top-N sectors by % gain get the full sector bonus
+
+# ── Liquidity thresholds (absolute avg daily volume) ──────
+LIQUIDITY_MIN_INDIA = 200_000    # shares/day — filters illiquid NSE midcaps
+LIQUIDITY_MIN_USA   = 1_000_000  # shares/day — S&P 500 should always pass
+
+# ── Entry quality thresholds ──────────────────────────────
+ENTRY_MAX_EMA_DIST_PCT  = 4.0    # avoid if close > 4% above EMA20 (overextended)
+ENTRY_MAX_DAY_CHG_PCT   = 6.0    # avoid if day change > 6% (unless high vol breakout)
+ENTRY_HIGH_VOL_EXEMPTION = 2.5   # vol_ratio >= this exempts the overextension check
+
+# ── Score conviction tiers ────────────────────────────────
+SCORE_HIGH_CONVICTION = 80
+SCORE_GOOD            = 70
+SCORE_MODERATE        = 55
+
+# ── Market direction scalar multipliers ───────────────────
+MKT_MULT_STRONG  = 1.10   # index +1% or better
+MKT_MULT_NEUTRAL = 1.00   # 0% to +1%
+MKT_MULT_SOFT    = 0.92   # –0.5% to 0%
+MKT_MULT_WEAK    = 0.80   # below –0.5%
 
 IST = ZoneInfo("Asia/Kolkata")
 EST = ZoneInfo("America/New_York")
@@ -635,44 +665,89 @@ def score_stock_from_df(symbol: str, df: pd.DataFrame,
         if not breadth_ok:
             total *= 0.80   # 20% score haircut in narrow-breadth sessions
 
+        # ── Market Direction Scalar (replaces binary safe/unsafe) ─
+        # Continuously adjusts score based on how strong the index is today.
+        # Bullish market boosts conviction; weak market reduces it.
+        if index_chg >= 1.0:
+            total *= MKT_MULT_STRONG   # strongly bullish: +10% boost
+        elif index_chg >= 0.0:
+            total *= MKT_MULT_NEUTRAL  # mildly bullish: no change
+        elif index_chg >= -0.5:
+            total *= MKT_MULT_SOFT     # flat/slightly weak: –8%
+        else:
+            total *= MKT_MULT_WEAK     # clearly weak: –20%
+
+        # ── Entry Quality Flag ────────────────────────────────────
+        # Flag overextended entries: stock too far above EMA20 (proxy for VWAP)
+        # OR large single-day move without volume confirmation.
+        ema_dist_pct = (close - ema20) / ema20 * 100 if ema20 > 0 else 0.0
+        entry_overextended = (
+            (ema_dist_pct > ENTRY_MAX_EMA_DIST_PCT and vol_ratio < ENTRY_HIGH_VOL_EXEMPTION) or
+            (day_chg > ENTRY_MAX_DAY_CHG_PCT and vol_ratio < ENTRY_HIGH_VOL_EXEMPTION)
+        )
+        if entry_overextended:
+            total *= 0.70   # heavy penalty — still shows up but ranks low
+
         # ── Stop-Loss and Target ──────────────────────────────────
         stop_loss = round(max(low, close - atr_val), 2)
-        target    = round(close + 1.5 * atr_val, 2)
-        risk      = close - stop_loss
-        reward    = target - close
-        rr_ratio  = round(reward / risk, 2) if risk > 0 else 0.0
+        # Next-day target range: 1.5% to 3% above close (min of ATR-based and 3% cap)
+        target_atr  = close + 1.5 * atr_val
+        target_pct3 = close * 1.03
+        target      = round(min(target_atr, target_pct3), 2)
+        # Conservative SL: also cap loss at –2% to enforce discipline
+        sl_pct2     = close * 0.98
+        stop_loss   = round(max(stop_loss, sl_pct2), 2)
+        risk        = close - stop_loss
+        reward      = target - close
+        rr_ratio    = round(reward / risk, 2) if risk > 0 else 0.0
+
+        # ── Conviction label ──────────────────────────────────────
+        if total >= SCORE_HIGH_CONVICTION:
+            conviction = "HIGH"
+        elif total >= SCORE_GOOD:
+            conviction = "GOOD"
+        elif total >= SCORE_MODERATE:
+            conviction = "MODERATE"
+        else:
+            conviction = "WEAK"
 
         clean_sym = (symbol.replace(".NS", "")
                            .replace("-", ".")
                            .replace("BRK.B", "BRK-B"))
 
         return {
-            "Symbol":        clean_sym,
-            "Close":         round(close, 2),
-            "Change%":       round(day_chg, 2),
-            "Volume_Ratio":  round(vol_ratio, 2),
-            "RSI":           round(rsi, 1),
-            "MACD_Hist":     round(macd_hist, 4) if macd_hist is not None else None,
-            "EMA20":         round(ema20, 2),
-            "EMA50":         round(ema50, 2),
-            "ADX":           round(adx_val, 1),
-            "Range_Pos%":    round(pos * 100, 1),
-            "ATR":           round(atr_val, 2),
-            "52W_High":      round(w52_high, 2),
-            "Near_52W_High": near_52w,
-            "Candle":        candle_name,
-            "Marubozu":      is_marubozu,
-            "FinalHrFade":   final_hr_fade,
-            "RS_Beat":       day_chg > index_chg,
-            "Weekly_Align":  weekly_align,
-            "Gap_Up":        gap_pct >= 0.5 and gap_held,
-            "Gap_Pct":       round(gap_pct, 2),
-            "Sector_Align":  sector_bonus > 0,
-            "Breadth_OK":    breadth_ok,
-            "Stop_Loss":     stop_loss,
-            "Target":        target,
-            "RR_Ratio":      rr_ratio,
-            "BTST_Score":    round(total, 1),
+            "Symbol":             clean_sym,
+            "Close":              round(close, 2),
+            "Change%":            round(day_chg, 2),
+            "Volume_Ratio":       round(vol_ratio, 2),
+            "Avg_Vol":            round(avg_vol, 0),
+            "RSI":                round(rsi, 1),
+            "MACD_Hist":          round(macd_hist, 4) if macd_hist is not None else None,
+            "EMA20":              round(ema20, 2),
+            "EMA50":              round(ema50, 2),
+            "EMA_Dist%":          round(ema_dist_pct, 2),
+            "ADX":                round(adx_val, 1),
+            "Range_Pos%":         round(pos * 100, 1),
+            "ATR":                round(atr_val, 2),
+            "52W_High":           round(w52_high, 2),
+            "Near_52W_High":      near_52w,
+            "Candle":             candle_name,
+            "Marubozu":           is_marubozu,
+            "FinalHrFade":        final_hr_fade,
+            "RS_Beat":            day_chg > index_chg,
+            "Weekly_Align":       weekly_align,
+            "Gap_Up":             gap_pct >= 0.5 and gap_held,
+            "Gap_Pct":            round(gap_pct, 2),
+            "Sector_Align":       sector_bonus > 0,
+            "Breadth_OK":         breadth_ok,
+            "Entry_Overextended": entry_overextended,
+            "Stop_Loss":          stop_loss,
+            "Target":             target,
+            "Target%":            round((target / close - 1) * 100, 2),
+            "SL%":                round((1 - stop_loss / close) * 100, 2),
+            "RR_Ratio":           rr_ratio,
+            "Conviction":         conviction,
+            "BTST_Score":         round(total, 1),
         }
     except Exception as e:
         print(f"  {Fore.YELLOW}⚠  Skipping {symbol}: {e}{Style.RESET_ALL}")
@@ -1121,18 +1196,49 @@ def filter_and_rank_orb(df: pd.DataFrame) -> pd.DataFrame:
 # FILTER & RANK
 # ══════════════════════════════════════════════════════════
 
-def filter_and_rank(df: pd.DataFrame) -> pd.DataFrame:
+def filter_and_rank(df: pd.DataFrame, min_score: float = 0.0) -> pd.DataFrame:
+    """
+    Filter and rank BTST candidates.
+
+    Filters applied (in order):
+      1. RSI ≥ 48
+      2. Volume ratio ≥ 1.1 (relative volume)
+      3. Absolute liquidity — avg daily volume above market threshold
+      4. Day change in acceptable range (not too red, not overextended without vol)
+      5. Close above EMA20
+      6. Entry not overextended (flagged by score_stock_from_df)
+      7. Optional minimum score threshold (--min-score arg)
+
+    Stocks are ranked by BTST_Score descending; top 15 returned.
+    """
     if df.empty:
         return df
+
+    is_india = df["Symbol"].iloc[0].endswith(".NS") if "Symbol" in df.columns else False
+    liq_min  = LIQUIDITY_MIN_INDIA if is_india else LIQUIDITY_MIN_USA
+
     f = df[
-        (df["RSI"] >= 48) &              # relaxed from 50 → catches mild dips
-        (df["Volume_Ratio"] >= 1.1) &    # relaxed from 1.2 → slightly less strict
-        (df["Change%"] > -0.5) &         # relaxed from >0 → allow flat/slightly red days
-        (df["Change%"] <= 6.0) &         # relaxed from 5.0 → widen upper cap
-        (df["Close"] > df["EMA20"])
+        (df["RSI"] >= 48) &
+        (df["Volume_Ratio"] >= 1.1) &
+        (df["Avg_Vol"] >= liq_min) &           # ← liquidity filter
+        (df["Change%"] > -0.5) &
+        (df["Close"] > df["EMA20"]) &
+        (~df["Entry_Overextended"])             # ← entry quality filter
     ].copy()
+
+    if min_score > 0:
+        f = f[f["BTST_Score"] >= min_score]    # ← score threshold filter
+
     f.sort_values("BTST_Score", ascending=False, inplace=True)
+
+    # Print how many were filtered out for transparency
+    dropped = len(df) - len(f)
+    if dropped > 0:
+        print(f"  🔍  Filtered out {dropped} candidates "
+              f"(liquidity/overextension/score checks).")
+
     return f.head(15)
+
 
 
 # ══════════════════════════════════════════════════════════
@@ -1152,14 +1258,25 @@ def print_report(df: pd.DataFrame, label: str, market_ok: bool, idx_chg: float):
         print(f"\n  {Fore.YELLOW}No strong candidates found.{Style.RESET_ALL}")
         return
 
-    cols = ["Symbol", "Close", "Change%", "Volume_Ratio", "RSI", "ADX",
+    cols = ["Symbol", "Conviction", "Close", "Change%", "Volume_Ratio", "RSI", "ADX",
             "Range_Pos%", "Near_52W_High", "Gap_Up", "Candle", "RS_Beat",
-            "Weekly_Align", "Sector_Align", "Stop_Loss", "Target", "RR_Ratio", "BTST_Score"]
+            "Weekly_Align", "Sector_Align", "Stop_Loss", "SL%",
+            "Target", "Target%", "RR_Ratio", "BTST_Score"]
     available = [c for c in cols if c in df.columns]
     disp = df[available].reset_index(drop=True)
     disp.index += 1
     print(f"\n{Fore.CYAN}  TOP BTST CANDIDATES{Style.RESET_ALL}\n")
     print(tabulate(disp, headers="keys", tablefmt="fancy_grid", floatfmt=".2f", showindex=True))
+
+    # Next-day exit guidance
+    is_india = "INDIA" in label.upper()
+    exit_time = "9:20 AM IST" if is_india else "9:35 AM EST"
+    print(f"\n  {Fore.YELLOW}⚡  NEXT-DAY EXIT RULES:{Style.RESET_ALL}")
+    print(f"     • Target:   +{df['Target%'].mean():.1f}% avg  (see Target% column per stock)")
+    print(f"     • Stop-loss: –{df['SL%'].mean():.1f}% avg  (see SL% column per stock)")
+    print(f"     • Gap-down exit: If opens below entry, EXIT by {exit_time} — don't hold.")
+    print(f"     • First 15-min low breaks SL → exit immediately, don't wait for EOD.")
+
 
 
 # ══════════════════════════════════════════════════════════
@@ -1272,15 +1389,28 @@ def _rows(df: pd.DataFrame, currency: str = "₹",
             arrow = ""
 
         # ── Stop-loss / Target / R:R ─────────────────────────────
-        sl     = row.get("Stop_Loss", 0)
-        tgt    = row.get("Target", 0)
-        rr     = row.get("RR_Ratio", 0)
-        rr_col = "#00ff88" if rr >= 2 else "#ffd740" if rr >= 1.5 else "#ff6b6b"
+        sl      = row.get("Stop_Loss", 0)
+        tgt     = row.get("Target", 0)
+        rr      = row.get("RR_Ratio", 0)
+        tgt_pct = row.get("Target%", 0.0)
+        sl_pct  = row.get("SL%", 0.0)
+        rr_col  = "#00ff88" if rr >= 2 else "#ffd740" if rr >= 1.5 else "#ff6b6b"
+
+        # ── Conviction badge ──────────────────────────────────────
+        conviction = str(row.get("Conviction", ""))
+        conv_map = {
+            "HIGH":     ('<span class="badge bg" style="font-weight:800">🔥 HIGH</span>'),
+            "GOOD":     ('<span class="badge bg">✅ GOOD</span>'),
+            "MODERATE": ('<span class="badge by">⚡ MOD</span>'),
+            "WEAK":     ('<span class="badge br">— WEAK</span>'),
+        }
+        badge_conv = conv_map.get(conviction, "")
 
         rows += f"""
         <tr>
           <td class="rnk">{medal}</td>
           <td class="sym">{sym}</td>
+          <td>{badge_conv}</td>
           <td class="num">{currency}{row['Close']:,.2f}</td>
           <td><span style="color:{chg_c};font-weight:700">{chg_a} {abs(row['Change%']):.2f}%</span></td>
           <td><span class="badge {vol_cls}">{row['Volume_Ratio']:.2f}x</span></td>
@@ -1293,8 +1423,8 @@ def _rows(df: pd.DataFrame, currency: str = "₹",
           <td>{badge_rs}</td>
           <td>{badge_mtf}</td>
           {badge_sec}
-          <td class="num" style="color:#ff6b6b">{currency}{sl:,.2f}</td>
-          <td class="num" style="color:#00ff88">{currency}{tgt:,.2f}</td>
+          <td class="num" style="color:#ff6b6b" title="Stop-loss: –{sl_pct:.1f}% from entry">{currency}{sl:,.2f} <span style="font-size:.75rem;opacity:.75">–{sl_pct:.1f}%</span></td>
+          <td class="num" style="color:#00ff88" title="Target: +{tgt_pct:.1f}% from entry">{currency}{tgt:,.2f} <span style="font-size:.75rem;opacity:.75">+{tgt_pct:.1f}%</span></td>
           <td class="num" style="color:{rr_col};font-weight:700">{rr:.1f}x</td>
           <td>
             <div class="bw">
@@ -1624,10 +1754,16 @@ def generate_html_report(
       <div class="sh-line"></div>
       <div class="sh-sub">Entry window: 3:00–3:20 PM IST</div>
     </div>
+    <div style="margin:10px 0 14px;padding:10px 14px;background:rgba(255,193,7,0.07);border:1px solid rgba(255,193,7,0.22);border-radius:8px;font-size:.75rem;line-height:1.6;color:var(--muted)">
+      <strong style="color:var(--text)">⚡ Next-day exit rules (India):</strong>
+      &nbsp;Target = see Target% column &nbsp;·&nbsp; SL = see SL% column &nbsp;·&nbsp;
+      <strong style="color:#ff6b6b">Gap-down exit: if opens below entry price, exit by 9:20 AM IST — do not hold.</strong>
+      &nbsp;·&nbsp; If first 15-min low breaks SL → exit immediately.
+    </div>
     <p class="scroll-hint">← swipe to see all columns</p>
     <div class="tw">
       <table>
-        <thead><tr><th>#</th><th>Symbol</th><th>Close (₹)</th><th>Change</th><th>Vol Ratio</th><th>RSI</th><th>ADX</th><th>Range Pos</th><th>52W High</th><th>Gap</th><th>Candle</th><th>RS</th><th>Weekly</th><th>Sector</th><th>Stop Loss</th><th>Target</th><th>R:R</th><th>BTST Score</th></tr></thead>
+        <thead><tr><th>#</th><th>Symbol</th><th>Conviction</th><th>Close (₹)</th><th>Change</th><th>Vol Ratio</th><th>RSI</th><th>ADX</th><th>Range Pos</th><th>52W High</th><th>Gap</th><th>Candle</th><th>RS</th><th>Weekly</th><th>Sector</th><th>Stop Loss</th><th>Target</th><th>R:R</th><th>BTST Score</th></tr></thead>
         <tbody>{india_rows}</tbody>
       </table>
     </div>
@@ -1642,10 +1778,16 @@ def generate_html_report(
       <div class="sh-line"></div>
       <div class="sh-sub">Entry window: 3:30–4:00 PM EST</div>
     </div>
+    <div style="margin:10px 0 14px;padding:10px 14px;background:rgba(255,193,7,0.07);border:1px solid rgba(255,193,7,0.22);border-radius:8px;font-size:.75rem;line-height:1.6;color:var(--muted)">
+      <strong style="color:var(--text)">⚡ Next-day exit rules (USA):</strong>
+      &nbsp;Target = see Target% column &nbsp;·&nbsp; SL = see SL% column &nbsp;·&nbsp;
+      <strong style="color:#ff6b6b">Gap-down exit: if opens below entry price, exit by 9:35 AM EST — do not hold.</strong>
+      &nbsp;·&nbsp; If first 15-min low breaks SL → exit immediately.
+    </div>
     <p class="scroll-hint">← swipe to see all columns</p>
     <div class="tw">
       <table>
-        <thead><tr><th>#</th><th>Symbol</th><th>Close ($)</th><th>Change</th><th>Vol Ratio</th><th>RSI</th><th>ADX</th><th>Range Pos</th><th>52W High</th><th>Gap</th><th>Candle</th><th>RS</th><th>Weekly</th><th>Sector</th><th>Stop Loss</th><th>Target</th><th>R:R</th><th>BTST Score</th></tr></thead>
+        <thead><tr><th>#</th><th>Symbol</th><th>Conviction</th><th>Close ($)</th><th>Change</th><th>Vol Ratio</th><th>RSI</th><th>ADX</th><th>Range Pos</th><th>52W High</th><th>Gap</th><th>Candle</th><th>RS</th><th>Weekly</th><th>Sector</th><th>Stop Loss</th><th>Target</th><th>R:R</th><th>BTST Score</th></tr></thead>
         <tbody>{usa_rows}</tbody>
       </table>
     </div>
@@ -2111,16 +2253,45 @@ def run_backtest(prefix: str, days: int = 30):
     losses  = (res_df["Outcome"] == "LOSS").sum()
     neutral = (res_df["Outcome"] == "NEUTRAL").sum()
     hit_rt  = wins / total * 100 if total else 0.0
+    loss_rt = losses / total * 100 if total else 0.0
     avg_chg = res_df["Actual_%"].mean()
 
-    # Score-stratified: ≥70 vs <70
-    hs      = res_df[res_df["Score"] >= 70]
-    hs_hits = (hs["Outcome"] == "WIN").sum()
-    hs_rt   = hs_hits / len(hs) * 100 if len(hs) else 0.0
+    # ── Win / Loss averages for expectancy ───────────────────
+    win_df  = res_df[res_df["Outcome"] == "WIN"]
+    loss_df = res_df[res_df["Outcome"] == "LOSS"]
+    avg_win  = win_df["Actual_%"].mean()  if len(win_df)  else 0.0
+    avg_loss = loss_df["Actual_%"].mean() if len(loss_df) else 0.0
+    # Expectancy = (win_rate × avg_win) + (loss_rate × avg_loss)
+    # A positive number means profitable per trade in expectation.
+    expectancy = (hit_rt / 100 * avg_win) + (loss_rt / 100 * avg_loss)
 
-    ls      = res_df[res_df["Score"] < 70]
-    ls_hits = (ls["Outcome"] == "WIN").sum()
-    ls_rt   = ls_hits / len(ls) * 100 if len(ls) else 0.0
+    # ── Max Drawdown ──────────────────────────────────────────
+    # Simulates holding a portfolio of all picks simultaneously;
+    # tracks the worst single-pick return as a simple per-trade drawdown.
+    max_drawdown = res_df["Actual_%"].min() if total else 0.0
+
+    # ── Score-stratified tiers ────────────────────────────────
+    def _tier_stats(subset: pd.DataFrame, label: str) -> list:
+        if subset.empty:
+            return [label, 0, 0, "—", "—", "—"]
+        n      = len(subset)
+        w      = (subset["Outcome"] == "WIN").sum()
+        l      = (subset["Outcome"] == "LOSS").sum()
+        wr     = w / n * 100
+        lr     = l / n * 100
+        aw     = subset[subset["Outcome"] == "WIN"]["Actual_%"].mean()
+        al     = subset[subset["Outcome"] == "LOSS"]["Actual_%"].mean()
+        exp    = (wr / 100 * (aw if not pd.isna(aw) else 0)) + \
+                 (lr / 100 * (al if not pd.isna(al) else 0))
+        avg_c  = subset["Actual_%"].mean()
+        return [label, n, w, f"{wr:.1f}%",
+                f"{avg_c:+.2f}%",
+                f"{exp:+.3f}%"]
+
+    hc = res_df[res_df["Score"] >= SCORE_HIGH_CONVICTION]
+    gc = res_df[(res_df["Score"] >= SCORE_GOOD) & (res_df["Score"] < SCORE_HIGH_CONVICTION)]
+    mc = res_df[(res_df["Score"] >= SCORE_MODERATE) & (res_df["Score"] < SCORE_GOOD)]
+    wk = res_df[res_df["Score"] < SCORE_MODERATE]
 
     # Score ↔ return correlation
     corr = (res_df[["Score", "Actual_%"]].corr().iloc[0, 1]
@@ -2131,24 +2302,32 @@ def run_backtest(prefix: str, days: int = 30):
     print(f"  Total picks        : {total}")
     print()
 
-    w_col = Fore.GREEN if hit_rt >= 55 else Fore.YELLOW if hit_rt >= 45 else Fore.RED
-    print(f"  {'Wins  (Target hit)':<22}: {Fore.GREEN}{wins:>4}{Style.RESET_ALL}")
-    print(f"  {'Losses (SL hit)':<22}: {Fore.RED}{losses:>4}{Style.RESET_ALL}")
-    print(f"  {'Neutral (neither)':<22}: {Fore.YELLOW}{neutral:>4}{Style.RESET_ALL}")
-    print(f"  {'Overall Hit Rate':<22}: {w_col}{hit_rt:>6.1f}%{Style.RESET_ALL}")
-    c_col = Fore.GREEN if avg_chg > 0 else Fore.RED
-    print(f"  {'Avg Next-Day Chg':<22}: {c_col}{avg_chg:>+6.2f}%{Style.RESET_ALL}")
+    w_col  = Fore.GREEN if hit_rt >= 55 else Fore.YELLOW if hit_rt >= 45 else Fore.RED
+    e_col  = Fore.GREEN if expectancy > 0 else Fore.RED
+    dd_col = Fore.RED   if max_drawdown < -3 else Fore.YELLOW if max_drawdown < -1.5 else Fore.GREEN
+    c_col  = Fore.GREEN if avg_chg > 0 else Fore.RED
+
+    print(f"  {'Wins  (Target hit)':<24}: {Fore.GREEN}{wins:>4}{Style.RESET_ALL}  "
+          f"  avg gain  {Fore.GREEN}{avg_win:>+6.2f}%{Style.RESET_ALL}")
+    print(f"  {'Losses (SL hit)':<24}: {Fore.RED}{losses:>4}{Style.RESET_ALL}  "
+          f"  avg loss  {Fore.RED}{avg_loss:>+6.2f}%{Style.RESET_ALL}")
+    print(f"  {'Neutral (neither)':<24}: {Fore.YELLOW}{neutral:>4}{Style.RESET_ALL}")
+    print(f"  {'Overall Hit Rate':<24}: {w_col}{hit_rt:>6.1f}%{Style.RESET_ALL}")
+    print(f"  {'Avg Next-Day Chg':<24}: {c_col}{avg_chg:>+6.2f}%{Style.RESET_ALL}")
+    print(f"  {'Expectancy / trade':<24}: {e_col}{expectancy:>+6.3f}%{Style.RESET_ALL}"
+          f"  {'✅ profitable edge' if expectancy > 0 else '⚠ negative edge — review filters'}")
+    print(f"  {'Max Drawdown (1 pick)':<24}: {dd_col}{max_drawdown:>+6.2f}%{Style.RESET_ALL}")
     print()
 
-    # Score-stratified table
+    # Score-stratified table with expectancy per tier
     strat_rows = [
-        ["Score ≥ 70", len(hs), hs_hits, f"{hs_rt:.1f}%",
-         f"{hs['Actual_%'].mean():+.2f}%" if len(hs) else "—"],
-        ["Score < 70", len(ls), ls_hits, f"{ls_rt:.1f}%",
-         f"{ls['Actual_%'].mean():+.2f}%" if len(ls) else "—"],
+        _tier_stats(hc, f"Score ≥ {SCORE_HIGH_CONVICTION} (HIGH)"),
+        _tier_stats(gc, f"Score {SCORE_GOOD}–{SCORE_HIGH_CONVICTION-1} (GOOD)"),
+        _tier_stats(mc, f"Score {SCORE_MODERATE}–{SCORE_GOOD-1} (MOD)"),
+        _tier_stats(wk, f"Score < {SCORE_MODERATE} (WEAK)"),
     ]
     print(tabulate(strat_rows,
-                   headers=["Tier", "Picks", "Wins", "Hit Rate", "Avg Chg"],
+                   headers=["Tier", "Picks", "Wins", "Hit Rate", "Avg Chg", "Expectancy"],
                    tablefmt="simple"))
     print()
 
@@ -2161,7 +2340,7 @@ def run_backtest(prefix: str, days: int = 30):
         print()
 
     # Top-5 wins
-    top_wins = (res_df[res_df["Outcome"] == "WIN"]
+    top_wins = (win_df
                 .nlargest(5, "Actual_%")
                 [["Date", "Symbol", "Score", "Entry", "Target", "Actual_%"]]
                 .reset_index(drop=True))
@@ -2173,7 +2352,7 @@ def run_backtest(prefix: str, days: int = 30):
         print()
 
     # Worst-5 losses
-    worst = (res_df[res_df["Outcome"] == "LOSS"]
+    worst = (loss_df
              .nsmallest(5, "Actual_%")
              [["Date", "Symbol", "Score", "Entry", "SL", "Actual_%"]]
              .reset_index(drop=True))
@@ -2205,13 +2384,13 @@ def print_disclaimer():
 # MAIN
 # ══════════════════════════════════════════════════════════
 
-def _scan_india(date_str: str, run_orb: bool = True):
+def _scan_india(date_str: str, run_orb: bool = True, min_score: float = 0.0):
     """Run India BTST scan (+ optional ORB scan). Returns (ok, chg, vix, top_df, full_df, orb_df)."""
     ok, chg, vix = check_market("india")
     full, sector_perf = run_screener(NIFTY100_SYMBOLS, "Nifty 100", chg)
     top  = pd.DataFrame()
     if not full.empty:
-        top = filter_and_rank(full)
+        top = filter_and_rank(full, min_score=min_score)
         print_report(top, "INDIA", ok, chg)
         save_csv(top, full, "india", date_str)
         save_meta("india", date_str, ok, chg, vix)
@@ -2226,13 +2405,13 @@ def _scan_india(date_str: str, run_orb: bool = True):
     return ok, chg, vix, top, full, orb_top
 
 
-def _scan_usa(date_str: str, run_orb: bool = True):
+def _scan_usa(date_str: str, run_orb: bool = True, min_score: float = 0.0):
     """Run USA BTST scan (+ optional ORB scan). Returns (ok, chg, vix, top_df, full_df, orb_df)."""
     ok, chg, vix = check_market("usa")
     full, sector_perf = run_screener(SP500_TOP100_SYMBOLS, "S&P 500 Top 100", chg)
     top  = pd.DataFrame()
     if not full.empty:
-        top = filter_and_rank(full)
+        top = filter_and_rank(full, min_score=min_score)
         print_report(top, "USA", ok, chg)
         save_csv(top, full, "usa", date_str)
         save_meta("usa", date_str, ok, chg, vix)
@@ -2258,13 +2437,22 @@ def main():
                         help="Replay past CSV picks against next-day actuals")
     parser.add_argument("--days",      type=int, default=30,
                         help="Calendar days to look back for backtest (default: 30)")
+    parser.add_argument("--min-score", type=float, default=0.0,
+                        help=f"Only show picks with BTST Score >= this value "
+                             f"(e.g. --min-score 70 for GOOD, --min-score 80 for HIGH conviction)")
     args      = parser.parse_args()
     run_india = not args.usa   or args.india
     run_usa   = not args.india or args.usa
     do_orb    = not args.no_orb   # True by default; False when --no-orb passed
+    min_score = args.min_score
 
     print(f"\n{Fore.CYAN}{'='*62}")
     print("   BTST SCREENER  |  India (Nifty 100)  +  USA (S&P 500 Top 100)")
+    if min_score > 0:
+        tier = "HIGH conviction" if min_score >= SCORE_HIGH_CONVICTION else \
+               "GOOD+"          if min_score >= SCORE_GOOD else \
+               "MODERATE+"
+        print(f"   Score filter    |  ≥ {min_score:.0f}  ({tier})")
     print(f"{'='*62}{Style.RESET_ALL}")
 
     IST_NOW  = datetime.now(tz=IST)
@@ -2330,16 +2518,16 @@ def main():
     if run_india and run_usa:
         hdr("Running India + USA scans in PARALLEL")
         with ThreadPoolExecutor(max_workers=2) as pool:
-            f_india = pool.submit(_scan_india, date_str, do_orb)
-            f_usa   = pool.submit(_scan_usa,   date_str, do_orb)
+            f_india = pool.submit(_scan_india, date_str, do_orb, min_score)
+            f_usa   = pool.submit(_scan_usa,   date_str, do_orb, min_score)
             india_ok, india_chg, india_vix, india_top, india_full, orb_india = f_india.result()
             usa_ok,   usa_chg,   usa_vix,   usa_top,   usa_full,   orb_usa   = f_usa.result()
 
     elif run_india:
-        india_ok, india_chg, india_vix, india_top, india_full, orb_india = _scan_india(date_str, do_orb)
+        india_ok, india_chg, india_vix, india_top, india_full, orb_india = _scan_india(date_str, do_orb, min_score)
 
     elif run_usa:
-        usa_ok, usa_chg, usa_vix, usa_top, usa_full, orb_usa = _scan_usa(date_str, do_orb)
+        usa_ok, usa_chg, usa_vix, usa_top, usa_full, orb_usa = _scan_usa(date_str, do_orb, min_score)
 
     # ── HTML ───────────────────────────────────────────────
     if run_india and run_usa:
