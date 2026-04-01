@@ -992,10 +992,10 @@ def filter_and_rank(df: pd.DataFrame) -> pd.DataFrame:
     if df.empty:
         return df
     f = df[
-        (df["RSI"] >= 50) &
-        (df["Volume_Ratio"] >= 1.2) &
-        (df["Change%"] > 0) &
-        (df["Change%"] <= 5.0) &
+        (df["RSI"] >= 48) &              # relaxed from 50 → catches mild dips
+        (df["Volume_Ratio"] >= 1.1) &    # relaxed from 1.2 → slightly less strict
+        (df["Change%"] > -0.5) &         # relaxed from >0 → allow flat/slightly red days
+        (df["Change%"] <= 6.0) &         # relaxed from 5.0 → widen upper cap
         (df["Close"] > df["EMA20"])
     ].copy()
     f.sort_values("BTST_Score", ascending=False, inplace=True)
