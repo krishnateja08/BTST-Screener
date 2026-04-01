@@ -1581,14 +1581,14 @@ def generate_html_report(
   .header-top{{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap}}
   .logo h1{{font-size:clamp(1.6rem,4vw,2.5rem);font-weight:800;letter-spacing:-.5px;line-height:1.1}}
   .logo h1 span{{color:var(--green)}}
-  .logo p{{font-family:var(--mono);font-size:clamp(.72rem,1.4vw,.86rem);color:var(--muted);margin-top:5px;letter-spacing:1.5px;text-transform:uppercase}}
-  .ts{{font-family:var(--mono);font-size:clamp(.72rem,1.3vw,.84rem);color:var(--muted);text-align:right;line-height:1.7;flex-shrink:0}}
+  .logo p{{font-family:var(--mono);font-size:clamp(.78rem,1.5vw,.92rem);color:#c8d8e8;margin-top:5px;letter-spacing:1.5px;text-transform:uppercase}}
+  .ts{{font-family:var(--mono);font-size:clamp(.76rem,1.3vw,.88rem);color:#c0ccda;text-align:right;line-height:1.7;flex-shrink:0}}
   .ts-time{{display:block;font-size:clamp(.95rem,2vw,1.1rem);font-weight:700;color:var(--blue);margin-bottom:2px;white-space:nowrap}}
   .tz-tag{{display:inline-block;background:rgba(96,212,255,.15);color:var(--blue);border:1px solid rgba(96,212,255,.4);border-radius:4px;font-family:var(--mono);font-size:.68rem;padding:1px 6px;letter-spacing:1px;vertical-align:middle;margin-left:4px}}
 
   /* PILLS */
   .pills{{display:flex;gap:8px;margin-top:20px;flex-wrap:wrap}}
-  .pill{{display:flex;align-items:center;gap:7px;background:var(--surf2);border:1px solid var(--border);border-radius:999px;padding:6px 14px;font-family:var(--mono);font-size:clamp(.7rem,1.3vw,.82rem);color:var(--muted);white-space:nowrap}}
+  .pill{{display:flex;align-items:center;gap:7px;background:var(--surf2);border:1px solid var(--border);border-radius:999px;padding:6px 14px;font-family:var(--mono);font-size:clamp(.74rem,1.4vw,.86rem);color:#c8d4e0;white-space:nowrap}}
   .dot{{width:7px;height:7px;border-radius:50%;flex-shrink:0}}
   .dot.live{{animation:blink 2s infinite}}
   @keyframes blink{{0%,100%{{opacity:1}}50%{{opacity:.25}}}}
@@ -1641,7 +1641,7 @@ def generate_html_report(
   .sh{{display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap}}
   .sh-title{{font-size:clamp(1rem,2.2vw,1.2rem);font-weight:700;white-space:nowrap;color:var(--text)}}
   .sh-line{{flex:1;height:1px;background:var(--border);min-width:16px}}
-  .sh-sub{{font-family:var(--mono);font-size:clamp(.68rem,1.3vw,.78rem);color:var(--muted);white-space:nowrap}}
+  .sh-sub{{font-family:var(--mono);font-size:clamp(.72rem,1.4vw,.82rem);color:#b8c8d8;white-space:nowrap}}
 
   /* TABLE */
   .scroll-hint{{display:none;font-family:var(--mono);font-size:.62rem;color:var(--muted);text-align:right;margin-bottom:6px}}
@@ -1677,8 +1677,8 @@ def generate_html_report(
 
   /* LEGEND */
   .legend{{display:flex;flex-wrap:wrap;gap:10px 18px;margin-top:18px;padding:clamp(12px,2vw,18px) clamp(12px,2vw,20px);background:var(--surf);border:1px solid var(--border);border-radius:var(--r)}}
-  .li{{display:flex;align-items:center;gap:7px;font-family:var(--mono);font-size:clamp(.68rem,1.2vw,.78rem);color:#a8b3bf}}
-  .ld{{width:9px;height:9px;border-radius:2px;flex-shrink:0}}
+  .li{{display:flex;align-items:center;gap:7px;font-family:var(--mono);font-size:clamp(.78rem,1.4vw,.9rem);color:#d8e4f0;font-weight:500}}
+  .ld{{width:10px;height:10px;border-radius:2px;flex-shrink:0}}
 
   /* PARAMS GRID */
   .pg{{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:28px}}
@@ -1895,25 +1895,52 @@ def generate_html_report(
     .sp-grid{{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin-top:16px}}
     @media(max-width:900px){{.sp-grid{{grid-template-columns:repeat(2,1fr)}}}}
     @media(max-width:480px){{.sp-grid{{grid-template-columns:1fr}}}}
-    .sp-section{{grid-column:1/-1;font-family:var(--mono);font-size:.58rem;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);padding:2px 0 5px;border-bottom:1px solid var(--border);margin-top:6px}}
+
+    /* Collapsible section header */
+    .sp-section{{
+      grid-column:1/-1;
+      font-family:var(--mono);font-size:.64rem;letter-spacing:.14em;text-transform:uppercase;
+      color:#c8d4e0;padding:6px 10px 6px;border-bottom:1px solid var(--border);margin-top:6px;
+      display:flex;align-items:center;justify-content:space-between;
+      cursor:pointer;border-radius:6px 6px 0 0;
+      background:rgba(255,255,255,.03);
+      user-select:none;transition:background .15s;
+    }}
+    .sp-section:hover{{background:rgba(255,255,255,.06)}}
+    .sp-section .sp-toggle-icon{{
+      font-size:.9rem;color:var(--blue);transition:transform .3s ease;display:inline-block;
+    }}
+    .sp-section.collapsed .sp-toggle-icon{{transform:rotate(-90deg)}}
+
+    /* Cards wrapper that collapses */
+    .sp-cards-wrap{{
+      grid-column:1/-1;
+      display:grid;grid-template-columns:repeat(4,1fr);gap:7px;
+      overflow:hidden;max-height:800px;
+      transition:max-height .4s ease, opacity .3s ease;opacity:1;
+    }}
+    @media(max-width:900px){{.sp-cards-wrap{{grid-template-columns:repeat(2,1fr)}}}}
+    @media(max-width:480px){{.sp-cards-wrap{{grid-template-columns:1fr}}}}
+    .sp-cards-wrap.collapsed{{max-height:0;opacity:0;pointer-events:none}}
+
     .sp-card{{background:var(--surf);border:1px solid var(--border);border-radius:8px;padding:9px 11px;position:relative;overflow:hidden;transition:border-color .15s}}
     .sp-card:hover{{border-color:#2a3245}}
     .sp-card::before{{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--sp-accent,transparent);opacity:.75}}
     .sp-card.sg{{--sp-accent:var(--green)}} .sp-card.sr{{--sp-accent:var(--red)}} .sp-card.sc{{--sp-accent:var(--blue)}} .sp-card.sy{{--sp-accent:var(--yellow)}}
     .sp-top{{display:flex;align-items:flex-start;justify-content:space-between;gap:5px;margin-bottom:3px}}
-    .sp-name{{font-family:var(--mono);font-size:.62rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#dde6f8}}
+    .sp-name{{font-family:var(--mono);font-size:.64rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#e8f0fa}}
     .sp-badge{{font-family:var(--mono);font-size:.68rem;font-weight:700;padding:1px 6px;border-radius:4px;white-space:nowrap;flex-shrink:0}}
     .sp-badge.sg{{color:var(--green);background:rgba(0,230,118,.12)}} .sp-badge.sr{{color:var(--red);background:rgba(255,82,82,.12)}}
     .sp-badge.sc{{color:var(--blue);background:rgba(64,196,255,.12)}} .sp-badge.sy{{color:var(--yellow);background:rgba(255,202,40,.1)}}
-    .sp-desc{{font-size:.72rem;color:var(--muted);line-height:1.4;margin-bottom:4px}}
+    .sp-desc{{font-size:.74rem;color:#b8c8d8;line-height:1.4;margin-bottom:4px}}
     .sp-tags{{display:flex;flex-wrap:wrap;gap:3px}}
-    .sp-tag{{font-family:var(--mono);font-size:.58rem;padding:1px 5px;border-radius:3px;background:var(--surf2);border:1px solid var(--border);color:var(--text);white-space:nowrap}}
+    .sp-tag{{font-family:var(--mono);font-size:.6rem;padding:2px 6px;border-radius:3px;background:var(--surf2);border:1px solid var(--border);color:#d0dce8;white-space:nowrap}}
     .sp-tag.tg{{color:var(--green);border-color:rgba(0,230,118,.25);background:rgba(0,230,118,.06)}}
     .sp-tag.tr{{color:var(--red);border-color:rgba(255,82,82,.25);background:rgba(255,82,82,.06)}}
     .sp-tag.tc{{color:var(--blue);border-color:rgba(64,196,255,.2);background:rgba(64,196,255,.06)}}
     .sp-formula{{font-family:var(--mono);font-size:.62rem;color:var(--blue);background:rgba(64,196,255,.1);border:1px solid rgba(64,196,255,.2);padding:2px 7px;border-radius:4px;display:inline-block;margin-top:4px}}
     .sp-footer{{margin-top:10px;padding:9px 13px;background:var(--surf);border:1px solid var(--border);border-radius:8px;display:flex;align-items:center;gap:6px;flex-wrap:wrap}}
-    .sp-footer-lbl{{font-family:var(--mono);font-size:.58rem;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-right:4px}}
+    .sp-footer-lbl{{font-family:var(--mono);font-size:.6rem;letter-spacing:.12em;text-transform:uppercase;color:#b0bcc8;margin-right:4px}}
     .sp-chip{{font-family:var(--mono);font-size:.65rem;font-weight:600;padding:2px 8px;border-radius:5px;border:1px solid}}
     .sp-chip.sg{{color:var(--green);background:rgba(0,230,118,.1);border-color:rgba(0,230,118,.2)}}
     .sp-chip.sr{{color:var(--red);background:rgba(255,82,82,.1);border-color:rgba(255,82,82,.2)}}
@@ -1924,106 +1951,130 @@ def generate_html_report(
   <div class="sp-grid">
 
     <!-- MOMENTUM & TREND -->
-    <div class="sp-section">📈 Momentum &amp; Trend</div>
-
-    <div class="sp-card sg">
-      <div class="sp-top"><span class="sp-name">Volume Surge</span><span class="sp-badge sg">20 PTS</span></div>
-      <div class="sp-desc">Confirms institutional participation.</div>
-      <div class="sp-tags"><span class="sp-tag tg">Vol &gt;1.5× 10-day avg</span></div>
+    <div class="sp-section" onclick="toggleSection('momentum')">
+      <span>📈 Momentum &amp; Trend</span>
+      <span class="sp-toggle-icon" id="icon-momentum">▼</span>
     </div>
+    <div class="sp-cards-wrap" id="wrap-momentum">
 
-    <div class="sp-card sg">
-      <div class="sp-top"><span class="sp-name">EMA Alignment</span><span class="sp-badge sg">15 PTS</span></div>
-      <div class="sp-desc">Confirms bullish structure.</div>
-      <div class="sp-tags"><span class="sp-tag tg">Above 20 EMA</span><span class="sp-tag tg">Above 50 EMA</span></div>
-    </div>
+      <div class="sp-card sg">
+        <div class="sp-top"><span class="sp-name">Volume Surge</span><span class="sp-badge sg">20 PTS</span></div>
+        <div class="sp-desc">Confirms institutional participation.</div>
+        <div class="sp-tags"><span class="sp-tag tg">Vol &gt;1.5× 10-day avg</span></div>
+      </div>
 
-    <div class="sp-card sg">
-      <div class="sp-top"><span class="sp-name">RSI Zone</span><span class="sp-badge sg">15 PTS</span></div>
-      <div class="sp-desc">Strong momentum without being overbought.</div>
-      <div class="sp-tags"><span class="sp-tag tg">RSI 55 – 75</span></div>
-    </div>
+      <div class="sp-card sg">
+        <div class="sp-top"><span class="sp-name">EMA Alignment</span><span class="sp-badge sg">15 PTS</span></div>
+        <div class="sp-desc">Confirms bullish structure.</div>
+        <div class="sp-tags"><span class="sp-tag tg">Above 20 EMA</span><span class="sp-tag tg">Above 50 EMA</span></div>
+      </div>
 
-    <div class="sp-card sg">
-      <div class="sp-top"><span class="sp-name">MACD Signal</span><span class="sp-badge sg">15 PTS</span></div>
-      <div class="sp-desc">Signals continuation.</div>
-      <div class="sp-tags"><span class="sp-tag tg">+ve histogram</span><span class="sp-tag tg">Fresh bull crossover</span></div>
-    </div>
+      <div class="sp-card sg">
+        <div class="sp-top"><span class="sp-name">RSI Zone</span><span class="sp-badge sg">15 PTS</span></div>
+        <div class="sp-desc">Strong momentum without being overbought.</div>
+        <div class="sp-tags"><span class="sp-tag tg">RSI 55 – 75</span></div>
+      </div>
 
-    <div class="sp-card sg">
-      <div class="sp-top"><span class="sp-name">ADX Trend</span><span class="sp-badge sg">10 PTS</span></div>
-      <div class="sp-desc">Reduces overnight whipsaw risk.</div>
-      <div class="sp-tags"><span class="sp-tag tg">ADX &gt; 25</span></div>
-    </div>
+      <div class="sp-card sg">
+        <div class="sp-top"><span class="sp-name">MACD Signal</span><span class="sp-badge sg">15 PTS</span></div>
+        <div class="sp-desc">Signals continuation.</div>
+        <div class="sp-tags"><span class="sp-tag tg">+ve histogram</span><span class="sp-tag tg">Fresh bull crossover</span></div>
+      </div>
 
-    <div class="sp-card sg">
-      <div class="sp-top"><span class="sp-name">52-Week High</span><span class="sp-badge sg">10 PTS</span></div>
-      <div class="sp-desc">Proximity to breakout zone.</div>
-      <div class="sp-tags"><span class="sp-tag tg">Within 5% → Full</span><span class="sp-tag">Within 10% → Half</span></div>
-    </div>
+      <div class="sp-card sg">
+        <div class="sp-top"><span class="sp-name">ADX Trend</span><span class="sp-badge sg">10 PTS</span></div>
+        <div class="sp-desc">Reduces overnight whipsaw risk.</div>
+        <div class="sp-tags"><span class="sp-tag tg">ADX &gt; 25</span></div>
+      </div>
+
+      <div class="sp-card sg">
+        <div class="sp-top"><span class="sp-name">52-Week High</span><span class="sp-badge sg">10 PTS</span></div>
+        <div class="sp-desc">Proximity to breakout zone.</div>
+        <div class="sp-tags"><span class="sp-tag tg">Within 5% → Full</span><span class="sp-tag">Within 10% → Half</span></div>
+      </div>
+
+    </div><!-- /wrap-momentum -->
 
     <!-- PRICE ACTION -->
-    <div class="sp-section">🕯 Price Action &amp; Structure</div>
-
-    <div class="sp-card sg">
-      <div class="sp-top"><span class="sp-name">Price Breakout</span><span class="sp-badge sg">15 PTS</span></div>
-      <div class="sp-desc">Buyer dominance at close.</div>
-      <div class="sp-tags"><span class="sp-tag tg">Close in top 5–10% of range</span></div>
+    <div class="sp-section" onclick="toggleSection('price')">
+      <span>🕯 Price Action &amp; Structure</span>
+      <span class="sp-toggle-icon" id="icon-price">▼</span>
     </div>
+    <div class="sp-cards-wrap" id="wrap-price">
 
-    <div class="sp-card sg">
-      <div class="sp-top"><span class="sp-name">Candlestick Pattern</span><span class="sp-badge sg">+6–10 PTS</span></div>
-      <div class="sp-desc">High-confidence reversal/continuation candles.</div>
-      <div class="sp-tags"><span class="sp-tag tg">M-Star +10</span><span class="sp-tag tg">Engulfing +8</span><span class="sp-tag tg">Hammer +6</span></div>
-    </div>
+      <div class="sp-card sg">
+        <div class="sp-top"><span class="sp-name">Price Breakout</span><span class="sp-badge sg">15 PTS</span></div>
+        <div class="sp-desc">Buyer dominance at close.</div>
+        <div class="sp-tags"><span class="sp-tag tg">Close in top 5–10% of range</span></div>
+      </div>
 
-    <div class="sp-card sg">
-      <div class="sp-top"><span class="sp-name">Gap-Up &amp; Hold</span><span class="sp-badge sg">+5–8 PTS</span></div>
-      <div class="sp-desc">Open gapped above prior close and held.</div>
-      <div class="sp-tags"><span class="sp-tag tg">≥1% gap + pos ≥60% → +8</span><span class="sp-tag">≥0.5% held → +5</span></div>
-    </div>
+      <div class="sp-card sg">
+        <div class="sp-top"><span class="sp-name">Candlestick Pattern</span><span class="sp-badge sg">+6–10 PTS</span></div>
+        <div class="sp-desc">High-confidence reversal/continuation candles.</div>
+        <div class="sp-tags"><span class="sp-tag tg">M-Star +10</span><span class="sp-tag tg">Engulfing +8</span><span class="sp-tag tg">Hammer +6</span></div>
+      </div>
 
-    <div class="sp-card sg">
-      <div class="sp-top"><span class="sp-name">Relative Strength</span><span class="sp-badge sg">+5 PTS</span></div>
-      <div class="sp-desc">Outperformance vs the broader index.</div>
-      <div class="sp-tags"><span class="sp-tag tg">Daily gain &gt; Index</span></div>
-    </div>
+      <div class="sp-card sg">
+        <div class="sp-top"><span class="sp-name">Gap-Up &amp; Hold</span><span class="sp-badge sg">+5–8 PTS</span></div>
+        <div class="sp-desc">Open gapped above prior close and held.</div>
+        <div class="sp-tags"><span class="sp-tag tg">≥1% gap + pos ≥60% → +8</span><span class="sp-tag">≥0.5% held → +5</span></div>
+      </div>
+
+      <div class="sp-card sg">
+        <div class="sp-top"><span class="sp-name">Relative Strength</span><span class="sp-badge sg">+5 PTS</span></div>
+        <div class="sp-desc">Outperformance vs the broader index.</div>
+        <div class="sp-tags"><span class="sp-tag tg">Daily gain &gt; Index</span></div>
+      </div>
+
+    </div><!-- /wrap-price -->
 
     <!-- CONFIRMATION -->
-    <div class="sp-section">🔗 Confirmation &amp; Alignment</div>
-
-    <div class="sp-card sy">
-      <div class="sp-top"><span class="sp-name">Sector Alignment</span><span class="sp-badge sy">+7 PTS</span></div>
-      <div class="sp-desc">Bonus when sector index is also green on the day.</div>
-      <div class="sp-tags"><span class="sp-tag">e.g. Nifty Bank, XLK</span></div>
+    <div class="sp-section" onclick="toggleSection('confirm')">
+      <span>🔗 Confirmation &amp; Alignment</span>
+      <span class="sp-toggle-icon" id="icon-confirm">▼</span>
     </div>
+    <div class="sp-cards-wrap" id="wrap-confirm">
 
-    <div class="sp-card sy">
-      <div class="sp-top"><span class="sp-name">Weekly MTF Confirm</span><span class="sp-badge sy">+8 PTS</span></div>
-      <div class="sp-desc">Weekly &amp; daily trends aligned. Reduces reversal risk.</div>
-      <div class="sp-tags"><span class="sp-tag">Daily close &gt; Weekly EMA20</span></div>
-    </div>
+      <div class="sp-card sy">
+        <div class="sp-top"><span class="sp-name">Sector Alignment</span><span class="sp-badge sy">+7 PTS</span></div>
+        <div class="sp-desc">Bonus when sector index is also green on the day.</div>
+        <div class="sp-tags"><span class="sp-tag">e.g. Nifty Bank, XLK</span></div>
+      </div>
+
+      <div class="sp-card sy">
+        <div class="sp-top"><span class="sp-name">Weekly MTF Confirm</span><span class="sp-badge sy">+8 PTS</span></div>
+        <div class="sp-desc">Weekly &amp; daily trends aligned. Reduces reversal risk.</div>
+        <div class="sp-tags"><span class="sp-tag">Daily close &gt; Weekly EMA20</span></div>
+      </div>
+
+    </div><!-- /wrap-confirm -->
 
     <!-- RISK -->
-    <div class="sp-section">⚠ Risk &amp; Dynamic Levels</div>
-
-    <div class="sp-card sr">
-      <div class="sp-top"><span class="sp-name">ATR Penalty</span><span class="sp-badge sr">−40%</span></div>
-      <div class="sp-desc">Avoids chasing overextended stocks. Triggered if day's move exceeds 1.5× ATR.</div>
-      <div class="sp-tags"><span class="sp-tag tr">Move &gt; 1.5× ATR → penalty</span></div>
+    <div class="sp-section" onclick="toggleSection('risk')">
+      <span>⚠ Risk &amp; Dynamic Levels</span>
+      <span class="sp-toggle-icon" id="icon-risk">▼</span>
     </div>
+    <div class="sp-cards-wrap" id="wrap-risk">
 
-    <div class="sp-card sc">
-      <div class="sp-top"><span class="sp-name">Stop Loss</span><span class="sp-badge sc">DYNAMIC</span></div>
-      <div class="sp-desc">Limits overnight gap risk. Tighter of the two values.</div>
-      <div class="sp-formula">max( Today's Low,  Close − 1×ATR )</div>
-    </div>
+      <div class="sp-card sr">
+        <div class="sp-top"><span class="sp-name">ATR Penalty</span><span class="sp-badge sr">−40%</span></div>
+        <div class="sp-desc">Avoids chasing overextended stocks. Triggered if day's move exceeds 1.5× ATR.</div>
+        <div class="sp-tags"><span class="sp-tag tr">Move &gt; 1.5× ATR → penalty</span></div>
+      </div>
 
-    <div class="sp-card sc">
-      <div class="sp-top"><span class="sp-name">Target</span><span class="sp-badge sc">DYNAMIC</span></div>
-      <div class="sp-desc">Respects each stock's typical daily volatility range.</div>
-      <div class="sp-formula">Close + 1.5× ATR</div>
-    </div>
+      <div class="sp-card sc">
+        <div class="sp-top"><span class="sp-name">Stop Loss</span><span class="sp-badge sc">DYNAMIC</span></div>
+        <div class="sp-desc">Limits overnight gap risk. Tighter of the two values.</div>
+        <div class="sp-formula">max( Today's Low,  Close − 1×ATR )</div>
+      </div>
+
+      <div class="sp-card sc">
+        <div class="sp-top"><span class="sp-name">Target</span><span class="sp-badge sc">DYNAMIC</span></div>
+        <div class="sp-desc">Respects each stock's typical daily volatility range.</div>
+        <div class="sp-formula">Close + 1.5× ATR</div>
+      </div>
+
+    </div><!-- /wrap-risk -->
 
   </div>
 
@@ -2088,6 +2139,22 @@ def generate_html_report(
     if (pillEl) pillEl.classList.add('active');
     // time
     updateTime(tab);
+  }}
+
+  // Scoring parameter section toggle
+  function toggleSection(id) {{
+    const wrap = document.getElementById('wrap-' + id);
+    const icon = document.getElementById('icon-' + id);
+    const header = icon.closest('.sp-section');
+    if (wrap.classList.contains('collapsed')) {{
+      wrap.classList.remove('collapsed');
+      icon.textContent = '▼';
+      header.classList.remove('collapsed');
+    }} else {{
+      wrap.classList.add('collapsed');
+      icon.textContent = '▶';
+      header.classList.add('collapsed');
+    }}
   }}
 
   // init
