@@ -551,197 +551,171 @@
 
   </div>
 
-  <div class="sh" style="margin-top:36px">
-    <div class="sh-title">⚙️ Scoring Parameters</div>
+  <div class="sh" style="margin-top:36px;cursor:pointer;user-select:none" onclick="toggleAllScoring()" id="scoring-header">
+    <div class="sh-title" style="display:flex;align-items:center;gap:10px">
+      ⚙️ Scoring Parameters
+      <span id="scoring-toggle-icon" style="font-size:.9rem;color:var(--blue);transition:transform .3s ease;display:inline-block;transform:rotate(-90deg)">▼</span>
+    </div>
     <div class="sh-line"></div>
-    <div class="sh-sub">Max score ≈ 138 pts · base 100 + sector (7) + candle (10) + RS (5) + weekly MTF (8) + gap-up (8)</div>
+    <div class="sh-sub">Max score ≈ 138 pts · base 100 + sector (7) + candle (10) + RS (5) + weekly MTF (8) + gap-up (8) &nbsp;<span id="scoring-sub-hint">· click to expand</span></div>
   </div>
 
   <!-- ── Compact 4-col scoring params ── -->
   <style>
-    .sp-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin-top:16px}
+    /* Entire scoring block collapses */
+    #scoring-body{
+      overflow:hidden;max-height:0;opacity:0;pointer-events:none;
+      transition:max-height .5s ease, opacity .35s ease;
+    }
+    #scoring-body.open{max-height:3000px;opacity:1;pointer-events:auto}
+    #scoring-header:hover .sh-title{color:var(--blue)}
+
+    .sp-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:9px;margin-top:16px}
     @media(max-width:900px){.sp-grid{grid-template-columns:repeat(2,1fr)}}
     @media(max-width:480px){.sp-grid{grid-template-columns:1fr}}
 
-    /* Collapsible section header */
+    /* Sub-section labels (non-clickable) */
     .sp-section{
       grid-column:1/-1;
-      font-family:var(--mono);font-size:.64rem;letter-spacing:.14em;text-transform:uppercase;
-      color:#c8d4e0;padding:6px 10px 6px;border-bottom:1px solid var(--border);margin-top:6px;
-      display:flex;align-items:center;justify-content:space-between;
-      cursor:pointer;border-radius:6px 6px 0 0;
-      background:rgba(255,255,255,.03);
-      user-select:none;transition:background .15s;
+      font-family:var(--mono);font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;
+      color:#c8d4e0;padding:5px 2px 7px;border-bottom:1px solid var(--border);margin-top:10px;
     }
-    .sp-section:hover{background:rgba(255,255,255,.06)}
-    .sp-section .sp-toggle-icon{
-      font-size:.9rem;color:var(--blue);transition:transform .3s ease;display:inline-block;
-    }
-    .sp-section.collapsed .sp-toggle-icon{transform:rotate(-90deg)}
 
-    /* Cards wrapper that collapses */
-    .sp-cards-wrap{
-      grid-column:1/-1;
-      display:grid;grid-template-columns:repeat(4,1fr);gap:7px;
-      overflow:hidden;max-height:800px;
-      transition:max-height .4s ease, opacity .3s ease;opacity:1;
-    }
-    @media(max-width:900px){.sp-cards-wrap{grid-template-columns:repeat(2,1fr)}}
-    @media(max-width:480px){.sp-cards-wrap{grid-template-columns:1fr}}
-    .sp-cards-wrap.collapsed{max-height:0;opacity:0;pointer-events:none}
-
-    .sp-card{background:var(--surf);border:1px solid var(--border);border-radius:8px;padding:9px 11px;position:relative;overflow:hidden;transition:border-color .15s}
+    /* Scoring parameter cards */
+    .sp-card{background:var(--surf);border:1px solid var(--border);border-radius:8px;padding:13px 15px;position:relative;overflow:hidden;transition:border-color .15s}
     .sp-card:hover{border-color:#2a3245}
     .sp-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--sp-accent,transparent);opacity:.75}
     .sp-card.sg{--sp-accent:var(--green)} .sp-card.sr{--sp-accent:var(--red)} .sp-card.sc{--sp-accent:var(--blue)} .sp-card.sy{--sp-accent:var(--yellow)}
-    .sp-top{display:flex;align-items:flex-start;justify-content:space-between;gap:5px;margin-bottom:3px}
-    .sp-name{font-family:var(--mono);font-size:.64rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#e8f0fa}
-    .sp-badge{font-family:var(--mono);font-size:.68rem;font-weight:700;padding:1px 6px;border-radius:4px;white-space:nowrap;flex-shrink:0}
+    .sp-top{display:flex;align-items:flex-start;justify-content:space-between;gap:5px;margin-bottom:5px}
+    .sp-name{font-family:var(--mono);font-size:.76rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#eef4ff}
+    .sp-badge{font-family:var(--mono);font-size:.76rem;font-weight:700;padding:2px 8px;border-radius:4px;white-space:nowrap;flex-shrink:0}
     .sp-badge.sg{color:var(--green);background:rgba(0,230,118,.12)} .sp-badge.sr{color:var(--red);background:rgba(255,82,82,.12)}
     .sp-badge.sc{color:var(--blue);background:rgba(64,196,255,.12)} .sp-badge.sy{color:var(--yellow);background:rgba(255,202,40,.1)}
-    .sp-desc{font-size:.74rem;color:#b8c8d8;line-height:1.4;margin-bottom:4px}
-    .sp-tags{display:flex;flex-wrap:wrap;gap:3px}
-    .sp-tag{font-family:var(--mono);font-size:.6rem;padding:2px 6px;border-radius:3px;background:var(--surf2);border:1px solid var(--border);color:#d0dce8;white-space:nowrap}
-    .sp-tag.tg{color:var(--green);border-color:rgba(0,230,118,.25);background:rgba(0,230,118,.06)}
-    .sp-tag.tr{color:var(--red);border-color:rgba(255,82,82,.25);background:rgba(255,82,82,.06)}
-    .sp-tag.tc{color:var(--blue);border-color:rgba(64,196,255,.2);background:rgba(64,196,255,.06)}
-    .sp-formula{font-family:var(--mono);font-size:.62rem;color:var(--blue);background:rgba(64,196,255,.1);border:1px solid rgba(64,196,255,.2);padding:2px 7px;border-radius:4px;display:inline-block;margin-top:4px}
-    .sp-footer{margin-top:10px;padding:9px 13px;background:var(--surf);border:1px solid var(--border);border-radius:8px;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
-    .sp-footer-lbl{font-family:var(--mono);font-size:.6rem;letter-spacing:.12em;text-transform:uppercase;color:#b0bcc8;margin-right:4px}
-    .sp-chip{font-family:var(--mono);font-size:.65rem;font-weight:600;padding:2px 8px;border-radius:5px;border:1px solid}
+    .sp-desc{font-size:.86rem;color:#c4d4e4;line-height:1.5;margin-bottom:6px}
+    .sp-tags{display:flex;flex-wrap:wrap;gap:4px}
+    .sp-tag{font-family:var(--mono);font-size:.7rem;padding:2px 7px;border-radius:3px;background:var(--surf2);border:1px solid var(--border);color:#d8e4f0;white-space:nowrap}
+    .sp-tag.tg{color:var(--green);border-color:rgba(0,230,118,.3);background:rgba(0,230,118,.07)}
+    .sp-tag.tr{color:var(--red);border-color:rgba(255,82,82,.3);background:rgba(255,82,82,.07)}
+    .sp-tag.tc{color:var(--blue);border-color:rgba(64,196,255,.25);background:rgba(64,196,255,.07)}
+    .sp-formula{font-family:var(--mono);font-size:.72rem;color:var(--blue);background:rgba(64,196,255,.1);border:1px solid rgba(64,196,255,.2);padding:3px 9px;border-radius:4px;display:inline-block;margin-top:5px}
+    .sp-footer{margin-top:10px;padding:10px 14px;background:var(--surf);border:1px solid var(--border);border-radius:8px;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+    .sp-footer-lbl{font-family:var(--mono);font-size:.68rem;letter-spacing:.12em;text-transform:uppercase;color:#b8c8d8;margin-right:4px}
+    .sp-chip{font-family:var(--mono);font-size:.72rem;font-weight:600;padding:3px 10px;border-radius:5px;border:1px solid}
     .sp-chip.sg{color:var(--green);background:rgba(0,230,118,.1);border-color:rgba(0,230,118,.2)}
     .sp-chip.sr{color:var(--red);background:rgba(255,82,82,.1);border-color:rgba(255,82,82,.2)}
     .sp-chip.sc{color:var(--blue);background:rgba(64,196,255,.1);border-color:rgba(64,196,255,.2)}
     .sp-sep{color:var(--border);margin:0 1px}
+    /* Collapsible body — closed by default */
+    #scoring-body{overflow:hidden;max-height:0;opacity:0;pointer-events:none;transition:max-height .55s ease,opacity .35s ease;margin-top:4px}
+    #scoring-body.open{max-height:3000px;opacity:1;pointer-events:auto}
+    /* Sub-section labels inside grid */
+    .sp-section{grid-column:1/-1;font-family:var(--mono);font-size:.7rem;letter-spacing:.14em;text-transform:uppercase;color:#c8d4e0;padding:5px 2px 7px;border-bottom:1px solid var(--border);margin-top:10px}
   </style>
 
+  <div id="scoring-body">
   <div class="sp-grid">
 
     <!-- MOMENTUM & TREND -->
-    <div class="sp-section" onclick="toggleSection('momentum')">
-      <span>📈 Momentum &amp; Trend</span>
-      <span class="sp-toggle-icon" id="icon-momentum">▼</span>
+    <div class="sp-section">📈 Momentum &amp; Trend</div>
+
+    <div class="sp-card sg">
+      <div class="sp-top"><span class="sp-name">Volume Surge</span><span class="sp-badge sg">20 PTS</span></div>
+      <div class="sp-desc">Confirms institutional participation.</div>
+      <div class="sp-tags"><span class="sp-tag tg">Vol &gt;1.5× 10-day avg</span></div>
     </div>
-    <div class="sp-cards-wrap" id="wrap-momentum">
 
-      <div class="sp-card sg">
-        <div class="sp-top"><span class="sp-name">Volume Surge</span><span class="sp-badge sg">20 PTS</span></div>
-        <div class="sp-desc">Confirms institutional participation.</div>
-        <div class="sp-tags"><span class="sp-tag tg">Vol &gt;1.5× 10-day avg</span></div>
-      </div>
+    <div class="sp-card sg">
+      <div class="sp-top"><span class="sp-name">EMA Alignment</span><span class="sp-badge sg">15 PTS</span></div>
+      <div class="sp-desc">Confirms bullish structure.</div>
+      <div class="sp-tags"><span class="sp-tag tg">Above 20 EMA</span><span class="sp-tag tg">Above 50 EMA</span></div>
+    </div>
 
-      <div class="sp-card sg">
-        <div class="sp-top"><span class="sp-name">EMA Alignment</span><span class="sp-badge sg">15 PTS</span></div>
-        <div class="sp-desc">Confirms bullish structure.</div>
-        <div class="sp-tags"><span class="sp-tag tg">Above 20 EMA</span><span class="sp-tag tg">Above 50 EMA</span></div>
-      </div>
+    <div class="sp-card sg">
+      <div class="sp-top"><span class="sp-name">RSI Zone</span><span class="sp-badge sg">15 PTS</span></div>
+      <div class="sp-desc">Strong momentum without being overbought.</div>
+      <div class="sp-tags"><span class="sp-tag tg">RSI 55 – 75</span></div>
+    </div>
 
-      <div class="sp-card sg">
-        <div class="sp-top"><span class="sp-name">RSI Zone</span><span class="sp-badge sg">15 PTS</span></div>
-        <div class="sp-desc">Strong momentum without being overbought.</div>
-        <div class="sp-tags"><span class="sp-tag tg">RSI 55 – 75</span></div>
-      </div>
+    <div class="sp-card sg">
+      <div class="sp-top"><span class="sp-name">MACD Signal</span><span class="sp-badge sg">15 PTS</span></div>
+      <div class="sp-desc">Signals continuation.</div>
+      <div class="sp-tags"><span class="sp-tag tg">+ve histogram</span><span class="sp-tag tg">Fresh bull crossover</span></div>
+    </div>
 
-      <div class="sp-card sg">
-        <div class="sp-top"><span class="sp-name">MACD Signal</span><span class="sp-badge sg">15 PTS</span></div>
-        <div class="sp-desc">Signals continuation.</div>
-        <div class="sp-tags"><span class="sp-tag tg">+ve histogram</span><span class="sp-tag tg">Fresh bull crossover</span></div>
-      </div>
+    <div class="sp-card sg">
+      <div class="sp-top"><span class="sp-name">ADX Trend</span><span class="sp-badge sg">10 PTS</span></div>
+      <div class="sp-desc">Reduces overnight whipsaw risk.</div>
+      <div class="sp-tags"><span class="sp-tag tg">ADX &gt; 25</span></div>
+    </div>
 
-      <div class="sp-card sg">
-        <div class="sp-top"><span class="sp-name">ADX Trend</span><span class="sp-badge sg">10 PTS</span></div>
-        <div class="sp-desc">Reduces overnight whipsaw risk.</div>
-        <div class="sp-tags"><span class="sp-tag tg">ADX &gt; 25</span></div>
-      </div>
-
-      <div class="sp-card sg">
-        <div class="sp-top"><span class="sp-name">52-Week High</span><span class="sp-badge sg">10 PTS</span></div>
-        <div class="sp-desc">Proximity to breakout zone.</div>
-        <div class="sp-tags"><span class="sp-tag tg">Within 5% → Full</span><span class="sp-tag">Within 10% → Half</span></div>
-      </div>
-
-    </div><!-- /wrap-momentum -->
+    <div class="sp-card sg">
+      <div class="sp-top"><span class="sp-name">52-Week High</span><span class="sp-badge sg">10 PTS</span></div>
+      <div class="sp-desc">Proximity to breakout zone.</div>
+      <div class="sp-tags"><span class="sp-tag tg">Within 5% → Full</span><span class="sp-tag">Within 10% → Half</span></div>
+    </div>
 
     <!-- PRICE ACTION -->
-    <div class="sp-section" onclick="toggleSection('price')">
-      <span>🕯 Price Action &amp; Structure</span>
-      <span class="sp-toggle-icon" id="icon-price">▼</span>
+    <div class="sp-section">🕯 Price Action &amp; Structure</div>
+
+    <div class="sp-card sg">
+      <div class="sp-top"><span class="sp-name">Price Breakout</span><span class="sp-badge sg">15 PTS</span></div>
+      <div class="sp-desc">Buyer dominance at close.</div>
+      <div class="sp-tags"><span class="sp-tag tg">Close in top 5–10% of range</span></div>
     </div>
-    <div class="sp-cards-wrap" id="wrap-price">
 
-      <div class="sp-card sg">
-        <div class="sp-top"><span class="sp-name">Price Breakout</span><span class="sp-badge sg">15 PTS</span></div>
-        <div class="sp-desc">Buyer dominance at close.</div>
-        <div class="sp-tags"><span class="sp-tag tg">Close in top 5–10% of range</span></div>
-      </div>
+    <div class="sp-card sg">
+      <div class="sp-top"><span class="sp-name">Candlestick Pattern</span><span class="sp-badge sg">+6–10 PTS</span></div>
+      <div class="sp-desc">High-confidence reversal/continuation candles.</div>
+      <div class="sp-tags"><span class="sp-tag tg">M-Star +10</span><span class="sp-tag tg">Engulfing +8</span><span class="sp-tag tg">Hammer +6</span></div>
+    </div>
 
-      <div class="sp-card sg">
-        <div class="sp-top"><span class="sp-name">Candlestick Pattern</span><span class="sp-badge sg">+6–10 PTS</span></div>
-        <div class="sp-desc">High-confidence reversal/continuation candles.</div>
-        <div class="sp-tags"><span class="sp-tag tg">M-Star +10</span><span class="sp-tag tg">Engulfing +8</span><span class="sp-tag tg">Hammer +6</span></div>
-      </div>
+    <div class="sp-card sg">
+      <div class="sp-top"><span class="sp-name">Gap-Up &amp; Hold</span><span class="sp-badge sg">+5–8 PTS</span></div>
+      <div class="sp-desc">Open gapped above prior close and held.</div>
+      <div class="sp-tags"><span class="sp-tag tg">≥1% gap + pos ≥60% → +8</span><span class="sp-tag">≥0.5% held → +5</span></div>
+    </div>
 
-      <div class="sp-card sg">
-        <div class="sp-top"><span class="sp-name">Gap-Up &amp; Hold</span><span class="sp-badge sg">+5–8 PTS</span></div>
-        <div class="sp-desc">Open gapped above prior close and held.</div>
-        <div class="sp-tags"><span class="sp-tag tg">≥1% gap + pos ≥60% → +8</span><span class="sp-tag">≥0.5% held → +5</span></div>
-      </div>
-
-      <div class="sp-card sg">
-        <div class="sp-top"><span class="sp-name">Relative Strength</span><span class="sp-badge sg">+5 PTS</span></div>
-        <div class="sp-desc">Outperformance vs the broader index.</div>
-        <div class="sp-tags"><span class="sp-tag tg">Daily gain &gt; Index</span></div>
-      </div>
-
-    </div><!-- /wrap-price -->
+    <div class="sp-card sg">
+      <div class="sp-top"><span class="sp-name">Relative Strength</span><span class="sp-badge sg">+5 PTS</span></div>
+      <div class="sp-desc">Outperformance vs the broader index.</div>
+      <div class="sp-tags"><span class="sp-tag tg">Daily gain &gt; Index</span></div>
+    </div>
 
     <!-- CONFIRMATION -->
-    <div class="sp-section" onclick="toggleSection('confirm')">
-      <span>🔗 Confirmation &amp; Alignment</span>
-      <span class="sp-toggle-icon" id="icon-confirm">▼</span>
+    <div class="sp-section">🔗 Confirmation &amp; Alignment</div>
+
+    <div class="sp-card sy">
+      <div class="sp-top"><span class="sp-name">Sector Alignment</span><span class="sp-badge sy">+7 PTS</span></div>
+      <div class="sp-desc">Bonus when sector index is also green on the day.</div>
+      <div class="sp-tags"><span class="sp-tag">e.g. Nifty Bank, XLK</span></div>
     </div>
-    <div class="sp-cards-wrap" id="wrap-confirm">
 
-      <div class="sp-card sy">
-        <div class="sp-top"><span class="sp-name">Sector Alignment</span><span class="sp-badge sy">+7 PTS</span></div>
-        <div class="sp-desc">Bonus when sector index is also green on the day.</div>
-        <div class="sp-tags"><span class="sp-tag">e.g. Nifty Bank, XLK</span></div>
-      </div>
-
-      <div class="sp-card sy">
-        <div class="sp-top"><span class="sp-name">Weekly MTF Confirm</span><span class="sp-badge sy">+8 PTS</span></div>
-        <div class="sp-desc">Weekly &amp; daily trends aligned. Reduces reversal risk.</div>
-        <div class="sp-tags"><span class="sp-tag">Daily close &gt; Weekly EMA20</span></div>
-      </div>
-
-    </div><!-- /wrap-confirm -->
+    <div class="sp-card sy">
+      <div class="sp-top"><span class="sp-name">Weekly MTF Confirm</span><span class="sp-badge sy">+8 PTS</span></div>
+      <div class="sp-desc">Weekly &amp; daily trends aligned. Reduces reversal risk.</div>
+      <div class="sp-tags"><span class="sp-tag">Daily close &gt; Weekly EMA20</span></div>
+    </div>
 
     <!-- RISK -->
-    <div class="sp-section" onclick="toggleSection('risk')">
-      <span>⚠ Risk &amp; Dynamic Levels</span>
-      <span class="sp-toggle-icon" id="icon-risk">▼</span>
+    <div class="sp-section">⚠ Risk &amp; Dynamic Levels</div>
+
+    <div class="sp-card sr">
+      <div class="sp-top"><span class="sp-name">ATR Penalty</span><span class="sp-badge sr">−40%</span></div>
+      <div class="sp-desc">Avoids chasing overextended stocks. Triggered if day's move exceeds 1.5× ATR.</div>
+      <div class="sp-tags"><span class="sp-tag tr">Move &gt; 1.5× ATR → penalty</span></div>
     </div>
-    <div class="sp-cards-wrap" id="wrap-risk">
 
-      <div class="sp-card sr">
-        <div class="sp-top"><span class="sp-name">ATR Penalty</span><span class="sp-badge sr">−40%</span></div>
-        <div class="sp-desc">Avoids chasing overextended stocks. Triggered if day's move exceeds 1.5× ATR.</div>
-        <div class="sp-tags"><span class="sp-tag tr">Move &gt; 1.5× ATR → penalty</span></div>
-      </div>
+    <div class="sp-card sc">
+      <div class="sp-top"><span class="sp-name">Stop Loss</span><span class="sp-badge sc">DYNAMIC</span></div>
+      <div class="sp-desc">Limits overnight gap risk. Tighter of the two values.</div>
+      <div class="sp-formula">max( Today's Low,  Close − 1×ATR )</div>
+    </div>
 
-      <div class="sp-card sc">
-        <div class="sp-top"><span class="sp-name">Stop Loss</span><span class="sp-badge sc">DYNAMIC</span></div>
-        <div class="sp-desc">Limits overnight gap risk. Tighter of the two values.</div>
-        <div class="sp-formula">max( Today's Low,  Close − 1×ATR )</div>
-      </div>
-
-      <div class="sp-card sc">
-        <div class="sp-top"><span class="sp-name">Target</span><span class="sp-badge sc">DYNAMIC</span></div>
-        <div class="sp-desc">Respects each stock's typical daily volatility range.</div>
-        <div class="sp-formula">Close + 1.5× ATR</div>
-      </div>
-
-    </div><!-- /wrap-risk -->
+    <div class="sp-card sc">
+      <div class="sp-top"><span class="sp-name">Target</span><span class="sp-badge sc">DYNAMIC</span></div>
+      <div class="sp-desc">Respects each stock's typical daily volatility range.</div>
+      <div class="sp-formula">Close + 1.5× ATR</div>
+    </div>
 
   </div>
 
@@ -754,11 +728,13 @@
     <span class="sp-chip sg">RS +5</span><span class="sp-sep">+</span>
     <span class="sp-chip sg">Weekly MTF +8</span><span class="sp-sep">+</span>
     <span class="sp-chip sg">Gap-Up +8</span><span class="sp-sep">=</span>
-    <span class="sp-chip sg" style="font-size:.72rem;padding:3px 10px">Max 138 PTS</span>
+    <span class="sp-chip sg" style="font-size:.76rem;padding:3px 10px">Max 138 PTS</span>
     <span class="sp-chip sr" style="margin-left:auto">ATR Penalty −40%</span>
     <span class="sp-chip sc">SL: Dynamic</span>
     <span class="sp-chip sc">Target: Dynamic</span>
   </div>
+
+  </div><!-- /scoring-body -->
 
   <!-- DISCLAIMER -->
   <div class="disc">
@@ -773,7 +749,7 @@
 <!-- FOOTER -->
 <div class="footer">
   Generated by BTST Screener · Python + yfinance + pandas-ta
-  &nbsp;|&nbsp; India: 02 Apr 2026, 04:20 AM IST &nbsp;·&nbsp; USA: 01 Apr 2026, 06:50 PM EST
+  &nbsp;|&nbsp; India: 02 Apr 2026, 04:31 AM IST &nbsp;·&nbsp; USA: 01 Apr 2026, 07:01 PM EST
   <br>
   Parameters: Vol Surge (20) · RSI (15) · MACD (15) · EMA (15) · Breakout (15) · ADX (10) · 52W (10) · Gap (+8) · Sector (+7) · Candle (+10) · RS (+5) · Weekly MTF (+8)
 </div>
@@ -781,9 +757,9 @@
 <script>
   // Timestamps per BTST tab; ORB shows both market times
   const times = {
-    india: { time: "04:20 AM", tz: "IST", date: "02 Apr 2026" },
-    usa:   { time: "06:50 PM", tz: "EST", date: "01 Apr 2026" },
-    orb:   { time: "04:20 AM", tz: "IST/EST", date: "02 Apr 2026" }
+    india: { time: "04:31 AM", tz: "IST", date: "02 Apr 2026" },
+    usa:   { time: "07:01 PM", tz: "EST", date: "01 Apr 2026" },
+    orb:   { time: "04:31 AM", tz: "IST/EST", date: "02 Apr 2026" }
   };
 
   function updateTime(tab) {
@@ -808,19 +784,19 @@
     updateTime(tab);
   }
 
-  // Scoring parameter section toggle
-  function toggleSection(id) {
-    const wrap = document.getElementById('wrap-' + id);
-    const icon = document.getElementById('icon-' + id);
-    const header = icon.closest('.sp-section');
-    if (wrap.classList.contains('collapsed')) {
-      wrap.classList.remove('collapsed');
-      icon.textContent = '▼';
-      header.classList.remove('collapsed');
+  // Scoring Parameters — single toggle for entire section
+  function toggleAllScoring() {
+    const body = document.getElementById('scoring-body');
+    const icon = document.getElementById('scoring-toggle-icon');
+    const sub  = document.getElementById('scoring-sub-hint');
+    if (body.classList.contains('open')) {
+      body.classList.remove('open');
+      icon.style.transform = 'rotate(-90deg)';
+      if (sub) sub.textContent = '· click to expand';
     } else {
-      wrap.classList.add('collapsed');
-      icon.textContent = '▶';
-      header.classList.add('collapsed');
+      body.classList.add('open');
+      icon.style.transform = 'rotate(0deg)';
+      if (sub) sub.textContent = '· click to collapse';
     }
   }
 
