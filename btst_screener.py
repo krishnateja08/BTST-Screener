@@ -36,9 +36,14 @@ from zoneinfo import ZoneInfo          # stdlib — Python 3.9+
 from tabulate import tabulate
 from colorama import Fore, Style, init
 from concurrent.futures import ThreadPoolExecutor, as_completed
+import threading
 
 warnings.filterwarnings("ignore")
 init(autoreset=True)
+
+# Global lock — prevents concurrent yf.download() calls from racing on
+# yfinance's internal shared _DFS dict (RuntimeError: dict changed size during iteration)
+_YF_LOCK = threading.Lock()
 
 # ══════════════════════════════════════════════════════════
 # SYMBOL LISTS
@@ -284,15 +289,16 @@ def check_market(market: str = "india") -> tuple[bool, float, float]:
     hdr(f"Market Health — {label.upper()}")
 
     try:
-        combined = yf.download(
-            [idx_sym, vix_sym],
-            period="5d",
-            interval="1d",
-            progress=False,
-            auto_adjust=True,
-            group_by="ticker",
-            threads=True,
-        )
+        with _YF_LOCK:
+            combined = yf.download(
+                [idx_sym, vix_sym],
+                period="5d",
+                interval="1d",
+                progress=False,
+                auto_adjust=True,
+                group_by="ticker",
+                threads=False,
+            )
         if isinstance(combined.columns, pd.MultiIndex):
             idx = combined[idx_sym].dropna()
             vix = combined[vix_sym].dropna()
@@ -335,16 +341,18 @@ def _batch_download(symbols: list) -> dict:
     """
     Download 1 year of OHLCV for all symbols in a single yf.download() call.
     Returns dict {symbol: DataFrame}.  1 year needed for 52-week high check.
+    Uses a global lock so concurrent India+USA scans don't race on yfinance internals.
     """
-    raw = yf.download(
-        symbols,
-        period="1y",
-        interval="1d",
-        progress=False,
-        auto_adjust=True,
-        group_by="ticker",
-        threads=True,
-    )
+    with _YF_LOCK:
+        raw = yf.download(
+            symbols,
+            period="1y",
+            interval="1d",
+            progress=False,
+            auto_adjust=True,
+            group_by="ticker",
+            threads=False,        # yfinance internal threading disabled — we manage concurrency
+        )
     result = {}
     for sym in symbols:
         try:
@@ -371,15 +379,16 @@ def fetch_sector_perf(market: str) -> dict[str, float]:
 
     print(f"  📊  Fetching sector data ({len(tickers)} indices/ETFs) …", flush=True)
     try:
-        raw = yf.download(
-            tickers,
-            period="5d",
-            interval="1d",
-            progress=False,
-            auto_adjust=True,
-            group_by="ticker",
-            threads=True,
-        )
+        with _YF_LOCK:
+            raw = yf.download(
+                tickers,
+                period="5d",
+                interval="1d",
+                progress=False,
+                auto_adjust=True,
+                group_by="ticker",
+                threads=False,
+            )
     except Exception:
         return {}
 
@@ -682,8 +691,9 @@ def score_orb_stock(symbol: str, sector_bonus: float = 0.0) -> dict | None:
     """
     try:
         # ── Fetch intraday 5-min data (2 days to guarantee today's bars) ──
-        raw = yf.download(symbol, period="2d", interval="5m",
-                          progress=False, auto_adjust=True)
+        with _YF_LOCK:
+            raw = yf.download(symbol, period="2d", interval="5m",
+                              progress=False, auto_adjust=True, threads=False)
         if isinstance(raw.columns, pd.MultiIndex):
             raw.columns = raw.columns.get_level_values(0)
         raw = raw.dropna()
@@ -818,21 +828,16 @@ def fetch_advance_decline(market: str) -> float:
     ad_sym = "^NYAD" if market == "usa" else "^NSEI"  # NYAD is a direct A/D line for NYSE
     try:
         if market == "usa":
-            raw = yf.download("^NYAD", period="5d", interval="1d",
-                              progress=False, auto_adjust=True)
+            with _YF_LOCK:
+                raw = yf.download("^NYAD", period="5d", interval="1d",
+                                  progress=False, auto_adjust=True, threads=False)
             if isinstance(raw.columns, pd.MultiIndex):
                 raw.columns = raw.columns.get_level_values(0)
             raw = raw.dropna()
             if len(raw) >= 2:
-                # NYAD is a cumulative A/D line; daily change = net advances
-                # Positive daily change = more advances than declines
                 today_chg = float(raw["Close"].iloc[-1]) - float(raw["Close"].iloc[-2])
-                # Convert to a meaningful ratio: >0 = breadth bullish
-                # We return 2.0 if strong advance day, 1.0 neutral, 0.5 weak
                 return 2.5 if today_chg > 500 else 1.8 if today_chg > 0 else 0.8
         else:
-            # For India, approximate using the fraction of Nifty 100 symbols that are up
-            # (computed after batch download — passed in externally, so return sentinel)
             return 0.0   # will be computed from cache in run_screener
     except Exception:
         pass
@@ -929,15 +934,16 @@ def _batch_download_intraday(symbols: list) -> dict:
 
     print(f"  📥  Batch-fetching 5-min bars for {len(symbols)} tickers …", flush=True)
     try:
-        raw = yf.download(
-            symbols,
-            period="2d",
-            interval="5m",
-            progress=False,
-            auto_adjust=True,
-            group_by="ticker",
-            threads=True,
-        )
+        with _YF_LOCK:
+            raw = yf.download(
+                symbols,
+                period="2d",
+                interval="5m",
+                progress=False,
+                auto_adjust=True,
+                group_by="ticker",
+                threads=False,
+            )
     except Exception as e:
         print(f"  ⚠  Intraday batch download failed: {e}")
         return {}
