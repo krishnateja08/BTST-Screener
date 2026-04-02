@@ -255,6 +255,11 @@ EST = ZoneInfo("America/New_York")
 
 ORB_BARS = 3          # number of 5-min bars defining the opening range
 
+# After this many hours from market open, ORB results are stale/unactionable.
+# India open 9:15 AM IST → valid until ~1:15 PM IST
+# USA   open 9:30 AM EST → valid until ~1:30 PM EST
+ORB_SCAN_WINDOW_HOURS = 4
+
 ORB_WEIGHTS = {
     "breakout_strength": 25,   # how far price is above ORB high
     "volume_surge":      20,   # current bar vol vs ORB avg vol
@@ -762,6 +767,7 @@ def score_orb_stock(symbol: str, sector_bonus: float = 0.0) -> dict | None:
     Download today's 5-min bars, identify the Opening Range (first ORB_BARS bars),
     and score bullish breakouts above the ORB High.
     Returns None if no breakout or insufficient data.
+    Same fixes as score_orb_stock_from_df — uses best breakout bar, not last bar.
     """
     try:
         # ── Fetch intraday 5-min data (2 days to guarantee today's bars) ──
@@ -777,7 +783,6 @@ def score_orb_stock(symbol: str, sector_bonus: float = 0.0) -> dict | None:
         # ── Localise index to market timezone ────────────────────────
         is_india = symbol.endswith(".NS")
         tz       = IST if is_india else EST
-        currency = "₹" if is_india else "$"
 
         if raw.index.tzinfo is None:
             raw.index = raw.index.tz_localize("UTC")
@@ -790,20 +795,26 @@ def score_orb_stock(symbol: str, sector_bonus: float = 0.0) -> dict | None:
             return None          # market not open long enough yet
 
         # ── Opening Range (first ORB_BARS bars) ──────────────────────
-        orb     = df.iloc[:ORB_BARS]
-        orb_high  = float(orb["High"].max())
-        orb_low   = float(orb["Low"].min())
-        orb_range = orb_high - orb_low
+        orb           = df.iloc[:ORB_BARS]
+        orb_high      = float(orb["High"].max())
+        orb_low       = float(orb["Low"].min())
+        orb_range     = orb_high - orb_low
         orb_range_pct = (orb_range / orb_high * 100) if orb_high > 0 else 0.0
 
-        # ── Current (latest) bar ─────────────────────────────────────
-        cur_bar = df.iloc[-1]
-        price   = float(cur_bar["Close"])
-        cur_vol = float(cur_bar["Volume"])
+        # ── Fix 1 & 2: Find BEST breakout bar after ORB ──────────────
+        post_orb      = df.iloc[ORB_BARS:]
+        if post_orb.empty:
+            return None
+        breakout_bars = post_orb[post_orb["High"] > orb_high]
+        if breakout_bars.empty:
+            return None   # price never crossed ORB high today
 
-        # ── Breakout condition: price must be ABOVE ORB High ─────────
-        if price <= orb_high:
-            return None          # not yet broken out (or broken down)
+        brk_bar_idx = breakout_bars["Close"].idxmax()
+        brk_bar     = df.loc[brk_bar_idx]
+        brk_bar_pos = df.index.get_loc(brk_bar_idx)
+
+        price   = float(brk_bar["Close"])
+        brk_vol = float(brk_bar["Volume"])    # Fix 2: breakout bar volume
 
         # ── 1. Breakout strength ──────────────────────────────────────
         brk_pct = (price - orb_high) / orb_high * 100
@@ -811,21 +822,23 @@ def score_orb_stock(symbol: str, sector_bonus: float = 0.0) -> dict | None:
                    ORB_WEIGHTS["breakout_strength"] * 0.72 if brk_pct >= 0.5 else
                    ORB_WEIGHTS["breakout_strength"] * 0.48)
 
-        # ── 2. Volume surge (current bar vs ORB avg) ─────────────────
+        # ── 2. Volume surge at breakout bar vs ORB avg ───────────────
         orb_avg_vol = float(orb["Volume"].mean())
-        vol_ratio   = cur_vol / orb_avg_vol if orb_avg_vol > 0 else 1.0
+        vol_ratio   = brk_vol / orb_avg_vol if orb_avg_vol > 0 else 1.0
         s_vol = (ORB_WEIGHTS["volume_surge"]        if vol_ratio >= 2.0 else
                  ORB_WEIGHTS["volume_surge"] * 0.70 if vol_ratio >= 1.5 else
                  ORB_WEIGHTS["volume_surge"] * 0.40 if vol_ratio >= 1.2 else 0)
 
-        # ── 3. RSI on 5-min bars ──────────────────────────────────────
-        rsi_s = ta.rsi(df["Close"], length=14)
+        # ── 3. RSI at breakout bar position (Fix 5) ──────────────────
+        df_to_brk = df.iloc[:brk_bar_pos + 1]
+        rsi_s = ta.rsi(df_to_brk["Close"], length=9)
         rsi   = float(rsi_s.iloc[-1]) if rsi_s is not None and not rsi_s.empty else 50.0
         s_rsi = (ORB_WEIGHTS["rsi_5m"]        if rsi >= 55 else
                  ORB_WEIGHTS["rsi_5m"] * 0.53 if rsi >= 50 else 0)
 
-        # ── 4. ADX on 5-min bars ──────────────────────────────────────
-        adx_df  = ta.adx(df["High"], df["Low"], df["Close"], length=14)
+        # ── 4. ADX at breakout bar position (Fix 5) ──────────────────
+        adx_df  = ta.adx(df_to_brk["High"], df_to_brk["Low"],
+                         df_to_brk["Close"], length=7)
         adx_val = 0.0
         s_adx   = 0
         if adx_df is not None and not adx_df.empty:
@@ -835,32 +848,34 @@ def score_orb_stock(symbol: str, sector_bonus: float = 0.0) -> dict | None:
                 s_adx   = (ORB_WEIGHTS["adx_5m"]        if adx_val >= 25 else
                            ORB_WEIGHTS["adx_5m"] * 0.50 if adx_val >= 20 else 0)
 
-        # ── 5. ORB range quality (tighter = cleaner breakout) ────────
+        # ── 5. ORB range quality ──────────────────────────────────────
         s_range = (ORB_WEIGHTS["orb_range_tight"]        if orb_range_pct <= 1.0 else
                    ORB_WEIGHTS["orb_range_tight"] * 0.70 if orb_range_pct <= 1.5 else
                    ORB_WEIGHTS["orb_range_tight"] * 0.40 if orb_range_pct <= 2.0 else 0)
 
         # ── 6. First bar of the day was bullish ───────────────────────
-        first = df.iloc[0]
+        first    = df.iloc[0]
         s_candle = (ORB_WEIGHTS["open_candle_bull"]
                     if float(first["Close"]) > float(first["Open"]) else 0)
 
-        # ── 7. Sector alignment bonus (passed in) ─────────────────────
         total = s_brk + s_vol + s_rsi + s_adx + s_range + s_candle + sector_bonus
 
-        # ── ATR for stop-loss ─────────────────────────────────────────
-        atr_s   = ta.atr(df["High"], df["Low"], df["Close"], length=14)
+        # ── ATR at breakout bar ───────────────────────────────────────
+        atr_s   = ta.atr(df_to_brk["High"], df_to_brk["Low"],
+                         df_to_brk["Close"], length=7)
         atr_val = (float(atr_s.iloc[-1])
                    if atr_s is not None and not atr_s.empty else orb_range)
 
         # ── Stop Loss and Target ──────────────────────────────────────
-        # SL  = ORB Low (clean invalidation level)  OR  price – ATR, whichever is tighter
-        # Tgt = ORB High + 1.5 × ORB Range  (classic first extension)
-        stop_loss = round(max(orb_low, price - atr_val), 2)
-        target    = round(orb_high + 1.5 * orb_range, 2)
-        risk      = price - stop_loss
-        reward    = target - price
-        rr_ratio  = round(reward / risk, 2) if risk > 0 else 0.0
+        stop_loss     = round(max(orb_low, price - atr_val), 2)
+        target        = round(orb_high + 1.5 * orb_range, 2)
+        risk          = price - stop_loss
+        if risk <= 0:
+            return None
+        reward        = target - price
+        rr_ratio      = round(reward / risk, 2) if reward > 0 else 0.0
+        current_price = float(df.iloc[-1]["Close"])
+        status        = "Target Hit ✅" if current_price >= target else "Active"
 
         clean_sym = (symbol.replace(".NS", "")
                            .replace("-", ".")
@@ -868,7 +883,9 @@ def score_orb_stock(symbol: str, sector_bonus: float = 0.0) -> dict | None:
 
         return {
             "Symbol":       clean_sym,
+            "Status":       status,
             "Price":        round(price, 2),
+            "Last_Price":   round(current_price, 2),
             "ORB_High":     round(orb_high, 2),
             "ORB_Low":      round(orb_low, 2),
             "ORB_Range%":   round(orb_range_pct, 2),
@@ -1002,9 +1019,23 @@ def _batch_download_intraday(symbols: list) -> dict:
     """
     Download today's 5-min bars for ALL symbols in a single yf.download() call.
     Returns {symbol: DataFrame} with today's bars only, tz-aware index.
+    Warns if called outside the ORB valid window (first ORB_SCAN_WINDOW_HOURS after open).
     """
     is_india = any(s.endswith(".NS") for s in symbols)
     tz = IST if is_india else EST
+
+    # ── Time-of-day guard: warn if outside ORB valid window ──────────
+    now_local  = datetime.now(tz=tz)
+    open_hour  = 9 if is_india else 9
+    open_min   = 15 if is_india else 30
+    market_open = now_local.replace(hour=open_hour, minute=open_min,
+                                    second=0, microsecond=0)
+    hours_since_open = (now_local - market_open).total_seconds() / 3600
+    if hours_since_open > ORB_SCAN_WINDOW_HOURS:
+        print(f"  {Fore.YELLOW}⚠  ORB Warning: Running {hours_since_open:.1f}h after market open. "
+              f"Breakout bars are from earlier today — results are historical, not live.{Style.RESET_ALL}")
+    elif hours_since_open < 0:
+        print(f"  {Fore.YELLOW}⚠  ORB Warning: Market not yet open. No intraday bars available.{Style.RESET_ALL}")
 
     print(f"  📥  Batch-fetching 5-min bars for {len(symbols)} tickers …", flush=True)
     try:
@@ -1045,7 +1076,15 @@ def _batch_download_intraday(symbols: list) -> dict:
 def score_orb_stock_from_df(symbol: str, df: pd.DataFrame, sector_bonus: float = 0.0) -> dict | None:
     """
     Score ORB for a single stock using pre-downloaded 5-min DataFrame.
-    Same logic as score_orb_stock() but no network I/O.
+
+    Fixes applied vs original:
+    1. Breakout detection scans ALL post-ORB bars for the best breakout bar
+       (not just the last bar). Catches stocks that broke out in the morning
+       but pulled back by the time screener runs at EOD.
+    2. Volume check uses the BREAKOUT bar's volume, not the last bar's volume.
+       EOD bars have naturally low volume and would fail every vol filter.
+    3. RSI and ADX computed at the breakout bar index, not at EOD.
+    4. Stocks that already hit target are shown as "Target Hit" instead of dropped.
     """
     try:
         is_india  = symbol.endswith(".NS")
@@ -1055,30 +1094,51 @@ def score_orb_stock_from_df(symbol: str, df: pd.DataFrame, sector_bonus: float =
         orb_range = orb_high - orb_low
         orb_range_pct = (orb_range / orb_high * 100) if orb_high > 0 else 0.0
 
-        cur_bar = df.iloc[-1]
-        price   = float(cur_bar["Close"])
-        cur_vol = float(cur_bar["Volume"])
+        # ── Post-ORB bars (everything after the opening range) ───────
+        post_orb = df.iloc[ORB_BARS:]
+        if post_orb.empty:
+            return None
 
-        if price <= orb_high:
-            return None   # no breakout
+        # ── Fix 1 & 2: Find the BEST breakout bar (highest High above ORB high)
+        # instead of using the last bar. This catches morning breakouts even when
+        # the screener is run at EOD and price has since pulled back.
+        breakout_bars = post_orb[post_orb["High"] > orb_high]
+        if breakout_bars.empty:
+            return None   # price never crossed ORB high at any point today
 
+        # Best breakout bar = the bar with the highest close above ORB high
+        brk_bar_idx = breakout_bars["Close"].idxmax()
+        brk_bar     = df.loc[brk_bar_idx]
+        brk_bar_pos = df.index.get_loc(brk_bar_idx)   # integer position in df
+
+        price   = float(brk_bar["Close"])
+        brk_vol = float(brk_bar["Volume"])             # Fix 2: use breakout bar volume
+
+        # ── 1. Breakout strength (measured from breakout bar close) ──
         brk_pct = (price - orb_high) / orb_high * 100
         s_brk   = (ORB_WEIGHTS["breakout_strength"]        if brk_pct >= 1.0 else
                    ORB_WEIGHTS["breakout_strength"] * 0.72 if brk_pct >= 0.5 else
                    ORB_WEIGHTS["breakout_strength"] * 0.48)
 
+        # ── 2. Volume surge at breakout bar vs ORB avg ───────────────
         orb_avg_vol = float(orb["Volume"].mean())
-        vol_ratio   = cur_vol / orb_avg_vol if orb_avg_vol > 0 else 1.0
+        vol_ratio   = brk_vol / orb_avg_vol if orb_avg_vol > 0 else 1.0
         s_vol = (ORB_WEIGHTS["volume_surge"]        if vol_ratio >= 2.0 else
                  ORB_WEIGHTS["volume_surge"] * 0.70 if vol_ratio >= 1.5 else
                  ORB_WEIGHTS["volume_surge"] * 0.40 if vol_ratio >= 1.2 else 0)
 
-        rsi_s = ta.rsi(df["Close"], length=14)
+        # ── 3. RSI at breakout bar position (Fix 5) ──────────────────
+        # Compute RSI on bars up to and including the breakout bar,
+        # so momentum reflects conditions at the moment of breakout.
+        df_to_brk = df.iloc[:brk_bar_pos + 1]
+        rsi_s = ta.rsi(df_to_brk["Close"], length=9)   # length=9 suits intraday 5-min
         rsi   = float(rsi_s.iloc[-1]) if rsi_s is not None and not rsi_s.empty else 50.0
         s_rsi = (ORB_WEIGHTS["rsi_5m"]        if rsi >= 55 else
                  ORB_WEIGHTS["rsi_5m"] * 0.53 if rsi >= 50 else 0)
 
-        adx_df  = ta.adx(df["High"], df["Low"], df["Close"], length=14)
+        # ── 4. ADX at breakout bar position (Fix 5) ──────────────────
+        adx_df  = ta.adx(df_to_brk["High"], df_to_brk["Low"],
+                         df_to_brk["Close"], length=7)
         adx_val = 0.0
         s_adx   = 0
         if adx_df is not None and not adx_df.empty:
@@ -1088,45 +1148,58 @@ def score_orb_stock_from_df(symbol: str, df: pd.DataFrame, sector_bonus: float =
                 s_adx   = (ORB_WEIGHTS["adx_5m"]        if adx_val >= 25 else
                            ORB_WEIGHTS["adx_5m"] * 0.50 if adx_val >= 20 else 0)
 
+        # ── 5. ORB range quality (tighter = cleaner breakout) ────────
         s_range = (ORB_WEIGHTS["orb_range_tight"]        if orb_range_pct <= 1.0 else
                    ORB_WEIGHTS["orb_range_tight"] * 0.70 if orb_range_pct <= 1.5 else
                    ORB_WEIGHTS["orb_range_tight"] * 0.40 if orb_range_pct <= 2.0 else 0)
 
+        # ── 6. First bar of the day was bullish ───────────────────────
         first    = df.iloc[0]
         s_candle = (ORB_WEIGHTS["open_candle_bull"]
                     if float(first["Close"]) > float(first["Open"]) else 0)
 
         total = s_brk + s_vol + s_rsi + s_adx + s_range + s_candle + sector_bonus
 
-        atr_s   = ta.atr(df["High"], df["Low"], df["Close"], length=14)
+        # ── ATR at breakout bar ───────────────────────────────────────
+        atr_s   = ta.atr(df_to_brk["High"], df_to_brk["Low"],
+                         df_to_brk["Close"], length=7)
         atr_val = (float(atr_s.iloc[-1])
                    if atr_s is not None and not atr_s.empty else orb_range)
 
+        # ── Stop Loss and Target ──────────────────────────────────────
         stop_loss = round(max(orb_low, price - atr_val), 2)
         target    = round(orb_high + 1.5 * orb_range, 2)
         risk      = price - stop_loss
-        reward    = target - price
-        rr_ratio  = round(reward / risk, 2) if risk > 0 else 0.0
+
+        # Fix 3: if price already exceeded target, show as "Target Hit" not drop it
+        current_price = float(df.iloc[-1]["Close"])   # actual last price for display
+        if risk <= 0:
+            return None   # stop-loss is above entry — invalid setup
+        reward   = target - price
+        rr_ratio = round(reward / risk, 2) if reward > 0 else 0.0
+        status   = "Target Hit ✅" if current_price >= target else "Active"
 
         clean_sym = (symbol.replace(".NS", "")
                            .replace("-", ".")
                            .replace("BRK.B", "BRK-B"))
 
         return {
-            "Symbol":       clean_sym,
-            "Price":        round(price, 2),
-            "ORB_High":     round(orb_high, 2),
-            "ORB_Low":      round(orb_low, 2),
-            "ORB_Range%":   round(orb_range_pct, 2),
-            "Brk_Pct":      round(brk_pct, 2),
-            "Vol_Ratio":    round(vol_ratio, 2),
-            "RSI_5m":       round(rsi, 1),
-            "ADX_5m":       round(adx_val, 1),
-            "Sector_Align": sector_bonus > 0,
-            "Stop_Loss":    stop_loss,
-            "Target":       target,
-            "RR_Ratio":     rr_ratio,
-            "ORB_Score":    round(total, 1),
+            "Symbol":        clean_sym,
+            "Status":        status,
+            "Price":         round(price, 2),       # breakout bar close
+            "Last_Price":    round(current_price, 2),  # current EOD price
+            "ORB_High":      round(orb_high, 2),
+            "ORB_Low":       round(orb_low, 2),
+            "ORB_Range%":    round(orb_range_pct, 2),
+            "Brk_Pct":       round(brk_pct, 2),
+            "Vol_Ratio":     round(vol_ratio, 2),
+            "RSI_5m":        round(rsi, 1),
+            "ADX_5m":        round(adx_val, 1),
+            "Sector_Align":  sector_bonus > 0,
+            "Stop_Loss":     stop_loss,
+            "Target":        target,
+            "RR_Ratio":      rr_ratio,
+            "ORB_Score":     round(total, 1),
         }
     except Exception as e:
         print(f"  {Fore.YELLOW}⚠  ORB skip {symbol}: {e}{Style.RESET_ALL}")
@@ -1179,16 +1252,31 @@ def run_orb_screener(symbols: list, label: str,
 
 
 def filter_and_rank_orb(df: pd.DataFrame) -> pd.DataFrame:
-    """Filter ORB candidates: valid R:R, decent volume, momentum; rank by score."""
+    """
+    Filter ORB candidates: valid R:R, decent volume, momentum; rank by score.
+    'Target Hit' stocks bypass the RR filter — they already worked, always show them.
+    """
     if df.empty:
         return df
-    f = df[
-        (df["RSI_5m"]   >= 50) &
-        (df["Vol_Ratio"] >= 1.2) &
-        (df["RR_Ratio"]  >= 1.5)
+
+    # Separate "Target Hit" rows — always include these regardless of RR
+    target_hit = df[df.get("Status", pd.Series(dtype=str)) == "Target Hit ✅"].copy() \
+        if "Status" in df.columns else pd.DataFrame()
+
+    # Active breakouts must pass quality filters
+    active = df[df.get("Status", pd.Series(dtype=str)) != "Target Hit ✅"].copy() \
+        if "Status" in df.columns else df.copy()
+
+    active_filtered = active[
+        (active["RSI_5m"]   >= 50) &
+        (active["Vol_Ratio"] >= 1.2) &
+        (active["RR_Ratio"]  >= 1.5)
     ].copy()
-    f.sort_values("ORB_Score", ascending=False, inplace=True)
-    return f.head(15)
+
+    # Combine: target hits first (best signal), then active breakouts by score
+    combined = pd.concat([target_hit, active_filtered], ignore_index=True)
+    combined.sort_values("ORB_Score", ascending=False, inplace=True)
+    return combined.head(15)
 
 
 # ══════════════════════════════════════════════════════════
