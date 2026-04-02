@@ -275,6 +275,12 @@ def hdr(msg):
     print(f"\n{Fore.CYAN}{'─'*62}\n  {msg}\n{'─'*62}{Style.RESET_ALL}")
 
 
+def _flatten(df):
+    if isinstance(df.columns, pd.MultiIndex):
+        df.columns = df.columns.get_level_values(0)
+    return df
+
+
 def _load_prev_scores(prefix: str, date_str: str) -> dict[str, float]:
     """
     Load the most recent previous day's top CSV to get prior BTST scores.
@@ -291,7 +297,7 @@ def _load_prev_scores(prefix: str, date_str: str) -> dict[str, float]:
         except FileNotFoundError:
             continue
         except Exception:
-            continue   # malformed CSV — try the next day back, don't stop
+            break
     return {}
 
 
@@ -307,7 +313,7 @@ def check_market(market: str = "india") -> tuple[bool, float, float]:
     idx_sym = INDIA_INDEX if market == "india" else USA_INDEX
     vix_sym = INDIA_VIX   if market == "india" else USA_VIX
     label   = "Nifty 50"  if market == "india" else "S&P 500"
-    vix_thr = 25          if market == "india" else 20   # India VIX >25 is genuinely elevated
+    vix_thr = 20          if market == "india" else 20
 
     hdr(f"Market Health — {label.upper()}")
 
@@ -463,10 +469,10 @@ def score_stock_from_df(symbol: str, df: pd.DataFrame,
         weekday    = df.index[-1].weekday() if hasattr(df.index[-1], "weekday") else -1
 
         if weekday == 4 and len(df) >= 10:
-            # Friday RVOL: compare against last 4 Friday volumes (including today at -1)
+            # Friday RVOL: compare against last 4 Friday volumes
             friday_vols = [
                 float(df["Volume"].iloc[i])
-                for i in range(-1, -len(df)-1, -1)
+                for i in range(-2, -len(df)-1, -1)
                 if hasattr(df.index[i], "weekday") and df.index[i].weekday() == 4
             ][:4]
             avg_vol = sum(friday_vols) / len(friday_vols) if friday_vols else avg_vol_10
@@ -618,6 +624,18 @@ def score_stock_from_df(symbol: str, df: pd.DataFrame,
         except Exception:
             pass
 
+        # ── Enhancement 3: Smart ATR penalty ─────────────────────
+        # Standard: penalise big moves that overextend.
+        # Exception: if vol_ratio > 3.0 (institutional breakaway gap), skip penalty
+        # because high-volume breakouts have strong follow-through overnight.
+        total   = s_vol + s_rsi + s_macd + s_ema + s_brk + s_52w + s_adx
+        atr_pct = (atr_val / close * 100) if close > 0 else 4.0
+        if day_chg > max(1.5 * atr_pct, 4.0):
+            if vol_ratio >= 3.0:
+                pass   # breakaway gap on massive volume — do NOT penalise
+            else:
+                total *= 0.6
+
         # ── Gap-up and hold ───────────────────────────────────────
         gap_pct  = 0.0
         gap_held = False
@@ -633,20 +651,8 @@ def score_stock_from_df(symbol: str, df: pd.DataFrame,
         except Exception:
             pass
 
-        # ── Enhancement 3: Smart ATR penalty ─────────────────────
-        # Standard: penalise big moves that overextend.
-        # Exception: if vol_ratio > 3.0 (institutional breakaway gap), skip penalty
-        # because high-volume breakouts have strong follow-through overnight.
-        # NOTE: ALL additive components are summed FIRST so the penalty is applied uniformly.
-        total   = s_vol + s_rsi + s_macd + s_ema + s_brk + s_52w + s_adx
-        total  += sector_bonus + s_candle + s_marubozu + s_rs + s_mtf + s_gap
-
-        atr_pct = (atr_val / close * 100) if close > 0 else 4.0
-        if day_chg > max(1.5 * atr_pct, 4.0):
-            if vol_ratio >= 3.0:
-                pass   # breakaway gap on massive volume — do NOT penalise
-            else:
-                total *= 0.6
+        # ── Additive bonuses (applied after penalty) ─────────────
+        total += sector_bonus + s_candle + s_marubozu + s_rs + s_mtf + s_gap
 
         # ── Enhancement 4 cont: final-hour fade penalty ───────────
         if final_hr_fade:
@@ -670,13 +676,6 @@ def score_stock_from_df(symbol: str, df: pd.DataFrame,
         else:
             total *= MKT_MULT_WEAK     # clearly weak: –20%
 
-        # ── Guard: combined penalties floor ───────────────────────
-        # Stacked multipliers (fade × breadth × market direction) can compound to
-        # ~0.54 on the worst days, suppressing every stock below meaningful thresholds.
-        # Cap the floor at 60% of the pre-penalty total to preserve ranking signal.
-        # (This does not boost scores — it just prevents over-suppression.)
-        total = max(total, 0.0)   # ensure non-negative after all multipliers
-
         # ── Entry Quality Flag ────────────────────────────────────
         # Flag overextended entries: stock too far above EMA20 (proxy for VWAP)
         # OR large single-day move without volume confirmation.
@@ -694,9 +693,9 @@ def score_stock_from_df(symbol: str, df: pd.DataFrame,
         target_atr  = close + 1.5 * atr_val
         target_pct3 = close * 1.03
         target      = round(min(target_atr, target_pct3), 2)
-        # Conservative SL cap: never risk more than -2% (floor, not ceiling — use min)
+        # Conservative SL: also cap loss at –2% to enforce discipline
         sl_pct2     = close * 0.98
-        stop_loss   = round(min(stop_loss, sl_pct2), 2)
+        stop_loss   = round(max(stop_loss, sl_pct2), 2)
         risk        = close - stop_loss
         reward      = target - close
         rr_ratio    = round(reward / risk, 2) if risk > 0 else 0.0
@@ -711,10 +710,9 @@ def score_stock_from_df(symbol: str, df: pd.DataFrame,
         else:
             conviction = "WEAK"
 
-        clean_sym = symbol.replace(".NS", "")
-        # Handle BRK-B explicitly BEFORE replacing dashes, to avoid mangling it
-        if clean_sym != "BRK-B":
-            clean_sym = clean_sym.replace("-", ".")
+        clean_sym = (symbol.replace(".NS", "")
+                           .replace("-", ".")
+                           .replace("BRK.B", "BRK-B"))
 
         return {
             "Symbol":             clean_sym,
@@ -821,13 +819,13 @@ def score_orb_stock(symbol: str, sector_bonus: float = 0.0) -> dict | None:
                  ORB_WEIGHTS["volume_surge"] * 0.40 if vol_ratio >= 1.2 else 0)
 
         # ── 3. RSI on 5-min bars ──────────────────────────────────────
-        rsi_s = ta.rsi(df["Close"], length=9)   # length=9 suits intraday (14 needs 28+ bars)
+        rsi_s = ta.rsi(df["Close"], length=14)
         rsi   = float(rsi_s.iloc[-1]) if rsi_s is not None and not rsi_s.empty else 50.0
         s_rsi = (ORB_WEIGHTS["rsi_5m"]        if rsi >= 55 else
                  ORB_WEIGHTS["rsi_5m"] * 0.53 if rsi >= 50 else 0)
 
         # ── 4. ADX on 5-min bars ──────────────────────────────────────
-        adx_df  = ta.adx(df["High"], df["Low"], df["Close"], length=7)  # shorter for 5-min
+        adx_df  = ta.adx(df["High"], df["Low"], df["Close"], length=14)
         adx_val = 0.0
         s_adx   = 0
         if adx_df is not None and not adx_df.empty:
@@ -851,7 +849,7 @@ def score_orb_stock(symbol: str, sector_bonus: float = 0.0) -> dict | None:
         total = s_brk + s_vol + s_rsi + s_adx + s_range + s_candle + sector_bonus
 
         # ── ATR for stop-loss ─────────────────────────────────────────
-        atr_s   = ta.atr(df["High"], df["Low"], df["Close"], length=7)  # shorter for 5-min
+        atr_s   = ta.atr(df["High"], df["Low"], df["Close"], length=14)
         atr_val = (float(atr_s.iloc[-1])
                    if atr_s is not None and not atr_s.empty else orb_range)
 
@@ -862,14 +860,11 @@ def score_orb_stock(symbol: str, sector_bonus: float = 0.0) -> dict | None:
         target    = round(orb_high + 1.5 * orb_range, 2)
         risk      = price - stop_loss
         reward    = target - price
-        # Guard: if price has already run past the ORB target, reward goes negative — skip
-        if reward <= 0 or risk <= 0:
-            return None
-        rr_ratio  = round(reward / risk, 2)
+        rr_ratio  = round(reward / risk, 2) if risk > 0 else 0.0
 
-        clean_sym = symbol.replace(".NS", "")
-        if clean_sym != "BRK-B":
-            clean_sym = clean_sym.replace("-", ".")
+        clean_sym = (symbol.replace(".NS", "")
+                           .replace("-", ".")
+                           .replace("BRK.B", "BRK-B"))
 
         return {
             "Symbol":       clean_sym,
@@ -904,7 +899,7 @@ def fetch_advance_decline(market: str) -> float:
     Returns float ratio (advances/declines). Returns 0.0 on failure (treated as unknown).
     """
     # Best available A/D proxies on Yahoo Finance
-    # NYAD is a direct cumulative A/D line for NYSE
+    ad_sym = "^NYAD" if market == "usa" else "^NSEI"  # NYAD is a direct A/D line for NYSE
     try:
         if market == "usa":
             with _YF_LOCK:
@@ -1078,12 +1073,12 @@ def score_orb_stock_from_df(symbol: str, df: pd.DataFrame, sector_bonus: float =
                  ORB_WEIGHTS["volume_surge"] * 0.70 if vol_ratio >= 1.5 else
                  ORB_WEIGHTS["volume_surge"] * 0.40 if vol_ratio >= 1.2 else 0)
 
-        rsi_s = ta.rsi(df["Close"], length=9)   # length=9 suits intraday 5-min (14 needs 28+ bars)
+        rsi_s = ta.rsi(df["Close"], length=14)
         rsi   = float(rsi_s.iloc[-1]) if rsi_s is not None and not rsi_s.empty else 50.0
         s_rsi = (ORB_WEIGHTS["rsi_5m"]        if rsi >= 55 else
                  ORB_WEIGHTS["rsi_5m"] * 0.53 if rsi >= 50 else 0)
 
-        adx_df  = ta.adx(df["High"], df["Low"], df["Close"], length=7)  # shorter ADX for 5-min
+        adx_df  = ta.adx(df["High"], df["Low"], df["Close"], length=14)
         adx_val = 0.0
         s_adx   = 0
         if adx_df is not None and not adx_df.empty:
@@ -1103,7 +1098,7 @@ def score_orb_stock_from_df(symbol: str, df: pd.DataFrame, sector_bonus: float =
 
         total = s_brk + s_vol + s_rsi + s_adx + s_range + s_candle + sector_bonus
 
-        atr_s   = ta.atr(df["High"], df["Low"], df["Close"], length=7)  # shorter ATR for 5-min
+        atr_s   = ta.atr(df["High"], df["Low"], df["Close"], length=14)
         atr_val = (float(atr_s.iloc[-1])
                    if atr_s is not None and not atr_s.empty else orb_range)
 
@@ -1111,14 +1106,11 @@ def score_orb_stock_from_df(symbol: str, df: pd.DataFrame, sector_bonus: float =
         target    = round(orb_high + 1.5 * orb_range, 2)
         risk      = price - stop_loss
         reward    = target - price
-        # Guard: if breakout has already run past the target, reward is negative — skip
-        if reward <= 0 or risk <= 0:
-            return None
-        rr_ratio  = round(reward / risk, 2)
+        rr_ratio  = round(reward / risk, 2) if risk > 0 else 0.0
 
-        clean_sym = symbol.replace(".NS", "")
-        if clean_sym != "BRK-B":
-            clean_sym = clean_sym.replace("-", ".")
+        clean_sym = (symbol.replace(".NS", "")
+                           .replace("-", ".")
+                           .replace("BRK.B", "BRK-B"))
 
         return {
             "Symbol":       clean_sym,
@@ -1346,7 +1338,7 @@ def _rows(df: pd.DataFrame, currency: str = "₹",
 
         sc  = row["BTST_Score"]
         bc  = "#00e676" if sc >= 70 else "#ffca28" if sc >= 50 else "#ff5252"
-        pct = min(sc / 138 * 100, 100)   # max ≈138 pts
+        pct = min(sc / 130 * 100, 100)   # new max ≈130 pts
 
         # ── 52W high badge ───────────────────────────────────────
         near52  = row.get("Near_52W_High", False)
@@ -1732,7 +1724,7 @@ def generate_html_report(
   <div class="market-pills active" id="pills-india">
     <div class="pill"><div class="dot live" style="background:{india_m_col}"></div>Market:&nbsp;<strong style="color:{india_m_col}">{'BULLISH' if india_ok else 'CAUTION'}</strong></div>
     <div class="pill"><div class="dot" style="background:#40c4ff"></div>Nifty 50:&nbsp;<strong style="color:#40c4ff">{'+' if india_chg>=0 else ''}{india_chg:.2f}%</strong></div>
-    <div class="pill"><div class="dot" style="background:{'#00e676' if india_vix<25 else '#ff5252'}"></div>India VIX:&nbsp;<strong style="color:{'#00e676' if india_vix<25 else '#ff5252'}">{india_vix:.2f}</strong></div>
+    <div class="pill"><div class="dot" style="background:{'#00e676' if india_vix<20 else '#ff5252'}"></div>India VIX:&nbsp;<strong style="color:{'#00e676' if india_vix<20 else '#ff5252'}">{india_vix:.2f}</strong></div>
     <div class="pill"><div class="dot" style="background:#7d8590"></div>Scanned:&nbsp;<strong style="color:#e6edf3">{len(india_full)}</strong></div>
     <div class="pill"><div class="dot" style="background:#7d8590"></div>Candidates:&nbsp;<strong style="color:#e6edf3">{len(india_top)}</strong></div>
   </div>
@@ -2248,9 +2240,7 @@ def run_backtest(prefix: str, days: int = 30):
     # Normalise keys → clean symbol (same logic as score_stock_from_df)
     norm_cache: dict[str, pd.DataFrame] = {}
     for sym, df in cache_raw.items():
-        clean = sym.replace(".NS", "")
-        if clean != "BRK-B":
-            clean = clean.replace("-", ".")
+        clean = sym.replace(".NS", "").replace("-", ".").replace("BRK.B", "BRK-B")
         df_copy = df.copy()
         df_copy.index = pd.to_datetime(df_copy.index)
         norm_cache[clean] = df_copy
@@ -2286,10 +2276,6 @@ def run_backtest(prefix: str, days: int = 30):
         # Gap-down through SL at open → instant loss
         if nxt_open <= sl:
             outcome = "LOSS"
-        elif nxt_high >= tgt and nxt_low <= sl:
-            # Both target AND stop touched on same day — intraday order unknown
-            # Conservatively mark as AMBIGUOUS to avoid inflating hit rate
-            outcome = "AMBIGUOUS"
         elif nxt_high >= tgt:
             outcome = "WIN"
         elif nxt_low <= sl:
@@ -2327,7 +2313,6 @@ def run_backtest(prefix: str, days: int = 30):
     wins    = (res_df["Outcome"] == "WIN").sum()
     losses  = (res_df["Outcome"] == "LOSS").sum()
     neutral = (res_df["Outcome"] == "NEUTRAL").sum()
-    ambig   = (res_df["Outcome"] == "AMBIGUOUS").sum()
     hit_rt  = wins / total * 100 if total else 0.0
     loss_rt = losses / total * 100 if total else 0.0
     avg_chg = res_df["Actual_%"].mean()
@@ -2388,8 +2373,6 @@ def run_backtest(prefix: str, days: int = 30):
     print(f"  {'Losses (SL hit)':<24}: {Fore.RED}{losses:>4}{Style.RESET_ALL}  "
           f"  avg loss  {Fore.RED}{avg_loss:>+6.2f}%{Style.RESET_ALL}")
     print(f"  {'Neutral (neither)':<24}: {Fore.YELLOW}{neutral:>4}{Style.RESET_ALL}")
-    print(f"  {'Ambiguous (both hit)':<24}: {Fore.YELLOW}{ambig:>4}{Style.RESET_ALL}"
-          f"  {Fore.YELLOW}(target & SL both touched — order unknown){Style.RESET_ALL}")
     print(f"  {'Overall Hit Rate':<24}: {w_col}{hit_rt:>6.1f}%{Style.RESET_ALL}")
     print(f"  {'Avg Next-Day Chg':<24}: {c_col}{avg_chg:>+6.2f}%{Style.RESET_ALL}")
     print(f"  {'Expectancy / trade':<24}: {e_col}{expectancy:>+6.3f}%{Style.RESET_ALL}"
@@ -2519,8 +2502,8 @@ def main():
                         help=f"Only show picks with BTST Score >= this value "
                              f"(e.g. --min-score 70 for GOOD, --min-score 80 for HIGH conviction)")
     args      = parser.parse_args()
-    run_india = args.india or not args.usa
-    run_usa   = args.usa   or not args.india
+    run_india = not args.usa   or args.india
+    run_usa   = not args.india or args.usa
     do_orb    = not args.no_orb   # True by default; False when --no-orb passed
     min_score = args.min_score
 
