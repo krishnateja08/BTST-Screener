@@ -155,7 +155,7 @@
     </div>
     <div class="ts">
       <div class="ts-time">
-        <span id="live-clock">12:28:56 AM</span>
+        <span id="live-clock">03:04:42 AM</span>
         <span class="tz-tag">IST</span>
       </div>
       <div class="ts-date">03 Apr 2026</div>
@@ -175,10 +175,10 @@
   <!-- USA status pills -->
   <div class="market-pills" id="pills-usa">
     <div class="pill"><div class="dot live" style="background:#ff5252"></div>Market:&nbsp;<strong style="color:#ff5252">CAUTION</strong></div>
-    <div class="pill"><div class="dot" style="background:#40c4ff"></div>S&amp;P 500:&nbsp;<strong style="color:#40c4ff">-0.09%</strong></div>
-    <div class="pill"><div class="dot" style="background:#ff5252"></div>CBOE VIX:&nbsp;<strong style="color:#ff5252">25.22</strong></div>
+    <div class="pill"><div class="dot" style="background:#40c4ff"></div>S&amp;P 500:&nbsp;<strong style="color:#40c4ff">+0.11%</strong></div>
+    <div class="pill"><div class="dot" style="background:#ff5252"></div>CBOE VIX:&nbsp;<strong style="color:#ff5252">23.87</strong></div>
     <div class="pill"><div class="dot" style="background:#7d8590"></div>Scanned:&nbsp;<strong style="color:#e6edf3">99</strong></div>
-    <div class="pill"><div class="dot" style="background:#7d8590"></div>Candidates:&nbsp;<strong style="color:#e6edf3">0</strong></div>
+    <div class="pill"><div class="dot" style="background:#7d8590"></div>Candidates:&nbsp;<strong style="color:#e6edf3">1</strong></div>
   </div>
 
   <!-- ORB status pills -->
@@ -387,10 +387,10 @@
   <div class="tab-panel" id="panel-usa">
     
     <div class="cards" id="cards-usa">
-      <div class="card cg"><span class="card-ico">🟢</span><div class="card-val" style="color:var(--green)">0</div><div class="card-lbl">Strong Picks (≥70)</div></div>
+      <div class="card cg"><span class="card-ico">🟢</span><div class="card-val" style="color:var(--green)">1</div><div class="card-lbl">Strong Picks (≥70)</div></div>
       <div class="card cy"><span class="card-ico">🟡</span><div class="card-val" style="color:var(--yellow)">0</div><div class="card-lbl">Moderate (50–69)</div></div>
       <div class="card cr"><span class="card-ico">🔴</span><div class="card-val" style="color:var(--red)">0</div><div class="card-lbl">Weak (&lt;50)</div></div>
-      <div class="card cb"><span class="card-ico">📋</span><div class="card-val" style="color:var(--blue)">0</div><div class="card-lbl">Total Candidates</div></div>
+      <div class="card cb"><span class="card-ico">📋</span><div class="card-val" style="color:var(--blue)">1</div><div class="card-lbl">Total Candidates</div></div>
       <div class="card cm"><span class="card-ico">🔍</span><div class="card-val" style="color:var(--text)">99</div><div class="card-lbl">Stocks Scanned</div></div>
     </div>
     <div class="sh">
@@ -408,7 +408,33 @@
     <div class="tw">
       <table>
         <thead><tr><th>#</th><th>Symbol</th><th>Conviction</th><th>Close ($)</th><th>Change</th><th>Vol Ratio</th><th>RSI</th><th>ADX</th><th>Range Pos</th><th>52W High</th><th>Gap</th><th>Candle</th><th>RS</th><th>Weekly</th><th>Sector</th><th>Stop Loss</th><th>Target</th><th>R:R</th><th>BTST Score</th></tr></thead>
-        <tbody><tr><td colspan='18' style='text-align:center;color:var(--muted);padding:30px'>No candidates found today</td></tr></tbody>
+        <tbody>
+        <tr>
+          <td class="rnk">🥇</td>
+          <td class="sym">ICE</td>
+          <td><span class="badge bg" style="font-weight:800">🔥 HIGH</span></td>
+          <td class="num">$162.98</td>
+          <td><span style="color:#00ff88;font-weight:700">▲ 3.10%</span></td>
+          <td><span class="badge by">1.28x</span></td>
+          <td><span class="badge bg">57.6</span></td>
+          <td class="num">23.1</td>
+          <td class="num">88.1%</td>
+          <td><span class="badge br">—</span></td>
+          <td><span class="badge br" style="color:var(--muted)">—</span></td>
+          <td><span class="badge br" style="color:var(--muted)">—</span></td>
+          <td><span class="badge bg">📈 RS+</span></td>
+          <td><span class="badge bg">✅ W</span></td>
+          <td style="background:rgba(0,255,136,0.12);text-align:center"><span style="color:#00ff88;font-weight:700;font-size:.82rem">✅ Green</span></td>
+          <td class="num" style="color:#ff6b6b" title="Stop-loss: –2.0% from entry">$159.72 <span style="font-size:.75rem;opacity:.75">–2.0%</span></td>
+          <td class="num" style="color:#00ff88" title="Target: +3.0% from entry">$167.87 <span style="font-size:.75rem;opacity:.75">+3.0%</span></td>
+          <td class="num" style="color:#ffd740;font-weight:700">1.5x</td>
+          <td>
+            <div class="bw">
+              <div class="bt"><div class="b" style="width:63%;background:#00e676"></div></div>
+              <span class="bl">82.5</span>
+            </div>
+          </td>
+        </tr></tbody>
       </table>
     </div>
     
@@ -703,7 +729,7 @@
 <!-- FOOTER -->
 <div class="footer">
   Generated by BTST Screener · Python + yfinance + pandas-ta
-  &nbsp;|&nbsp; India: 03 Apr 2026, 12:28 AM IST &nbsp;·&nbsp; USA: 02 Apr 2026, 02:58 PM EST
+  &nbsp;|&nbsp; India: 03 Apr 2026, 03:04 AM IST &nbsp;·&nbsp; USA: 02 Apr 2026, 05:34 PM EST
   <br>
   Parameters: Vol Surge (20) · RSI (15) · MACD (15) · EMA (15) · Breakout (15) · ADX (10) · 52W (10) · Gap (+8) · Sector (+7) · Candle (+10) · RS (+5) · Weekly MTF (+8)
 </div>
