@@ -1,4 +1,6 @@
 Symbol,Close,Change%,Volume_Ratio,Avg_Vol,RSI,MACD_Hist,EMA20,EMA50,EMA_Dist%,ADX,Range_Pos%,ATR,52W_High,Near_52W_High,Candle,Marubozu,FinalHrFade,RS_Beat,Weekly_Align,Gap_Up,Gap_Pct,Sector_Align,Breadth_OK,Entry_Overextended,Stop_Loss,Target,Target%,SL%,RR_Ratio,Conviction,BTST_Score
-ONGC,284.65,0.96,1.96,22869092.0,66.4,0.8701,271.03,263.86,5.02,33.4,42.2,8.05,293.0,True,,False,True,True,True,False,0.28,False,False,False,281.95,293.19,3.0,0.95,3.16,WEAK,50.9
-DMART,3956.8,1.37,2.76,629535.0,57.7,8.6388,3849.31,3854.66,2.79,13.3,57.8,113.77,4949.5,False,,False,True,True,True,False,-0.14,False,False,False,3877.66,4075.5,3.0,2.0,1.5,WEAK,40.0
-COALINDIA,450.45,1.21,1.35,14163224.0,53.6,-2.1053,447.34,434.09,0.69,23.6,43.8,13.32,476.0,False,Engulfing,False,True,True,True,False,0.0,False,False,False,443.1,463.96,3.0,1.63,1.84,WEAK,34.5
+DMART,4271.1,7.94,3.81,712026.0,70.7,33.5254,3889.48,3870.99,9.81,15.6,89.6,129.79,4949.5,False,,False,False,True,True,True,2.99,False,True,False,4185.68,4399.23,3.0,2.0,1.5,GOOD,72.4
+ADANIPOWER,157.11,4.44,1.38,34915052.0,62.4,0.6668,149.24,146.36,5.27,15.3,77.9,6.03,182.7,False,,False,False,True,True,True,3.04,False,True,False,153.97,161.82,3.0,2.0,1.5,MODERATE,64.4
+ONGC,288.05,1.19,1.24,25514610.0,68.7,1.5323,272.65,264.81,5.65,35.2,51.5,8.21,293.0,True,,False,True,True,True,True,1.88,False,True,False,282.8,296.69,3.0,1.82,1.65,MODERATE,60.2
+SAIL,155.82,2.91,1.45,26372259.0,53.0,0.1288,152.31,151.98,2.31,20.6,55.5,6.88,168.21,False,,False,True,True,True,True,2.76,False,True,False,153.1,160.49,3.0,1.75,1.72,WEAK,51.3
+HINDALCO,904.6,2.28,1.1,7054501.0,49.0,-3.1326,903.35,911.01,0.14,19.2,20.1,32.45,1029.8,False,,False,True,True,True,True,2.78,False,True,False,900.1,931.74,3.0,0.5,6.03,WEAK,24.1
