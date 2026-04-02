@@ -1709,8 +1709,9 @@ def generate_html_report(
       <p>India — Nifty 100 &nbsp;·&nbsp; USA — S&P 500 Top 100 &nbsp;·&nbsp; Buy Today Sell Tomorrow</p>
     </div>
     <div class="ts">
-      <span class="ts-time" id="hdr-time">—</span>
-      <span id="hdr-date">—</span> · Auto-generated
+      <span class="ts-time">{now_ist.strftime('%I:%M:%S %p')} <span class="tz-tag">IST</span></span>
+      <span style="display:block;font-size:clamp(.78rem,1.4vw,.9rem);color:#d0dce8;margin-top:2px">{now_ist.strftime('%d %b %Y')}</span>
+      <span style="display:block;font-size:clamp(.66rem,1.2vw,.76rem);color:#8090a0;margin-top:1px">Last generated · Auto-report</span>
     </div>
   </div>
 
@@ -2088,20 +2089,6 @@ def generate_html_report(
 </div>
 
 <script>
-  // Timestamps per BTST tab; ORB shows both market times
-  const times = {{
-    india: {{ time: "{now_ist.strftime('%I:%M %p')}", tz: "IST", date: "{now_ist.strftime('%d %b %Y')}" }},
-    usa:   {{ time: "{now_est.strftime('%I:%M %p')}", tz: "EST", date: "{now_est.strftime('%d %b %Y')}" }},
-    orb:   {{ time: "{now_ist.strftime('%I:%M %p')}", tz: "IST/EST", date: "{now_ist.strftime('%d %b %Y')}" }}
-  }};
-
-  function updateTime(tab) {{
-    const t = times[tab];
-    document.getElementById('hdr-time').innerHTML =
-      t.time + ' <span class="tz-tag">' + t.tz + '</span>';
-    document.getElementById('hdr-date').textContent = t.date;
-  }}
-
   function switchTab(tab) {{
     // panels
     document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
@@ -2113,8 +2100,6 @@ def generate_html_report(
     document.querySelectorAll('.market-pills').forEach(p => p.classList.remove('active'));
     const pillEl = document.getElementById('pills-' + tab);
     if (pillEl) pillEl.classList.add('active');
-    // time
-    updateTime(tab);
   }}
 
   // Scoring Parameters — single toggle for entire section
@@ -2133,8 +2118,6 @@ def generate_html_report(
     }}
   }}
 
-  // init
-  updateTime('india');
 </script>
 </body>
 </html>"""
