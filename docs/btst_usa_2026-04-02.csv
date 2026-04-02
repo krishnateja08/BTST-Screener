@@ -1,5 +1,5 @@
 Symbol,Close,Change%,Volume_Ratio,Avg_Vol,RSI,MACD_Hist,EMA20,EMA50,EMA_Dist%,ADX,Range_Pos%,ATR,52W_High,Near_52W_High,Candle,Marubozu,FinalHrFade,RS_Beat,Weekly_Align,Gap_Up,Gap_Pct,Sector_Align,Breadth_OK,Entry_Overextended,Stop_Loss,Target,Target%,SL%,RR_Ratio,Conviction,BTST_Score
-LLY,954.52,3.78,2.08,2964790.0,50.2,2.3624,940.96,977.83,1.44,23.2,56.3,29.34,1132.06,False,,False,True,True,False,True,0.77,True,True,False,935.43,983.16,3.0,2.0,1.5,MODERATE,59.5
+AMD,210.21,3.33,1.11,36750600.0,53.6,1.1479,203.8,207.76,3.15,11.6,54.7,10.02,267.08,False,,False,True,True,True,True,2.04,True,True,False,206.01,216.52,3.0,2.0,1.5,MODERATE,60.4
+LLY,954.52,3.78,2.11,2964790.0,50.2,2.3624,940.96,977.83,1.44,23.2,56.3,29.34,1132.06,False,,False,True,True,False,True,0.77,True,True,False,935.43,983.16,3.0,2.0,1.5,MODERATE,59.5
 GOOGL,297.39,3.42,1.11,33908940.0,48.9,-0.7737,295.94,303.75,0.49,30.6,69.0,8.47,348.75,False,,False,False,True,True,True,1.14,True,True,False,291.44,306.31,3.0,2.0,1.5,WEAK,53.5
 BA,207.32,4.17,1.31,7381760.0,48.1,0.5513,205.92,216.02,0.68,35.1,56.3,7.24,254.35,False,,False,True,True,False,True,2.25,True,True,False,203.5,213.54,3.0,1.84,1.63,WEAK,53.1
-AMD,210.21,3.33,1.1,36750600.0,53.6,1.1479,203.8,207.76,3.15,11.6,54.7,10.02,267.08,False,,False,True,True,True,True,2.09,True,True,False,206.01,216.52,3.0,2.0,1.5,WEAK,51.9
