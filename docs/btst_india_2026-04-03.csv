@@ -1,6 +1,7 @@
 Symbol,Close,Change%,Volume_Ratio,Avg_Vol,RSI,MACD_Hist,EMA20,EMA50,EMA_Dist%,ADX,Range_Pos%,ATR,52W_High,Near_52W_High,Candle,Marubozu,FinalHrFade,RS_Beat,Weekly_Align,Gap_Up,Gap_Pct,Sector_Align,Breadth_OK,Entry_Overextended,Stop_Loss,Target,Target%,SL%,RR_Ratio,Conviction,BTST_Score
-DMART,4271.1,7.94,3.81,712026.0,70.7,33.5254,3889.48,3871.0,9.81,15.6,89.6,129.79,4949.5,False,,False,False,True,True,True,2.99,False,True,False,4185.68,4399.23,3.0,2.0,1.5,HIGH,99.6
-ADANIPOWER,157.11,4.44,1.38,34915052.0,62.4,0.6668,149.24,146.36,5.27,15.3,77.9,6.03,182.7,False,,False,False,True,True,True,3.04,True,True,False,153.97,161.82,3.0,2.0,1.5,HIGH,94.1
-ONGC,288.05,1.19,1.24,25514610.0,68.7,1.5323,272.65,264.81,5.65,35.2,51.5,8.21,293.0,True,,False,True,False,True,True,1.88,True,True,False,282.8,296.69,3.0,1.82,1.65,HIGH,82.7
-SAIL,155.82,2.91,1.45,26372259.0,53.0,0.1288,152.31,151.98,2.31,20.6,55.5,6.88,168.21,False,,False,True,True,True,True,2.76,True,True,False,153.1,160.49,3.0,1.75,1.72,GOOD,79.9
-HINDALCO,904.6,2.28,1.1,7054501.0,49.0,-3.1326,903.35,911.01,0.14,19.2,20.1,32.45,1029.8,False,,False,True,True,True,True,2.78,True,True,False,900.1,931.74,3.0,0.5,6.03,WEAK,42.5
+MARICO,761.35,2.26,1.51,1899307.0,51.9,-0.2375,754.25,757.39,0.94,21.7,83.9,18.1,813.5,False,Engulfing,False,False,True,True,False,-0.32,True,False,False,746.12,784.19,3.0,2.0,1.5,GOOD,74.0
+HCLTECH,1402.2,3.53,1.57,4141920.0,52.5,13.3807,1372.5,1440.64,2.16,31.8,85.2,44.83,1780.1,False,Engulfing,False,False,True,False,False,-0.55,True,False,False,1374.16,1444.27,3.0,2.0,1.5,GOOD,70.0
+TITAN,4097.2,0.78,1.48,1091695.0,50.2,-1.6922,4076.37,4097.01,0.51,25.7,92.8,121.34,4378.4,False,,False,False,True,True,False,-1.71,False,False,False,4015.26,4220.12,3.0,2.0,1.5,MODERATE,60.4
+HINDALCO,916.25,1.29,1.14,6756644.0,51.5,-0.0946,904.58,911.22,1.29,18.8,87.0,32.71,1029.8,False,Engulfing,False,False,True,True,False,-0.62,True,False,False,897.92,943.74,3.0,2.0,1.5,MODERATE,58.0
+ADANIPOWER,159.97,1.82,1.95,30713914.0,65.1,0.9235,150.27,146.9,6.46,14.4,96.1,6.29,182.7,False,,False,False,True,True,False,-1.66,False,False,True,156.77,164.77,3.0,2.0,1.5,WEAK,49.6
+DMART,4362.4,2.14,1.68,942911.0,73.3,53.1694,3934.52,3890.27,10.87,18.2,84.6,135.05,4949.5,False,,False,False,True,True,False,-1.0,False,False,True,4275.15,4493.27,3.0,2.0,1.5,WEAK,46.2
