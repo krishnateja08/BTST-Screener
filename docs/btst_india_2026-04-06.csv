@@ -1,5 +1,5 @@
 Symbol,Close,Change%,Volume_Ratio,Avg_Vol,RSI,MACD_Hist,EMA20,EMA50,EMA_Dist%,ADX,Range_Pos%,ATR,52W_High,Near_52W_High,Candle,Marubozu,FinalHrFade,RS_Beat,Weekly_Align,Gap_Up,Gap_Pct,Sector_Align,Breadth_OK,Entry_Overextended,Stop_Loss,Target,Target%,SL%,RR_Ratio,Conviction,BTST_Score
-NMDC,82.18,5.25,1.45,25786506.0,58.3,0.2653,78.7,78.84,4.42,12.5,98.6,2.81,84.16,True,Morning Star,False,False,True,True,True,0.77,True,False,False,80.54,84.65,3.01,2.0,1.51,MODERATE,68.8
-ADANIGREEN,905.8,5.82,2.67,3401680.0,55.1,6.0364,867.98,902.53,4.36,26.6,89.4,38.29,1177.55,False,,False,False,True,False,False,0.12,False,False,False,887.68,932.97,3.0,2.0,1.5,MODERATE,67.6
-ADANIPOWER,163.95,2.49,3.33,32532753.0,68.6,1.2674,151.57,147.57,8.17,14.1,71.6,6.21,182.7,False,,False,False,True,True,True,1.27,False,False,False,161.05,168.87,3.0,1.77,1.7,MODERATE,65.2
-DMART,4464.0,2.33,1.22,1077899.0,75.9,69.0339,3984.95,3912.77,12.02,21.0,67.2,137.19,4949.5,False,,False,False,True,True,True,2.01,False,False,True,4374.72,4597.92,3.0,2.0,1.5,WEAK,37.2
+ADANIGREEN,907.25,5.99,2.67,3401680.0,55.3,6.129,868.12,902.58,4.51,26.6,92.0,38.29,1177.55,False,,False,False,True,False,False,0.12,False,False,False,889.11,934.47,3.0,2.0,1.5,MODERATE,66.6
+NMDC,82.11,5.16,1.47,25786506.0,58.2,0.2608,78.7,78.83,4.34,12.5,95.8,2.81,84.16,True,Morning Star,False,False,True,True,True,0.77,True,False,False,80.47,84.57,3.0,2.0,1.5,MODERATE,63.3
+ADANIPOWER,164.0,2.52,3.34,32532753.0,68.6,1.2706,151.57,147.57,8.2,14.1,72.8,6.21,182.7,False,,False,False,True,True,True,1.27,False,False,False,161.05,168.92,3.0,1.8,1.67,MODERATE,60.0
+DMART,4464.4,2.34,1.22,1077899.0,75.9,69.0594,3984.99,3912.78,12.03,21.0,67.5,137.19,4949.5,False,,False,False,True,True,True,2.01,False,False,True,4375.11,4598.33,3.0,2.0,1.5,WEAK,34.3
