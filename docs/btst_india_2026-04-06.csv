@@ -1,3 +1,3 @@
 Symbol,Close,Change%,Volume_Ratio,Avg_Vol,RSI,MACD_Hist,EMA20,EMA50,EMA_Dist%,ADX,Range_Pos%,ATR,52W_High,Near_52W_High,Candle,Marubozu,FinalHrFade,RS_Beat,Weekly_Align,Gap_Up,Gap_Pct,Sector_Align,Breadth_OK,Entry_Overextended,Stop_Loss,Target,Target%,SL%,RR_Ratio,Conviction,BTST_Score
-ADANIGREEN,880.9,2.91,1.53,3401680.0,51.1,4.4474,865.61,901.55,1.77,27.6,100.0,36.09,1177.55,False,Marubozu,True,False,True,False,False,0.12,False,False,False,863.28,907.33,3.0,2.0,1.5,MODERATE,56.0
-ADANIPOWER,163.62,2.28,2.79,32532753.0,68.3,1.2464,151.54,147.55,7.97,14.1,63.5,6.21,182.7,False,,False,False,True,True,True,1.27,False,False,False,161.05,168.53,3.0,1.57,1.91,WEAK,52.2
+ADANIPOWER,164.15,2.61,2.84,32532753.0,68.7,1.2802,151.59,147.57,8.29,14.1,76.5,6.21,182.7,False,,False,False,True,True,True,1.27,False,False,False,161.05,169.07,3.0,1.89,1.59,MODERATE,57.9
+ADANIGREEN,889.5,3.91,1.62,3401680.0,52.5,4.9962,866.43,901.89,2.66,27.3,96.4,36.79,1177.55,False,Marubozu,True,False,True,False,False,0.12,False,False,False,871.71,916.19,3.0,2.0,1.5,MODERATE,56.0
