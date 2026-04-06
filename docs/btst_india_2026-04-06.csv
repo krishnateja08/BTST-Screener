@@ -1,6 +1,6 @@
 Symbol,Close,Change%,Volume_Ratio,Avg_Vol,RSI,MACD_Hist,EMA20,EMA50,EMA_Dist%,ADX,Range_Pos%,ATR,52W_High,Near_52W_High,Candle,Marubozu,FinalHrFade,RS_Beat,Weekly_Align,Gap_Up,Gap_Pct,Sector_Align,Breadth_OK,Entry_Overextended,Stop_Loss,Target,Target%,SL%,RR_Ratio,Conviction,BTST_Score
-NMDC,81.42,4.28,1.92,25786506.0,56.8,0.2168,78.63,78.81,3.55,12.5,79.6,2.81,84.16,True,Morning Star,False,False,True,True,True,0.77,True,True,False,79.79,83.86,3.0,2.0,1.5,HIGH,134.2
-TITAN,4252.1,3.78,1.33,1140491.0,58.0,14.4407,4093.11,4103.1,3.88,23.9,98.1,123.94,4378.4,True,Marubozu,True,False,True,True,False,0.19,False,True,False,4167.06,4379.66,3.0,2.0,1.5,HIGH,121.0
-ADANIGREEN,921.4,7.64,3.64,3401680.0,57.2,7.032,869.47,903.14,5.97,26.2,92.5,39.36,1177.55,False,,False,False,True,False,False,0.12,True,True,False,902.97,949.04,3.0,2.0,1.5,HIGH,105.1
-ADANIPOWER,163.4,2.14,3.76,32532753.0,68.1,1.2323,151.52,147.55,7.84,14.1,58.0,6.21,182.7,False,,False,True,True,True,True,1.27,True,True,False,161.05,168.3,3.0,1.44,2.09,GOOD,78.1
-DMART,4562.0,4.58,1.7,1077899.0,77.9,75.288,3994.28,3916.61,14.21,21.1,99.7,140.36,4949.5,False,,False,False,True,True,True,2.01,False,True,True,4470.76,4698.86,3.0,2.0,1.5,GOOD,70.5
+NMDC,81.27,4.09,1.95,25786506.0,56.5,0.2072,78.62,78.8,3.38,12.5,76.1,2.81,84.16,True,Morning Star,False,False,True,True,True,0.77,True,True,False,79.64,83.71,3.0,2.01,1.5,HIGH,134.2
+TITAN,4248.4,3.69,1.36,1140491.0,57.8,14.2045,4092.76,4102.95,3.8,23.9,95.5,123.96,4378.4,True,Marubozu,True,False,True,True,False,0.19,False,True,False,4163.43,4375.85,3.0,2.0,1.5,HIGH,121.0
+ADANIGREEN,921.1,7.61,3.68,3401680.0,57.2,7.0128,869.44,903.13,5.94,26.2,92.1,39.36,1177.55,False,,False,False,True,False,False,0.12,True,True,False,902.68,948.73,3.0,2.0,1.5,HIGH,105.1
+ADANIPOWER,163.24,2.04,3.79,32532753.0,68.0,1.2221,151.5,147.54,7.75,14.1,54.1,6.21,182.7,False,,False,True,True,True,True,1.27,True,True,False,161.05,168.14,3.0,1.34,2.24,GOOD,78.1
+DMART,4552.8,4.36,1.72,1077899.0,77.7,74.7009,3993.4,3916.25,14.01,21.1,95.3,140.36,4949.5,False,,False,False,True,True,True,2.01,False,True,True,4461.74,4689.38,3.0,2.0,1.5,GOOD,70.5
