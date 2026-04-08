@@ -1,0 +1,6 @@
+Symbol,Close,Change%,Volume_Ratio,Avg_Vol,RSI,MACD_Hist,EMA20,EMA50,EMA_Dist%,ADX,Range_Pos%,ATR,52W_High,Near_52W_High,Candle,Marubozu,FinalHrFade,RS_Beat,Weekly_Align,Gap_Up,Gap_Pct,Sector_Align,Breadth_OK,Entry_Overextended,Stop_Loss,Target,Target%,SL%,RR_Ratio,Conviction,BTST_Score
+VEDL,713.25,3.37,1.19,17651604.0,60.9,3.8124,677.31,664.94,5.31,11.8,78.0,26.42,757.15,False,,False,False,True,True,True,1.46,True,True,False,698.99,734.65,3.0,2.0,1.5,HIGH,95.5
+HINDALCO,954.5,2.92,1.65,7205102.0,59.0,6.0518,911.31,913.53,4.74,17.1,67.4,32.17,1029.8,False,,False,False,True,True,True,0.7,True,True,False,935.41,983.13,3.0,2.0,1.5,HIGH,93.5
+WIPRO,204.72,3.77,1.36,18169281.0,57.0,2.4342,196.45,208.61,4.21,32.2,93.3,5.66,266.23,False,,False,False,True,False,False,-0.14,True,True,False,200.63,210.86,3.0,2.0,1.5,HIGH,83.0
+INFY,1339.4,2.54,1.17,13173461.0,56.5,16.7317,1293.41,1364.18,3.56,23.3,89.0,39.1,1728.0,False,,False,False,True,False,False,-0.32,True,True,False,1312.61,1379.58,3.0,2.0,1.5,GOOD,72.0
+ETERNAL,243.62,5.02,1.19,51719383.0,52.5,2.5312,236.81,250.85,2.88,25.3,44.3,10.32,368.45,False,,False,True,True,False,True,4.99,False,True,False,241.0,250.93,3.0,1.08,2.79,WEAK,47.2
