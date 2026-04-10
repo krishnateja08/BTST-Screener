@@ -1,6 +1,6 @@
 Symbol,Close,Change%,Volume_Ratio,Avg_Vol,RSI,MACD_Hist,EMA20,EMA50,EMA_Dist%,ADX,Range_Pos%,ATR,52W_High,Near_52W_High,Candle,Marubozu,FinalHrFade,RS_Beat,Weekly_Align,Gap_Up,Gap_Pct,Sector_Align,Breadth_OK,Entry_Overextended,Stop_Loss,Target,Target%,SL%,RR_Ratio,Conviction,BTST_Score
 UNP,251.15,0.82,1.11,2704850.0,60.7,1.5033,245.29,245.1,2.39,29.3,75.7,4.77,268.14,False,Engulfing,False,False,True,True,False,-0.04,True,True,False,248.1,258.3,2.85,1.21,2.34,HIGH,105.5
 TJX,165.0,2.08,1.37,4095530.0,62.4,0.5998,159.1,157.09,3.71,14.4,84.5,3.4,165.82,True,,False,False,True,True,False,-0.5,True,True,False,161.7,169.95,3.0,2.0,1.5,HIGH,92.5
-AMGN,355.6,1.66,1.17,2479170.0,50.4,0.062,353.56,354.67,0.58,19.2,70.5,8.47,391.29,False,,False,False,True,True,False,-0.67,False,True,False,348.49,366.27,3.0,2.0,1.5,MODERATE,65.5
-CAT,787.07,2.01,1.28,2170190.0,66.6,8.7001,722.81,703.39,8.89,16.0,62.5,26.98,795.52,True,,False,False,True,True,False,0.18,True,True,True,772.99,810.68,3.0,1.79,1.68,MODERATE,58.4
+AMGN,355.6,1.66,1.19,2479170.0,50.4,0.062,353.56,354.67,0.58,19.2,70.5,8.47,391.29,False,,False,False,True,True,False,-0.67,False,True,False,348.49,366.27,3.0,2.0,1.5,MODERATE,65.5
+CAT,787.07,2.01,1.29,2170190.0,66.6,8.7001,722.81,703.39,8.89,16.0,62.5,26.98,795.52,True,,False,False,True,True,False,0.18,True,True,True,772.99,810.68,3.0,1.79,1.68,MODERATE,58.4
 AMZN,233.65,5.6,1.54,42602970.0,69.0,2.7035,213.04,215.13,9.67,15.5,98.6,6.68,258.6,False,,False,False,True,True,True,1.8,True,True,True,228.98,240.66,3.0,2.0,1.5,MODERATE,55.5
