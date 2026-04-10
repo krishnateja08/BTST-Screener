@@ -1,0 +1,2 @@
+Symbol,Close,Change%,Volume_Ratio,Avg_Vol,RSI,MACD_Hist,EMA20,EMA50,EMA_Dist%,ADX,Range_Pos%,ATR,52W_High,Near_52W_High,Candle,Marubozu,FinalHrFade,RS_Beat,Weekly_Align,Gap_Up,Gap_Pct,Sector_Align,Breadth_OK,Entry_Overextended,Stop_Loss,Target,Target%,SL%,RR_Ratio,Conviction,BTST_Score
+AMD,245.04,3.55,1.12,31986850.0,70.1,4.5377,215.83,212.39,13.53,17.4,57.3,10.22,267.08,False,,False,True,True,True,True,0.98,True,True,True,240.14,252.39,3.0,2.0,1.5,WEAK,45.7
