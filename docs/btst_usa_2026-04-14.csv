@@ -1,8 +1,10 @@
 Symbol,Close,Change%,Volume_Ratio,Avg_Vol,RSI,MACD_Hist,EMA20,EMA50,EMA_Dist%,ADX,Range_Pos%,ATR,52W_High,Near_52W_High,Candle,Marubozu,FinalHrFade,RS_Beat,Weekly_Align,Gap_Up,Gap_Pct,Sector_Align,Breadth_OK,Entry_Overextended,Stop_Loss,Target,Target%,SL%,RR_Ratio,Conviction,BTST_Score
-WFC,86.64,1.45,1.19,12152740.0,65.7,1.2122,81.81,82.9,5.9,20.4,99.6,2.2,97.28,False,Engulfing,False,False,True,True,False,-0.95,True,True,False,84.91,89.24,3.0,2.0,1.5,HIGH,111.7
-PLD,137.15,-0.03,1.24,3421930.0,60.2,0.9029,134.0,133.14,2.35,19.2,97.7,3.01,142.8,True,Hammer,False,False,False,True,False,-0.17,True,True,False,135.03,141.26,3.0,1.55,1.94,HIGH,104.0
+WFC,86.64,1.45,1.19,12152790.0,65.7,1.2122,81.81,82.9,5.9,20.4,97.7,2.2,97.28,False,Engulfing,False,False,True,True,False,-0.95,True,True,False,84.91,89.24,3.0,2.0,1.5,HIGH,111.7
+PLD,137.15,-0.03,1.24,3426450.0,60.2,0.9029,134.0,133.14,2.35,19.2,97.7,3.01,142.8,True,Hammer,False,False,False,True,False,-0.17,True,True,False,135.03,141.26,3.0,1.55,1.94,HIGH,104.0
 TMO,514.23,3.65,1.14,1603960.0,59.2,4.9297,494.49,510.38,3.99,25.8,94.0,14.74,643.35,False,Engulfing,False,False,True,False,False,-0.23,True,True,False,503.95,529.66,3.0,2.0,1.5,HIGH,102.9
 SYK,347.24,2.39,1.51,1711700.0,55.8,2.8353,339.26,348.16,2.35,28.5,96.2,8.42,401.86,False,,False,False,True,False,True,0.55,True,True,False,340.3,357.66,3.0,2.0,1.5,HIGH,102.3
-CB,329.98,0.63,1.26,1296680.0,54.0,0.4495,327.8,324.24,0.66,12.5,98.5,5.93,344.65,True,,False,False,False,True,False,0.0,True,True,False,326.65,338.88,2.7,1.01,2.67,HIGH,94.6
-MSFT,384.37,3.64,1.12,31056910.0,51.5,2.3591,378.53,397.65,1.54,27.5,98.7,8.84,552.24,False,,False,False,True,False,True,0.72,True,True,False,376.68,395.9,3.0,2.0,1.5,HIGH,88.6
-DHR,195.87,3.3,1.37,3523760.0,52.3,1.6205,192.48,200.13,1.76,29.8,92.4,5.24,242.28,False,Engulfing,False,False,True,False,False,-0.5,True,True,False,191.95,201.75,3.0,2.0,1.5,HIGH,86.4
+CB,329.98,0.63,1.26,1296680.0,54.0,0.4495,327.8,324.24,0.66,12.5,98.2,5.93,344.65,True,,False,False,False,True,False,0.0,True,True,False,326.65,338.88,2.7,1.01,2.67,HIGH,94.6
+MSFT,384.37,3.64,1.14,31064220.0,51.5,2.3591,378.53,397.65,1.54,27.5,98.7,8.84,552.24,False,,False,False,True,False,True,0.74,True,True,False,376.68,395.9,3.0,2.0,1.5,HIGH,88.6
+DHR,195.87,3.3,1.37,3523760.0,52.3,1.6205,192.48,200.13,1.76,29.8,92.3,5.24,242.28,False,Engulfing,False,False,True,False,False,-0.5,True,True,False,191.95,201.75,3.0,2.0,1.5,HIGH,86.4
+AON,325.4,4.1,1.26,1336090.0,50.8,0.3085,323.51,327.71,0.58,17.3,97.8,9.2,386.07,False,,False,False,True,False,True,0.78,True,True,False,318.89,335.16,3.0,2.0,1.5,GOOD,77.6
+ZTS,120.08,1.88,1.3,2727710.0,52.2,0.6715,118.61,120.9,1.24,23.0,99.1,3.16,170.33,False,,False,False,True,False,False,-0.59,True,True,False,117.68,123.68,3.0,2.0,1.5,GOOD,72.1
