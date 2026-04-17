@@ -1,0 +1,9 @@
+Symbol,Close,Change%,Volume_Ratio,Avg_Vol,RSI,MACD_Hist,EMA20,EMA50,EMA_Dist%,ADX,Range_Pos%,ATR,52W_High,Near_52W_High,Candle,Marubozu,FinalHrFade,RS_Beat,Weekly_Align,Gap_Up,Gap_Pct,Sector_Align,Breadth_OK,Entry_Overextended,Stop_Loss,Target,Target%,SL%,RR_Ratio,Conviction,BTST_Score
+SHW,345.55,3.66,1.19,1719600.0,62.3,3.1003,329.51,333.06,4.87,20.5,63.2,9.71,377.93,False,Morning Star,False,False,True,True,True,1.59,True,True,False,338.64,355.92,3.0,2.0,1.5,HIGH,106.2
+LOW,251.72,3.84,1.34,2809750.0,57.5,2.4308,242.83,247.64,3.66,25.3,58.8,7.07,293.06,False,Morning Star,False,True,True,True,True,1.6,True,True,False,246.69,259.27,3.0,2.0,1.5,HIGH,92.1
+COST,999.89,1.28,1.17,1991300.0,52.3,-1.9956,995.53,986.16,0.44,16.1,97.1,18.88,1062.65,False,,False,False,True,True,False,-0.22,True,True,False,981.01,1028.21,2.83,1.89,1.5,GOOD,77.6
+TSLA,400.62,3.01,1.44,62633600.0,60.3,6.1695,373.65,388.27,7.22,24.7,50.9,15.72,498.83,False,,False,True,True,True,True,1.81,True,True,True,392.61,412.64,3.0,2.0,1.5,WEAK,54.7
+MSFT,422.79,0.6,1.33,35923925.0,71.7,7.3946,389.92,399.82,8.43,29.1,19.3,9.92,552.24,False,,False,True,False,True,True,1.08,True,True,True,420.69,435.47,3.0,0.5,6.04,WEAK,54.7
+ADI,371.45,4.99,1.34,3902300.0,75.2,4.3424,338.21,326.25,9.83,22.7,93.2,10.07,372.45,True,,False,False,True,True,True,1.5,True,True,True,364.02,382.59,3.0,2.0,1.5,WEAK,54.1
+ISRG,469.21,2.43,1.3,2072725.0,50.3,2.4558,465.14,480.88,0.87,23.1,55.0,12.43,603.88,False,,False,True,True,False,True,1.21,True,True,False,463.02,483.29,3.0,1.32,2.27,WEAK,51.9
+SYK,343.32,1.46,1.13,2167375.0,51.5,2.3101,340.19,347.27,0.92,22.3,35.0,8.19,401.86,False,,False,True,True,False,True,1.08,True,True,False,341.06,353.62,3.0,0.66,4.56,WEAK,51.9
