@@ -1,0 +1,6 @@
+Symbol,Close,Change%,Volume_Ratio,Avg_Vol,RSI,MACD_Hist,EMA20,EMA50,EMA_Dist%,ADX,Range_Pos%,ATR,52W_High,Near_52W_High,Candle,Marubozu,FinalHrFade,RS_Beat,Weekly_Align,Gap_Up,Gap_Pct,Sector_Align,Breadth_OK,Entry_Overextended,Stop_Loss,Target,Target%,SL%,RR_Ratio,Conviction,BTST_Score
+MARICO,778.9,0.83,1.15,1898522.0,59.6,3.604,758.65,757.86,2.67,13.2,91.7,17.03,813.5,True,Hammer,False,False,True,True,False,0.32,False,False,False,765.65,802.27,3.0,1.7,1.76,MODERATE,60.5
+DIVISLAB,6378.5,1.48,1.6,253443.0,64.6,49.5448,6157.11,6167.27,3.6,19.2,58.4,146.49,7039.45,False,Engulfing,False,True,True,True,False,-0.33,True,False,False,6250.93,6569.86,3.0,2.0,1.5,WEAK,52.5
+CIPLA,1305.9,5.63,2.96,1784623.0,64.0,11.2027,1243.98,1284.1,4.98,27.0,96.9,27.9,1673.0,False,,False,False,True,False,False,-0.18,True,False,False,1279.78,1345.08,3.0,2.0,1.5,WEAK,42.4
+BEL,449.95,0.28,1.1,13713980.0,56.5,2.315,442.11,435.79,1.77,12.5,48.7,11.75,473.45,True,,False,True,True,True,True,0.67,False,False,False,444.5,463.45,3.0,1.21,2.48,WEAK,37.3
+ADANIENT,2300.0,1.73,1.15,2561658.0,71.6,39.1071,2105.58,2084.08,9.23,35.1,69.8,78.01,2695.0,False,,False,False,True,True,False,-0.77,False,False,True,2254.0,2369.0,3.0,2.0,1.5,WEAK,32.9
