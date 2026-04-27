@@ -1,0 +1,6 @@
+Symbol,Close,Change%,Volume_Ratio,Avg_Vol,RSI,MACD_Hist,EMA20,EMA50,EMA_Dist%,ADX,Range_Pos%,ATR,52W_High,Near_52W_High,Candle,Marubozu,FinalHrFade,RS_Beat,Weekly_Align,Gap_Up,Gap_Pct,Sector_Align,Breadth_OK,Entry_Overextended,Stop_Loss,Target,Target%,SL%,RR_Ratio,Conviction,BTST_Score
+ADANIGREEN,1235.8,1.78,2.96,4383880.0,83.1,23.156,1066.62,992.73,15.86,39.3,84.1,50.14,1252.0,True,,False,False,True,True,True,0.65,False,False,False,1211.08,1272.87,3.0,2.0,1.5,MODERATE,59.2
+BANDHANBNK,174.67,0.44,1.4,7716720.0,59.2,1.7672,168.31,164.88,3.78,18.8,93.5,6.53,190.74,False,Hammer,False,False,True,True,False,-0.05,False,False,False,171.18,179.91,3.0,2.0,1.5,MODERATE,57.3
+MARICO,783.3,0.56,1.27,1989932.0,61.2,4.1713,761.0,758.86,2.93,14.0,78.5,17.07,813.5,True,,False,False,True,True,True,0.64,False,False,False,769.4,806.8,3.0,1.77,1.69,MODERATE,56.0
+NESTLEIND,1421.3,0.77,2.03,1688196.0,79.3,24.2911,1291.61,1267.08,10.04,36.5,56.0,33.87,1430.9,True,,False,False,True,True,True,0.67,False,False,True,1409.1,1463.94,3.0,0.86,3.5,WEAK,37.4
+BRITANNIA,5730.5,1.04,1.23,381770.0,52.2,33.2234,5672.3,5749.3,1.03,20.2,73.9,148.76,6336.0,False,,False,False,True,False,True,0.63,False,False,False,5665.5,5902.41,3.0,1.13,2.64,WEAK,35.5

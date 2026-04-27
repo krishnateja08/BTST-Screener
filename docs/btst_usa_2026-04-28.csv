@@ -1,0 +1,8 @@
+Symbol,Close,Change%,Volume_Ratio,Avg_Vol,RSI,MACD_Hist,EMA20,EMA50,EMA_Dist%,ADX,Range_Pos%,ATR,52W_High,Near_52W_High,Candle,Marubozu,FinalHrFade,RS_Beat,Weekly_Align,Gap_Up,Gap_Pct,Sector_Align,Breadth_OK,Entry_Overextended,Stop_Loss,Target,Target%,SL%,RR_Ratio,Conviction,BTST_Score
+QCOM,150.26,0.95,3.7,11258440.0,74.5,2.3093,135.69,137.29,10.74,24.6,23.1,5.08,203.6,False,,False,True,True,True,True,4.92,True,True,False,147.25,154.77,3.0,2.0,1.5,GOOD,79.5
+VZ,47.1,1.55,1.46,25340250.0,48.8,0.048,47.07,47.0,0.05,25.1,18.8,1.11,50.91,False,,False,True,True,True,True,2.25,True,True,False,46.74,48.51,2.99,0.76,3.92,GOOD,70.5
+GOOGL,350.34,1.72,1.25,22488130.0,71.7,2.6644,326.96,316.8,7.15,30.6,72.8,8.08,353.18,True,,False,False,True,True,False,0.39,True,True,True,343.33,360.85,3.0,2.0,1.5,MODERATE,65.5
+PANW,182.9,2.44,1.17,6710590.0,63.0,1.8458,169.62,167.62,7.83,13.5,85.1,7.3,223.61,False,,False,False,True,True,False,-0.87,True,True,True,179.24,188.39,3.0,2.0,1.5,MODERATE,57.7
+ELV,356.13,3.3,1.26,1852630.0,75.7,4.646,322.07,317.1,10.57,28.8,87.7,10.55,418.6,False,Engulfing,False,False,True,True,False,-0.51,False,True,True,349.01,366.81,3.0,2.0,1.5,WEAK,52.8
+NVDA,216.61,4.0,1.29,143680050.0,76.3,2.3928,195.08,188.4,11.04,25.2,97.8,5.73,216.82,True,,False,False,True,True,True,0.66,True,True,True,212.28,223.11,3.0,2.0,1.5,WEAK,49.2
+SPGI,437.22,0.1,1.11,1721110.0,52.2,1.3569,434.51,439.65,0.62,14.9,57.9,10.99,575.57,False,,False,False,False,False,False,-0.01,True,True,False,433.65,450.34,3.0,0.82,3.68,WEAK,45.5
