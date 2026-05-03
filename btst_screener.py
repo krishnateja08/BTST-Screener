@@ -223,7 +223,17 @@ WEIGHTS = {
 # Core signals max: vol(20)+rsi(15)+macd(15)+ema(15)+breakout(15)+52w(10)+adx(10) = 100
 # Bonus signals max: sector(10)+candle(10)+marubozu(12)+rs(5)+mtf(8)+gap(8) = 53
 # Total = 153 pts.  Normalized score = raw / MAX_RAW_SCORE * 100  → 0-100 scale.
-MAX_RAW_SCORE = 153.0
+MAX_RAW_SCORE   = 153.0   # denominator for BTST score normalisation → 0-100
+MAX_ORB_SCORE   = 95.0    # max theoretical ORB score (used for HTML progress bar)
+
+# ── TA fallback values (used when indicator calc returns None / too few bars) ──
+RSI_FALLBACK        = 50    # neutral RSI — neither overbought nor oversold
+ATR_FALLBACK_FACTOR = 0.5   # ATR ≈ 50% of today's high-low range when ATR unavailable
+
+# ── Market detection heuristic ─────────────────────────────
+# India large-caps rarely exceed ~5M shares/day; US mega-caps easily do.
+# Used in filter_and_rank to pick the right liquidity gate without a country flag.
+INDIA_USA_VOL_THRESHOLD = 5_000_000
 
 # ── Enhancement constants ─────────────────────────────────
 AD_RATIO_MIN = 1.5   # min Advance/Decline ratio for high-conviction BTST trades
@@ -347,10 +357,10 @@ def check_market(market: str = "india") -> tuple[bool, float, float]:
             vix = pd.DataFrame()
     except Exception:
         print(f"  {Fore.YELLOW}⚠  Could not fetch market data{Style.RESET_ALL}")
-        return True, 0.0, 0.0
+        return True, 0.0, 0.0   # fail-open: assume safe market so scan still runs
 
     if idx.empty:
-        return True, 0.0, 0.0
+        return True, 0.0, 0.0   # fail-open: no data returned, proceed without blocking
 
     close = float(idx["Close"].iloc[-1])
     prev  = float(idx["Close"].iloc[-2]) if len(idx) >= 2 else close
@@ -496,7 +506,7 @@ def score_stock_from_df(symbol: str, df: pd.DataFrame,
 
         # ── RSI ───────────────────────────────────────────────────
         rsi_s = ta.rsi(df["Close"], length=14)
-        rsi   = float(rsi_s.iloc[-1]) if rsi_s is not None else 50
+        rsi   = float(rsi_s.iloc[-1]) if rsi_s is not None else RSI_FALLBACK
         s_rsi = (WEIGHTS["rsi_zone"] if 55 <= rsi <= 75 else
                  WEIGHTS["rsi_zone"] * 0.5 if 50 <= rsi < 55 else 0)
 
@@ -544,7 +554,7 @@ def score_stock_from_df(symbol: str, df: pd.DataFrame,
 
         # ── ATR (used for penalty + SL/Target) ───────────────────
         atr_s   = ta.atr(df["High"], df["Low"], df["Close"], length=14)
-        atr_val = float(atr_s.iloc[-1]) if atr_s is not None and not atr_s.empty else (rng * 0.5)
+        atr_val = float(atr_s.iloc[-1]) if atr_s is not None and not atr_s.empty else (rng * ATR_FALLBACK_FACTOR)
 
         # ── Day change ────────────────────────────────────────────
         prev_close = float(df["Close"].iloc[-2])
@@ -845,7 +855,7 @@ def score_orb_stock(symbol: str, sector_bonus: float = 0.0) -> dict | None:
         # ── 3. RSI at breakout bar position (Fix 5) ──────────────────
         df_to_brk = df.iloc[:brk_bar_pos + 1]
         rsi_s = ta.rsi(df_to_brk["Close"], length=9)
-        rsi   = float(rsi_s.iloc[-1]) if rsi_s is not None and not rsi_s.empty else 50.0
+        rsi   = float(rsi_s.iloc[-1]) if rsi_s is not None and not rsi_s.empty else float(RSI_FALLBACK)
         s_rsi = (ORB_WEIGHTS["rsi_5m"]        if rsi >= 55 else
                  ORB_WEIGHTS["rsi_5m"] * 0.53 if rsi >= 50 else 0)
 
@@ -1149,7 +1159,7 @@ def score_orb_stock_from_df(symbol: str, df: pd.DataFrame, sector_bonus: float =
         # so momentum reflects conditions at the moment of breakout.
         df_to_brk = df.iloc[:brk_bar_pos + 1]
         rsi_s = ta.rsi(df_to_brk["Close"], length=9)   # length=9 suits intraday 5-min
-        rsi   = float(rsi_s.iloc[-1]) if rsi_s is not None and not rsi_s.empty else 50.0
+        rsi   = float(rsi_s.iloc[-1]) if rsi_s is not None and not rsi_s.empty else float(RSI_FALLBACK)
         s_rsi = (ORB_WEIGHTS["rsi_5m"]        if rsi >= 55 else
                  ORB_WEIGHTS["rsi_5m"] * 0.53 if rsi >= 50 else 0)
 
@@ -1326,7 +1336,7 @@ def filter_and_rank(df: pd.DataFrame, min_score: float = 0.0) -> pd.DataFrame:
     # India stocks typically have avg daily volume in the hundreds of thousands;
     # USA large-caps run in the millions. Use the Avg_Vol median to decide.
     median_vol = df["Avg_Vol"].median() if "Avg_Vol" in df.columns else 0
-    is_india   = median_vol < 5_000_000   # India midcaps rarely exceed 5M shares/day
+    is_india   = median_vol < INDIA_USA_VOL_THRESHOLD
     liq_min    = LIQUIDITY_MIN_INDIA if is_india else LIQUIDITY_MIN_USA
 
     f = df[
@@ -1420,7 +1430,7 @@ def load_meta(prefix: str, date_str: str) -> tuple[bool, float, float]:
             m = json.load(f)
         return bool(m.get("ok", True)), float(m.get("chg", 0.0)), float(m.get("vix", 0.0))
     except Exception:
-        return True, 0.0, 0.0
+        return True, 0.0, 0.0   # fail-open: missing/corrupt meta file → assume safe, no chg, no vix
 
 
 # ══════════════════════════════════════════════════════════
@@ -1443,7 +1453,7 @@ def _rows(df: pd.DataFrame, currency: str = "₹",
 
         sc  = row["BTST_Score"]
         bc  = "#00e676" if sc >= 70 else "#ffca28" if sc >= 50 else "#ff5252"
-        pct = min(sc / 130 * 100, 100)   # new max ≈130 pts
+        pct = sc   # score is already normalised to 0-100
 
         # ── 52W high badge ───────────────────────────────────────
         near52  = row.get("Near_52W_High", False)
@@ -1562,7 +1572,7 @@ def _rows_orb(df: pd.DataFrame, currency: str = "₹") -> str:
         medal   = medals.get(rank, f"#{rank}")
         sc      = row["ORB_Score"]
         bc      = "#00ff88" if sc >= 60 else "#ffd740" if sc >= 40 else "#ff6b6b"
-        pct     = min(sc / 95 * 100, 100)
+        pct     = min(sc / MAX_ORB_SCORE * 100, 100)
 
         vol_cls = "bg" if row["Vol_Ratio"] >= 2.0 else "by" if row["Vol_Ratio"] >= 1.5 else "br"
         rsi_cls = "bg" if row["RSI_5m"] >= 55    else "by" if row["RSI_5m"] >= 50    else "br"
@@ -2372,7 +2382,7 @@ def run_backtest(prefix: str, days: int = 30):
             continue          # no next-day data yet (picked today)
 
         nxt        = future.iloc[0]
-        nxt_open   = float(nxt.get("Open",  nxt["Close"]))
+        nxt_open   = float(nxt.get("Open",  nxt["Close"]))   # fallback: use close if Open missing (split-adjusted data gap)
         nxt_high   = float(nxt["High"])
         nxt_low    = float(nxt["Low"])
         nxt_close  = float(nxt["Close"])
