@@ -17,49 +17,40 @@
   html{scroll-behavior:smooth}
   body{background:var(--bg);color:var(--text);font-family:var(--sans);padding-bottom:60px;-webkit-font-smoothing:antialiased}
 
-  /* HEADER */
-  .header{background:linear-gradient(135deg,#0d1117 0%,#0a1628 55%,#0d1117 100%);border-bottom:1px solid var(--border);padding:clamp(18px,4vw,36px) clamp(14px,5vw,48px) clamp(16px,3vw,28px);position:relative;overflow:hidden}
-  .header::before{content:'';position:absolute;top:-80px;right:-80px;width:clamp(160px,28vw,300px);height:clamp(160px,28vw,300px);background:radial-gradient(circle,rgba(0,230,118,.07) 0%,transparent 70%);pointer-events:none}
-  .header::after{content:'';position:absolute;bottom:-70px;left:25%;width:200px;height:200px;background:radial-gradient(circle,rgba(64,196,255,.05) 0%,transparent 70%);pointer-events:none}
-  .header-top{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap}
-  .logo h1{font-size:clamp(1.6rem,4vw,2.5rem);font-weight:800;letter-spacing:-.5px;line-height:1.1}
-  .logo h1 span{color:var(--green)}
-  .logo p{font-family:var(--mono);font-size:clamp(.78rem,1.5vw,.92rem);color:#c8d8e8;margin-top:5px;letter-spacing:1.5px;text-transform:uppercase}
-  .ts{font-family:var(--mono);text-align:right;flex-shrink:0;display:flex;flex-direction:column;align-items:flex-end;gap:2px}
-  .ts-time{font-size:clamp(1.05rem,2.2vw,1.25rem);font-weight:700;color:var(--blue);white-space:nowrap;display:flex;align-items:center;gap:6px;line-height:1.2}
-  .ts-date{font-size:clamp(.82rem,1.5vw,.96rem);color:#d0dce8;font-weight:600;white-space:nowrap}
-  .ts-label{font-size:clamp(.66rem,1.2vw,.76rem);color:#7888a0;letter-spacing:.5px}
-  .tz-tag{display:inline-block;background:rgba(96,212,255,.15);color:var(--blue);border:1px solid rgba(96,212,255,.4);border-radius:4px;font-family:var(--mono);font-size:.7rem;padding:2px 7px;letter-spacing:1px;vertical-align:middle;font-weight:700}
-
-  /* PILLS */
-  .pills{display:flex;gap:8px;margin-top:20px;flex-wrap:wrap}
-  .pill{display:flex;align-items:center;gap:7px;background:var(--surf2);border:1px solid var(--border);border-radius:999px;padding:6px 14px;font-family:var(--mono);font-size:clamp(.74rem,1.4vw,.86rem);color:#c8d4e0;white-space:nowrap}
-  .dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+  /* HEADER — compact single bar */
+  .header{background:linear-gradient(90deg,#0d1117 0%,#0a1628 50%,#0d1117 100%);border-bottom:1px solid var(--border);padding:10px clamp(14px,3vw,32px);display:flex;align-items:center;gap:14px;flex-wrap:nowrap;overflow:hidden}
+  .logo-inline{display:flex;flex-direction:column;justify-content:center;flex-shrink:0}
+  .logo-inline h1{font-size:1.1rem;font-weight:800;letter-spacing:-.5px;line-height:1.15;white-space:nowrap}
+  .logo-inline h1 span{color:var(--green)}
+  .logo-inline p{font-family:var(--mono);font-size:.6rem;color:#7888a0;letter-spacing:1.2px;text-transform:uppercase;margin-top:1px}
+  .hdr-divider{width:1px;height:28px;background:var(--border);flex-shrink:0}
+  .pills-inline{display:flex;gap:6px;flex:1;flex-wrap:nowrap;overflow:hidden;align-items:center;min-width:0}
+  .pill{display:flex;align-items:center;gap:5px;background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:999px;padding:3px 10px;font-family:var(--mono);font-size:.7rem;color:#c8d4e0;white-space:nowrap}
+  .dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
   .dot.live{animation:blink 2s infinite}
   @keyframes blink{0%,100%{opacity:1}50%{opacity:.25}}
+  .hdr-ts{display:flex;align-items:center;gap:8px;flex-shrink:0;margin-left:auto;font-family:var(--mono)}
+  .hdr-clock{font-size:.88rem;font-weight:700;color:var(--blue);white-space:nowrap}
+  .tz-tag{display:inline-block;background:rgba(96,212,255,.15);color:var(--blue);border:1px solid rgba(96,212,255,.4);border-radius:4px;font-size:.62rem;padding:1px 5px;letter-spacing:1px;font-weight:700;vertical-align:middle}
+  .hdr-date{font-size:.68rem;color:#7888a0;white-space:nowrap}
 
   /* MARKET PILLS — per-tab, shown/hidden via JS */
-  .market-pills{display:none;flex-wrap:wrap;gap:8px;margin-top:16px}
+  .market-pills{display:none;gap:6px;align-items:center;flex:1;min-width:0;overflow:hidden}
   .market-pills.active{display:flex}
+
+  /* TABS BAR */
+  .tabs-bar{background:var(--surf);border-bottom:1px solid var(--border);padding:0 clamp(14px,3vw,32px);display:flex;align-items:center;gap:2px}
+  .tab-btn{display:flex;align-items:center;gap:6px;background:transparent;border:none;border-bottom:2px solid transparent;padding:9px 16px;cursor:pointer;font-family:var(--mono);font-size:clamp(.72rem,1.3vw,.82rem);font-weight:700;color:var(--muted);transition:color .2s,border-color .2s;white-space:nowrap;margin-bottom:-1px}
+  .tab-btn .flag{font-size:.95rem}
+  .tab-btn.active.india-btn{color:var(--green);border-bottom-color:var(--green)}
+  .tab-btn.active.usa-btn{color:var(--blue);border-bottom-color:var(--blue)}
+  .tab-btn.active.orb-btn{color:#f9a825;border-bottom-color:#f9a825}
+  .tab-btn:hover:not(.active){color:var(--text)}
+  .tabs-bar-spacer{flex:1}
+  .tabs-bar-label{font-family:var(--mono);font-size:.62rem;color:#7888a0;letter-spacing:.5px;white-space:nowrap}
 
   /* CONTENT */
   .content{padding:clamp(20px,4vw,36px) clamp(14px,5vw,48px)}
-
-  /* ── TOGGLE ── */
-  .toggle-wrap{display:flex;gap:0;margin-bottom:30px;background:var(--surf2);border:1px solid var(--border);border-radius:999px;padding:4px;width:fit-content}
-  .tab-btn{
-    display:flex;align-items:center;gap:8px;
-    background:transparent;border:none;border-radius:999px;
-    padding:10px 24px;cursor:pointer;
-    font-family:var(--mono);font-size:clamp(.78rem,1.5vw,.9rem);
-    font-weight:700;color:var(--muted);
-    transition:all .25s ease;white-space:nowrap;
-  }
-  .tab-btn .flag{font-size:1.1rem}
-  .tab-btn.active{background:var(--surf);color:var(--text);box-shadow:0 2px 8px rgba(0,0,0,.4)}
-  .tab-btn.active.india-btn{color:var(--green)}
-  .tab-btn.active.usa-btn{color:var(--blue)}
-  .tab-btn:hover:not(.active){color:var(--text)}
 
   /* TAB PANELS */
   .tab-panel{display:none;animation:fadeUp .35s ease}
@@ -146,30 +137,21 @@
 </head>
 <body>
 
-<!-- HEADER -->
+<!-- HEADER — compact single bar -->
 <div class="header">
-  <div class="header-top">
-    <div class="logo">
-      <h1>BTST <span>Screener</span></h1>
-      <p>India — Nifty 100 &nbsp;·&nbsp; USA — S&P 500 Top 100 &nbsp;·&nbsp; Buy Today Sell Tomorrow</p>
-    </div>
-    <div class="ts">
-      <div class="ts-time">
-        <span id="live-clock">03:00:56 AM</span>
-        <span class="tz-tag">IST</span>
-      </div>
-      <div class="ts-date">04 May 2026</div>
-      <div class="ts-label">Last generated · Auto-report</div>
-    </div>
+  <div class="logo-inline">
+    <h1>BTST <span>Screener</span></h1>
+    <p>India · USA · Buy Today Sell Tomorrow</p>
   </div>
+  <div class="hdr-divider"></div>
 
-  <!-- India status pills -->
+  <!-- India status pills (shown by default) -->
   <div class="market-pills active" id="pills-india">
     <div class="pill"><div class="dot live" style="background:#ff5252"></div>Market:&nbsp;<strong style="color:#ff5252">CAUTION</strong></div>
     <div class="pill"><div class="dot" style="background:#40c4ff"></div>Nifty 50:&nbsp;<strong style="color:#40c4ff">-0.74%</strong></div>
     <div class="pill"><div class="dot" style="background:#00e676"></div>India VIX:&nbsp;<strong style="color:#00e676">18.46</strong></div>
     <div class="pill"><div class="dot" style="background:#7d8590"></div>Scanned:&nbsp;<strong style="color:#e6edf3">100</strong></div>
-    <div class="pill"><div class="dot" style="background:#7d8590"></div>Candidates:&nbsp;<strong style="color:#e6edf3">15</strong></div>
+    <div class="pill"><div class="dot" style="background:#7d8590"></div>Picks:&nbsp;<strong style="color:#e6edf3">15</strong></div>
   </div>
 
   <!-- USA status pills -->
@@ -178,35 +160,40 @@
     <div class="pill"><div class="dot" style="background:#40c4ff"></div>S&amp;P 500:&nbsp;<strong style="color:#40c4ff">+0.29%</strong></div>
     <div class="pill"><div class="dot" style="background:#00e676"></div>CBOE VIX:&nbsp;<strong style="color:#00e676">16.99</strong></div>
     <div class="pill"><div class="dot" style="background:#7d8590"></div>Scanned:&nbsp;<strong style="color:#e6edf3">99</strong></div>
-    <div class="pill"><div class="dot" style="background:#7d8590"></div>Candidates:&nbsp;<strong style="color:#e6edf3">7</strong></div>
+    <div class="pill"><div class="dot" style="background:#7d8590"></div>Picks:&nbsp;<strong style="color:#e6edf3">7</strong></div>
   </div>
 
   <!-- ORB status pills -->
   <div class="market-pills" id="pills-orb">
     <div class="pill"><div class="dot live" style="background:#f9a825"></div>Mode:&nbsp;<strong style="color:#f9a825">INTRADAY</strong></div>
-    <div class="pill"><div class="dot" style="background:#f9a825"></div>Strategy:&nbsp;<strong style="color:#e6edf3">Opening Range Breakout</strong></div>
-    <div class="pill"><div class="dot" style="background:#7d8590"></div>Interval:&nbsp;<strong style="color:#e6edf3">5-min bars</strong></div>
-    <div class="pill"><div class="dot" style="background:#7d8590"></div>ORB Window:&nbsp;<strong style="color:#e6edf3">First 15 min</strong></div>
+    <div class="pill"><div class="dot" style="background:#f9a825"></div>Strategy:&nbsp;<strong style="color:#e6edf3">ORB 5-min</strong></div>
     <div class="pill"><div class="dot" style="background:#7d8590"></div>🇮🇳 Breakouts:&nbsp;<strong style="color:#e6edf3">0</strong></div>
     <div class="pill"><div class="dot" style="background:#7d8590"></div>🇺🇸 Breakouts:&nbsp;<strong style="color:#e6edf3">0</strong></div>
   </div>
+
+  <div class="hdr-ts">
+    <span class="hdr-clock"><span id="live-clock">03:46:32 AM</span> <span class="tz-tag">IST</span></span>
+    <span class="hdr-date">04 May 2026</span>
+  </div>
+</div>
+
+<!-- TABS BAR -->
+<div class="tabs-bar">
+  <button class="tab-btn india-btn active" onclick="switchTab('india')">
+    <span class="flag">🇮🇳</span> India <span style="font-size:.6rem;opacity:.55">NIFTY 100</span>
+  </button>
+  <button class="tab-btn usa-btn" onclick="switchTab('usa')">
+    <span class="flag">🇺🇸</span> USA <span style="font-size:.6rem;opacity:.55">S&amp;P 500</span>
+  </button>
+  <button class="tab-btn orb-btn" onclick="switchTab('orb')">
+    <span class="flag">📊</span> ORB <span style="font-size:.6rem;opacity:.55">5-MIN</span>
+  </button>
+  <div class="tabs-bar-spacer"></div>
+  <span class="tabs-bar-label">Last generated · Auto-report</span>
 </div>
 
 <!-- CONTENT -->
 <div class="content">
-
-  <!-- TOGGLE -->
-  <div class="toggle-wrap">
-    <button class="tab-btn india-btn active" onclick="switchTab('india')">
-      <span class="flag">🇮🇳</span> India &nbsp;<span style="font-size:.65rem;opacity:.6">NIFTY 100</span>
-    </button>
-    <button class="tab-btn usa-btn" onclick="switchTab('usa')">
-      <span class="flag">🇺🇸</span> USA &nbsp;<span style="font-size:.65rem;opacity:.6">S&amp;P 500 TOP 100</span>
-    </button>
-    <button class="tab-btn orb-btn" onclick="switchTab('orb')">
-      <span class="flag">📊</span> ORB &nbsp;<span style="font-size:.65rem;opacity:.6">INTRADAY 5-MIN</span>
-    </button>
-  </div>
 
   <!-- INDIA PANEL -->
   <div class="tab-panel active" id="panel-india">
@@ -872,7 +859,6 @@
 
   <!-- ORB PANEL -->
   <style>
-    .tab-btn.active.orb-btn{color:#f9a825}
     .orb-sub{margin:20px 0 10px;padding:10px 14px;background:rgba(249,168,37,.05);border:1px solid rgba(249,168,37,.18);border-radius:8px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
     .orb-sub-title{font-family:var(--mono);font-size:.72rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#f9a825}
     .orb-chip{font-family:var(--mono);font-size:.65rem;padding:2px 8px;border-radius:4px;background:rgba(249,168,37,.12);border:1px solid rgba(249,168,37,.25);color:#f9a825}
@@ -1145,7 +1131,7 @@
 <!-- FOOTER -->
 <div class="footer">
   Generated by BTST Screener · Python + yfinance + pandas-ta
-  &nbsp;|&nbsp; India: 04 May 2026, 03:00 AM IST &nbsp;·&nbsp; USA: 03 May 2026, 05:30 PM EST
+  &nbsp;|&nbsp; India: 04 May 2026, 03:46 AM IST &nbsp;·&nbsp; USA: 03 May 2026, 06:16 PM EST
   <br>
   Parameters: Vol Surge (20) · RSI (15) · MACD (15) · EMA (15) · Breakout (15) · ADX (10) · 52W (10) · Gap (+8) · Sector (+7) · Candle (+10) · RS (+5) · Weekly MTF (+8)
 </div>
