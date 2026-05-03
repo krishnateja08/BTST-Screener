@@ -1551,8 +1551,10 @@ def _rows(df: pd.DataFrame, currency: str = "₹",
           <td>{badge_rs}</td>
           <td>{badge_mtf}</td>
           {badge_sec}
-          <td class="num" style="color:#ff6b6b" title="Stop-loss: –{sl_pct:.1f}% from entry">{currency}{sl:,.2f} <span style="font-size:.75rem;opacity:.75">–{sl_pct:.1f}%</span></td>
-          <td class="num" style="color:#00ff88" title="Target: +{tgt_pct:.1f}% from entry">{currency}{tgt:,.2f} <span style="font-size:.75rem;opacity:.75">+{tgt_pct:.1f}%</span></td>
+          <td class="num" style="line-height:1.55">
+            <span style="color:#ff6b6b" title="Stop-loss: –{sl_pct:.1f}% from entry">{currency}{sl:,.2f} <span style="font-size:.72rem;opacity:.8">–{sl_pct:.1f}%</span></span><br>
+            <span style="color:#00ff88" title="Target: +{tgt_pct:.1f}% from entry">{currency}{tgt:,.2f} <span style="font-size:.72rem;opacity:.8">+{tgt_pct:.1f}%</span></span>
+          </td>
           <td class="num" style="color:{rr_col};font-weight:700">{rr:.1f}x</td>
           <td>
             <div class="bw">
@@ -1652,8 +1654,8 @@ def generate_html_report(
     time_est = now_est.strftime("%d %b %Y, %I:%M %p EST")
     html_file = f"btst_report_{date_str}.html"
 
-    india_rows = _rows(india_top, "₹", _load_prev_scores("india", date_str)) if not india_top.empty else "<tr><td colspan='18' style='text-align:center;color:var(--muted);padding:30px'>No candidates found today</td></tr>"
-    usa_rows   = _rows(usa_top,   "$", _load_prev_scores("usa",   date_str)) if not usa_top.empty   else "<tr><td colspan='18' style='text-align:center;color:var(--muted);padding:30px'>No candidates found today</td></tr>"
+    india_rows = _rows(india_top, "₹", _load_prev_scores("india", date_str)) if not india_top.empty else "<tr><td colspan='17' style='text-align:center;color:var(--muted);padding:30px'>No candidates found today</td></tr>"
+    usa_rows   = _rows(usa_top,   "$", _load_prev_scores("usa",   date_str)) if not usa_top.empty   else "<tr><td colspan='17' style='text-align:center;color:var(--muted);padding:30px'>No candidates found today</td></tr>"
 
     # ── ORB rows ──────────────────────────────────────────────
     _orb_empty = "<tr><td colspan='15' style='text-align:center;color:var(--muted);padding:30px'>No ORB breakouts detected — market may not be open yet, or no confirmed breakouts this session.</td></tr>"
@@ -1884,7 +1886,7 @@ def generate_html_report(
     <p class="scroll-hint">← swipe to see all columns</p>
     <div class="tw">
       <table>
-        <thead><tr><th>#</th><th>Symbol</th><th>Conviction</th><th>Close (₹)</th><th>Change</th><th>Vol Ratio</th><th>RSI</th><th>ADX</th><th>Range Pos</th><th>52W High</th><th>Gap</th><th>Candle</th><th>RS</th><th>Weekly</th><th>Sector</th><th>Stop Loss</th><th>Target</th><th>R:R</th><th>BTST Score</th></tr></thead>
+        <thead><tr><th>#</th><th>Symbol</th><th>Conviction</th><th>Close (₹)</th><th>Change</th><th>Vol Ratio</th><th>RSI</th><th>ADX</th><th>Range Pos</th><th>52W High</th><th>Gap</th><th>Candle</th><th>RS</th><th>Weekly</th><th>Sector</th><th>SL / Target</th><th>R:R</th><th>BTST Score</th></tr></thead>
         <tbody>{india_rows}</tbody>
       </table>
     </div>
@@ -1908,7 +1910,7 @@ def generate_html_report(
     <p class="scroll-hint">← swipe to see all columns</p>
     <div class="tw">
       <table>
-        <thead><tr><th>#</th><th>Symbol</th><th>Conviction</th><th>Close ($)</th><th>Change</th><th>Vol Ratio</th><th>RSI</th><th>ADX</th><th>Range Pos</th><th>52W High</th><th>Gap</th><th>Candle</th><th>RS</th><th>Weekly</th><th>Sector</th><th>Stop Loss</th><th>Target</th><th>R:R</th><th>BTST Score</th></tr></thead>
+        <thead><tr><th>#</th><th>Symbol</th><th>Conviction</th><th>Close ($)</th><th>Change</th><th>Vol Ratio</th><th>RSI</th><th>ADX</th><th>Range Pos</th><th>52W High</th><th>Gap</th><th>Candle</th><th>RS</th><th>Weekly</th><th>Sector</th><th>SL / Target</th><th>R:R</th><th>BTST Score</th></tr></thead>
         <tbody>{usa_rows}</tbody>
       </table>
     </div>
