@@ -1463,9 +1463,10 @@ def _rows(df: pd.DataFrame, currency: str = "₹",
         sec_align = row.get("Sector_Align", False)
         sec_bg    = "rgba(0,255,136,0.12)" if sec_align else "rgba(255,107,107,0.10)"
         sec_txt   = "#00ff88"              if sec_align else "#ff6b6b"
-        sec_label = "✅ Green"             if sec_align else "❌ Red"
-        badge_sec = (f'<td style="background:{sec_bg};text-align:center">'
-                     f'<span style="color:{sec_txt};font-weight:700;font-size:.82rem">'
+        sec_bdr   = "rgba(0,255,136,0.35)" if sec_align else "rgba(255,107,107,0.30)"
+        sec_label = "▲ Bull"               if sec_align else "▼ Bear"
+        badge_sec = (f'<td style="text-align:center">'
+                     f'<span style="display:inline-block;background:{sec_bg};color:{sec_txt};border:1px solid {sec_bdr};border-radius:4px;font-family:var(--mono);font-size:.65rem;font-weight:700;padding:2px 7px;letter-spacing:.5px;white-space:nowrap">'
                      f'{sec_label}</span></td>')
 
         # ── Gap-up badge ─────────────────────────────────────────
@@ -1540,7 +1541,7 @@ def _rows(df: pd.DataFrame, currency: str = "₹",
           <td class="sym">{sym}</td>
           <td>{badge_conv}</td>
           <td class="num">{currency}{row['Close']:,.2f}</td>
-          <td><span style="color:{chg_c};font-weight:700">{chg_a} {abs(row['Change%']):.2f}%</span></td>
+          <td><span style="color:{chg_c};font-weight:700;font-family:var(--mono);font-size:.78rem">{chg_a} {abs(row['Change%']):.2f}%</span></td>
           <td><span class="badge {vol_cls}">{row['Volume_Ratio']:.2f}x</span></td>
           <td><span class="badge {rsi_cls}">{row['RSI']:.1f}</span></td>
           <td class="num">{row['ADX']:.1f}</td>
