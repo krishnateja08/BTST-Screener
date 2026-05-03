@@ -219,6 +219,12 @@ WEIGHTS = {
     "gap_up":          8,   # gap-up open that held by close (+5 mild / +8 strong)
 }
 
+# ── Max theoretical raw score (used for normalization to 0-100) ──────
+# Core signals max: vol(20)+rsi(15)+macd(15)+ema(15)+breakout(15)+52w(10)+adx(10) = 100
+# Bonus signals max: sector(10)+candle(10)+marubozu(12)+rs(5)+mtf(8)+gap(8) = 53
+# Total = 153 pts.  Normalized score = raw / MAX_RAW_SCORE * 100  → 0-100 scale.
+MAX_RAW_SCORE = 153.0
+
 # ── Enhancement constants ─────────────────────────────────
 AD_RATIO_MIN = 1.5   # min Advance/Decline ratio for high-conviction BTST trades
 SECTOR_TOP_N = 3     # top-N sectors by % gain get the full sector bonus
@@ -318,7 +324,7 @@ def check_market(market: str = "india") -> tuple[bool, float, float]:
     idx_sym = INDIA_INDEX if market == "india" else USA_INDEX
     vix_sym = INDIA_VIX   if market == "india" else USA_VIX
     label   = "Nifty 50"  if market == "india" else "S&P 500"
-    vix_thr = 20          if market == "india" else 20
+    vix_thr = 18          if market == "india" else 20  # India VIX scale differs from CBOE VIX
 
     hdr(f"Market Health — {label.upper()}")
 
@@ -648,7 +654,7 @@ def score_stock_from_df(symbol: str, df: pd.DataFrame,
         try:
             open0    = float(df["Open"].iloc[-1])
             gap_pct  = (open0 - prev_close) / prev_close * 100 if prev_close > 0 else 0.0
-            gap_held = close > prev_close
+            gap_held = close >= open0   # gap held = price closed at or above today's open (gap not filled)
             if gap_pct >= 1.0 and gap_held and pos >= 0.60:
                 s_gap = WEIGHTS["gap_up"]
             elif gap_pct >= 0.5 and gap_held:
@@ -682,7 +688,7 @@ def score_stock_from_df(symbol: str, df: pd.DataFrame,
             total *= MKT_MULT_WEAK     # clearly weak: –20%
 
         # ── Entry Quality Flag ────────────────────────────────────
-        # Flag overextended entries: stock too far above EMA20 (proxy for VWAP)
+        # Flag overextended entries: stock too far above the 20-day EMA
         # OR large single-day move without volume confirmation.
         ema_dist_pct = (close - ema20) / ema20 * 100 if ema20 > 0 else 0.0
         entry_overextended = (
@@ -704,6 +710,12 @@ def score_stock_from_df(symbol: str, df: pd.DataFrame,
         risk        = close - stop_loss
         reward      = target - close
         rr_ratio    = round(reward / risk, 2) if risk > 0 else 0.0
+
+        # ── Normalise to 0-100 scale ─────────────────────────────
+        # Raw total can exceed 100 when many bonuses stack; normalising makes
+        # the conviction tiers (80 / 70 / 55) meaningful relative to max possible.
+        raw_total = total
+        total     = min(round(raw_total / MAX_RAW_SCORE * 100, 1), 100.0)
 
         # ── Conviction label ──────────────────────────────────────
         if total >= SCORE_HIGH_CONVICTION:
@@ -801,7 +813,7 @@ def score_orb_stock(symbol: str, sector_bonus: float = 0.0) -> dict | None:
         orb_range     = orb_high - orb_low
         orb_range_pct = (orb_range / orb_high * 100) if orb_high > 0 else 0.0
 
-        # ── Fix 1 & 2: Find BEST breakout bar after ORB ──────────────
+        # ── Fix 1 & 2: Find FIRST breakout bar after ORB ─────────────
         post_orb      = df.iloc[ORB_BARS:]
         if post_orb.empty:
             return None
@@ -809,7 +821,8 @@ def score_orb_stock(symbol: str, sector_bonus: float = 0.0) -> dict | None:
         if breakout_bars.empty:
             return None   # price never crossed ORB high today
 
-        brk_bar_idx = breakout_bars["Close"].idxmax()
+        # First breakout bar = actual real-time entry signal (no look-ahead bias)
+        brk_bar_idx = breakout_bars.index[0]
         brk_bar     = df.loc[brk_bar_idx]
         brk_bar_pos = df.index.get_loc(brk_bar_idx)
 
@@ -927,7 +940,9 @@ def fetch_advance_decline(market: str) -> float:
             raw = raw.dropna()
             if len(raw) >= 2:
                 today_chg = float(raw["Close"].iloc[-1]) - float(raw["Close"].iloc[-2])
-                return 2.5 if today_chg > 500 else 1.8 if today_chg > 0 else 0.8
+                # NYAD cumulative line changes by thousands on strong days.
+                # >2000 = very broad rally; >0 = more advances than declines; <=0 = narrow/falling.
+                return 2.5 if today_chg > 2000 else 1.8 if today_chg > 0 else 0.8
         else:
             return 0.0   # will be computed from cache in run_screener
     except Exception:
@@ -1099,15 +1114,17 @@ def score_orb_stock_from_df(symbol: str, df: pd.DataFrame, sector_bonus: float =
         if post_orb.empty:
             return None
 
-        # ── Fix 1 & 2: Find the BEST breakout bar (highest High above ORB high)
-        # instead of using the last bar. This catches morning breakouts even when
-        # the screener is run at EOD and price has since pulled back.
+        # ── Fix 1 & 2: Find the FIRST breakout bar after ORB ────────
+        # Use the first bar that crosses ORB high — this is the actual entry
+        # signal in real trading.  Using highest-close bar introduces look-ahead
+        # bias (you cannot know which bar will peak at the time of breakout).
+        # "Target Hit" display below still uses the current last price.
         breakout_bars = post_orb[post_orb["High"] > orb_high]
         if breakout_bars.empty:
             return None   # price never crossed ORB high at any point today
 
-        # Best breakout bar = the bar with the highest close above ORB high
-        brk_bar_idx = breakout_bars["Close"].idxmax()
+        # First breakout bar = the earliest bar whose High exceeded ORB high
+        brk_bar_idx = breakout_bars.index[0]
         brk_bar     = df.loc[brk_bar_idx]
         brk_bar_pos = df.index.get_loc(brk_bar_idx)   # integer position in df
 
