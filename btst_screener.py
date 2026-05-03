@@ -1878,11 +1878,14 @@ def generate_html_report(
       <div class="sh-line"></div>
       <div class="sh-sub">Entry window: 3:00–3:20 PM IST</div>
     </div>
-    <div style="margin:10px 0 14px;padding:10px 14px;background:rgba(255,193,7,0.07);border:1px solid rgba(255,193,7,0.22);border-radius:8px;font-size:.75rem;line-height:1.6;color:var(--muted)">
-      <strong style="color:var(--text)">⚡ Next-day exit rules (India):</strong>
-      &nbsp;Target = see Target% column &nbsp;·&nbsp; SL = see SL% column &nbsp;·&nbsp;
-      <strong style="color:#ff6b6b">Gap-down exit: if opens below entry price, exit by 9:20 AM IST — do not hold.</strong>
-      &nbsp;·&nbsp; If first 15-min low breaks SL → exit immediately.
+    <div style="margin:10px 0 14px;padding:12px 16px;background:rgba(255,193,7,0.06);border:1px solid rgba(255,193,7,0.22);border-radius:8px;display:flex;flex-wrap:wrap;gap:10px 24px;align-items:flex-start">
+      <div style="font-family:var(--mono);font-size:.72rem;font-weight:700;color:#ffd740;white-space:nowrap;padding-top:1px">⚡ EXIT RULES · INDIA</div>
+      <div style="display:flex;flex-wrap:wrap;gap:8px 20px;flex:1;font-family:var(--mono);font-size:.72rem">
+        <span style="color:#a0aab4">🎯 Target: <strong style="color:#00ff88">see Target% col</strong></span>
+        <span style="color:#a0aab4">🛑 SL: <strong style="color:#ff6b6b">see SL% col</strong></span>
+        <span style="color:#ff6b6b;font-weight:700">⚠ Gap-down open → exit by 9:20 AM IST, do not hold</span>
+        <span style="color:#a0aab4">📉 First 15-min low breaks SL → exit immediately</span>
+      </div>
     </div>
     <p class="scroll-hint">← swipe to see all columns</p>
     <div class="tw">
@@ -1902,11 +1905,14 @@ def generate_html_report(
       <div class="sh-line"></div>
       <div class="sh-sub">Entry window: 3:30–4:00 PM EST</div>
     </div>
-    <div style="margin:10px 0 14px;padding:10px 14px;background:rgba(255,193,7,0.07);border:1px solid rgba(255,193,7,0.22);border-radius:8px;font-size:.75rem;line-height:1.6;color:var(--muted)">
-      <strong style="color:var(--text)">⚡ Next-day exit rules (USA):</strong>
-      &nbsp;Target = see Target% column &nbsp;·&nbsp; SL = see SL% column &nbsp;·&nbsp;
-      <strong style="color:#ff6b6b">Gap-down exit: if opens below entry price, exit by 9:35 AM EST — do not hold.</strong>
-      &nbsp;·&nbsp; If first 15-min low breaks SL → exit immediately.
+    <div style="margin:10px 0 14px;padding:12px 16px;background:rgba(255,193,7,0.06);border:1px solid rgba(255,193,7,0.22);border-radius:8px;display:flex;flex-wrap:wrap;gap:10px 24px;align-items:flex-start">
+      <div style="font-family:var(--mono);font-size:.72rem;font-weight:700;color:#ffd740;white-space:nowrap;padding-top:1px">⚡ EXIT RULES · USA</div>
+      <div style="display:flex;flex-wrap:wrap;gap:8px 20px;flex:1;font-family:var(--mono);font-size:.72rem">
+        <span style="color:#a0aab4">🎯 Target: <strong style="color:#00ff88">see Target% col</strong></span>
+        <span style="color:#a0aab4">🛑 SL: <strong style="color:#ff6b6b">see SL% col</strong></span>
+        <span style="color:#ff6b6b;font-weight:700">⚠ Gap-down open → exit by 9:35 AM EST, do not hold</span>
+        <span style="color:#a0aab4">📉 First 15-min low breaks SL → exit immediately</span>
+      </div>
     </div>
     <p class="scroll-hint">← swipe to see all columns</p>
     <div class="tw">
