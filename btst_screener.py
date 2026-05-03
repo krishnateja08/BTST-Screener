@@ -1729,18 +1729,18 @@ def generate_html_report(
   .tab-panel.active{{display:block}}
 
   /* CARDS */
-  .cards{{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:32px}}
+  .cards{{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:20px}}
   @media(max-width:860px){{.cards{{grid-template-columns:repeat(3,1fr)}}}}
   @media(max-width:520px){{.cards{{grid-template-columns:repeat(2,1fr)}}}}
-  .card{{background:var(--surf);border:1px solid var(--border);border-radius:var(--r);padding:clamp(13px,2.5vw,22px) clamp(12px,2vw,20px) clamp(11px,2vw,18px);position:relative;overflow:hidden;transition:transform .2s,box-shadow .2s;animation:fadeUp .4s ease both}}
-  .card:hover{{transform:translateY(-3px);box-shadow:0 10px 28px rgba(0,0,0,.45)}}
-  .card::after{{content:'';position:absolute;bottom:0;left:0;right:0;height:3px;border-radius:0 0 var(--r) var(--r)}}
+  .card{{background:var(--surf);border:1px solid var(--border);border-radius:var(--r);padding:10px 14px 9px;position:relative;overflow:hidden;transition:transform .2s,box-shadow .2s;animation:fadeUp .4s ease both}}
+  .card:hover{{transform:translateY(-2px);box-shadow:0 6px 18px rgba(0,0,0,.4)}}
+  .card::after{{content:'';position:absolute;bottom:0;left:0;right:0;height:2px;border-radius:0 0 var(--r) var(--r)}}
   .card.cg::after{{background:var(--green)}} .card.cy::after{{background:var(--yellow)}}
   .card.cr::after{{background:var(--red)}}   .card.cb::after{{background:var(--blue)}}
   .card.cm::after{{background:var(--muted)}}
-  .card-ico{{font-size:1.15rem;margin-bottom:8px;display:block}}
-  .card-val{{font-family:var(--mono);line-height:1;font-size:clamp(1.7rem,3.8vw,2.6rem);font-weight:700}}
-  .card-lbl{{font-size:clamp(.68rem,1.3vw,.82rem);color:var(--muted);text-transform:uppercase;letter-spacing:.9px;margin-top:7px;line-height:1.4}}
+  .card-ico{{font-size:.9rem;margin-bottom:4px;display:block}}
+  .card-val{{font-family:var(--mono);line-height:1;font-size:clamp(1.1rem,2.2vw,1.5rem);font-weight:700}}
+  .card-lbl{{font-size:clamp(.6rem,1.1vw,.7rem);color:var(--muted);text-transform:uppercase;letter-spacing:.8px;margin-top:4px;line-height:1.3}}
   .card:nth-child(1){{animation-delay:.04s}} .card:nth-child(2){{animation-delay:.08s}}
   .card:nth-child(3){{animation-delay:.12s}} .card:nth-child(4){{animation-delay:.16s}}
   .card:nth-child(5){{animation-delay:.20s}}
