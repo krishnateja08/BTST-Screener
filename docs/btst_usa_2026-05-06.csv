@@ -1,3 +1,5 @@
 Symbol,Close,Change%,Volume_Ratio,Avg_Vol,RSI,MACD_Hist,EMA20,EMA50,EMA_Dist%,ADX,Range_Pos%,ATR,52W_High,Near_52W_High,Candle,Marubozu,FinalHrFade,RS_Beat,Weekly_Align,Gap_Up,Gap_Pct,Sector_Align,Breadth_OK,Entry_Overextended,Stop_Loss,Target,Target%,SL%,RR_Ratio,Conviction,BTST_Score
-LRCX,275.8,6.66,1.22,9636910.0,62.9,-0.5414,255.65,241.87,7.88,15.9,68.1,12.35,279.99,True,,False,False,True,True,True,3.21,True,True,True,270.28,284.07,3.0,2.0,1.5,WEAK,37.1
-SO,95.9,-0.09,1.2,4845810.0,53.9,0.266,95.11,94.67,0.83,17.0,15.0,1.57,99.58,True,,False,True,False,True,False,0.24,False,True,False,95.73,98.25,2.45,0.18,13.82,WEAK,33.9
+AMD,355.26,4.02,1.25,47192840.0,72.5,4.1275,304.71,263.08,16.59,48.2,70.7,16.44,362.79,True,,False,False,True,True,True,2.92,True,True,True,348.15,365.92,3.0,2.0,1.5,WEAK,46.4
+SO,95.9,-0.09,1.72,4845810.0,53.9,0.266,95.11,94.67,0.83,17.0,14.9,1.57,99.58,True,,False,True,False,True,False,0.24,False,True,False,95.73,98.25,2.45,0.18,13.82,WEAK,39.4
+LRCX,275.8,6.66,1.23,9636910.0,62.9,-0.5414,255.65,241.87,7.88,15.9,68.6,12.35,280.0,True,,False,False,True,True,True,3.12,True,True,True,270.28,284.07,3.0,2.0,1.5,WEAK,37.1
+AVGO,427.36,2.61,1.11,18974860.0,69.3,-0.2017,397.35,368.83,7.55,32.1,57.1,13.18,433.39,True,,False,True,True,True,True,1.24,True,True,True,419.35,440.18,3.0,1.87,1.6,WEAK,34.2
