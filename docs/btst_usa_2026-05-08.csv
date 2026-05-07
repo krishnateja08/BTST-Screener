@@ -1,0 +1,5 @@
+Symbol,Close,Change%,Volume_Ratio,Avg_Vol,RSI,MACD_Hist,EMA20,EMA50,EMA_Dist%,ADX,Range_Pos%,ATR,52W_High,Near_52W_High,Candle,Marubozu,FinalHrFade,RS_Beat,Weekly_Align,Gap_Up,Gap_Pct,Sector_Align,Breadth_OK,Entry_Overextended,Stop_Loss,Target,Target%,SL%,RR_Ratio,Conviction,BTST_Score
+BA,231.03,0.48,1.6,5262380.0,57.8,-0.1247,224.72,221.66,2.81,15.6,20.3,6.64,254.35,False,,False,True,True,True,False,0.66,False,True,False,229.6,237.96,3.0,0.62,4.85,WEAK,34.8
+PLD,142.29,-0.43,1.16,3205670.0,57.0,-0.1904,140.16,137.39,1.52,19.5,3.7,2.97,145.44,True,,False,True,False,True,False,0.34,False,True,False,142.21,146.56,3.0,0.06,53.38,WEAK,29.6
+QCOM,202.55,5.18,1.63,31163250.0,82.6,5.9292,160.14,148.43,26.48,42.5,41.4,10.92,223.66,False,Engulfing,False,True,True,True,False,-1.04,False,True,True,198.5,208.63,3.0,2.0,1.5,WEAK,29.2
+PANW,196.53,7.0,1.82,5773690.0,70.8,1.3587,178.02,172.19,10.4,16.1,68.2,7.38,223.61,False,,False,False,True,True,True,4.0,False,True,True,192.6,202.43,3.0,2.0,1.5,WEAK,24.1
