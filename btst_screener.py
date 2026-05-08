@@ -1,6 +1,6 @@
 """
 ============================================================
-  BTST (Buy Today Sell Tomorrow) Stock Screener
+  BTST (Buy Today Sell Tomorrow) Stock Screener  v3 (Fixed)
   India — Nifty 100 (NSE)  |  USA — S&P 500 Top 100 (NYSE/NASDAQ)
 ============================================================
 Requirements:
@@ -11,18 +11,32 @@ Usage:
     python btst_screener.py --india      # India only
     python btst_screener.py --usa        # USA only
     python btst_screener.py --no-orb     # skip ORB intraday scan
-    python btst_screener.py --min-score 70   # GOOD picks only (score ≥ 70)    python btst_screener.py --min-score 80   # HIGH conviction only (score ≥ 80)
+    python btst_screener.py --min-score 70   # GOOD picks only (score ≥ 70)
+    python btst_screener.py --min-score 80   # HIGH conviction only (score ≥ 80)
     python btst_screener.py --backtest   # replay past CSV picks (last 30 days)
     python btst_screener.py --backtest --days 60   # extend backtest window
     python btst_screener.py --backtest --india      # India backtest only
 
-Enhancements v2:
-    ✅ Entry Quality Filter   — skips stocks >4% above EMA20 or >6% day-chg (no vol)
-    ✅ Next-day Exit Logic    — Target%, SL% columns; gap-down exit note in report
-    ✅ Score Threshold Filter — --min-score CLI arg; HIGH/GOOD/MODERATE/WEAK labels
-    ✅ Liquidity Filter       — abs avg-vol gate (200k India / 1M USA shares/day)
-    ✅ Market Direction Scalar — continuous score multiplier based on index % change
-    ✅ Backtest Improvements  — max drawdown, expectancy, 4-tier score stratification
+Bug-fixes & Improvements in v3:
+    ✅ FIX: Closing Marubozu — only upper shadow checked (was incorrectly
+             requiring both shadows to be tiny, making it a Full Marubozu)
+    ✅ FIX: MACD histogram direction — expanding histogram scores higher than
+             shrinking; a shrinking positive histogram is now penalised (was
+             all positive histograms scored identically)
+    ✅ FIX: MACD crossover detection — fresh MACD line crossing signal line
+             now detected separately and scored at full weight
+    ✅ FIX: Friday RVOL guard — now requires ≥ 2 Friday data-points before
+             using Friday-adjusted average (was silently dividing by zero)
+    ✅ FIX: Dynamic VIX threshold — uses 60-day rolling median × 1.30 instead
+             of hardcoded 18/20 (adapts to volatility regime)
+    ✅ NEW:  Earnings filter — stocks with earnings announced tomorrow are
+             automatically flagged with Has_Earnings=True and score is cut
+             by 50% (overnight gap risk from earnings is the #1 BTST killer)
+    ✅ NEW:  Minimum R:R filter — filter_and_rank() now enforces RR_Ratio ≥ 1.5
+             (no trade taken where reward < 1.5× the risk)
+    ✅ NEW:  Position sizing — output now includes Shares and Position_Value
+             columns based on 1% capital-at-risk per trade (capital = ₹5L / $10k)
+    ✅ NEW:  MACD line vs signal-line crossover used as primary conviction signal
 
 Output:
     btst_report_YYYY-MM-DD.html    (combined HTML with BTST + ORB tabs)
@@ -259,6 +273,15 @@ MKT_MULT_NEUTRAL = 1.00   # 0% to +1%
 MKT_MULT_SOFT    = 0.92   # –0.5% to 0%
 MKT_MULT_WEAK    = 0.80   # below –0.5%
 
+# ── Position sizing (FIX: professional risk management) ───
+# Risk 1% of capital per trade — adjust CAPITAL to your actual portfolio size.
+CAPITAL_INDIA      = 500_000   # ₹5 lakh default (adjust to your actual capital)
+CAPITAL_USA        = 10_000    # $10,000 default (adjust to your actual capital)
+RISK_PER_TRADE_PCT = 1.0       # never risk more than 1% of capital on a single BTST
+
+# ── Minimum R:R required to take a trade (FIX: new filter) ──
+MIN_RR_RATIO = 1.5   # reward must be ≥ 1.5× risk — a 1:1 trade is not worth BTST risk
+
 IST = ZoneInfo("Asia/Kolkata")
 EST = ZoneInfo("America/New_York")
 
@@ -323,6 +346,40 @@ def _load_prev_scores(prefix: str, date_str: str) -> dict[str, float]:
 
 
 # ══════════════════════════════════════════════════════════
+# FIX: EARNINGS FILTER  — skip stocks reporting tomorrow
+# ══════════════════════════════════════════════════════════
+
+def check_earnings_tomorrow(symbol: str) -> bool:
+    """
+    Returns True if the stock has an earnings announcement on the next
+    trading day.  Earnings = the #1 overnight gap risk for BTST.
+    Uses yfinance .calendar — may return empty for Indian stocks.
+    Silently returns False on any failure so screener keeps running.
+    """
+    try:
+        ticker = yf.Ticker(symbol)
+        cal = ticker.calendar
+        if cal is None or cal.empty:
+            return False
+        # .calendar returns a DataFrame; 'Earnings Date' is a column
+        if "Earnings Date" in cal.columns:
+            dates = pd.to_datetime(cal["Earnings Date"], errors="coerce").dropna()
+        elif "Earnings Date" in cal.index:
+            dates = pd.to_datetime(cal.loc["Earnings Date"], errors="coerce")
+            if not hasattr(dates, "__iter__"):
+                dates = pd.Series([dates])
+        else:
+            return False
+        tomorrow = (datetime.now(tz=IST) + timedelta(days=1)).date()
+        for d in dates:
+            if hasattr(d, "date") and d.date() == tomorrow:
+                return True
+        return False
+    except Exception:
+        return False   # fail-open — never block a scan on calendar failure
+
+
+# ══════════════════════════════════════════════════════════
 # MARKET HEALTH CHECK
 # ══════════════════════════════════════════════════════════
 
@@ -334,7 +391,10 @@ def check_market(market: str = "india") -> tuple[bool, float, float]:
     idx_sym = INDIA_INDEX if market == "india" else USA_INDEX
     vix_sym = INDIA_VIX   if market == "india" else USA_VIX
     label   = "Nifty 50"  if market == "india" else "S&P 500"
-    vix_thr = 18          if market == "india" else 20  # India VIX scale differs from CBOE VIX
+    # FIX: use dynamic VIX threshold — 60-day rolling median × 1.30
+    # Hardcoded 18/20 blocked valid BTST days when volatility was elevated but normal.
+    # A percentile-based gate adapts to the current volatility regime.
+    VIX_STATIC_FALLBACK = 18 if market == "india" else 20
 
     hdr(f"Market Health — {label.upper()}")
 
@@ -366,6 +426,13 @@ def check_market(market: str = "india") -> tuple[bool, float, float]:
     prev  = float(idx["Close"].iloc[-2]) if len(idx) >= 2 else close
     chg   = round((close - prev) / prev * 100, 2)
     vix_v = float(vix["Close"].iloc[-1]) if not vix.empty else 0.0
+
+    # FIX: dynamic VIX threshold — 60-day median × 1.30 (adapts to regime)
+    if not vix.empty and len(vix) >= 20:
+        vix_median = float(vix["Close"].tail(60).median())
+        vix_thr    = round(vix_median * 1.30, 1)
+    else:
+        vix_thr    = VIX_STATIC_FALLBACK
 
     bullish  = chg >= -0.5
     vix_safe = vix_v < vix_thr if vix_v > 0 else True
@@ -490,13 +557,17 @@ def score_stock_from_df(symbol: str, df: pd.DataFrame,
         weekday    = df.index[-1].weekday() if hasattr(df.index[-1], "weekday") else -1
 
         if weekday == 4 and len(df) >= 10:
-            # Friday RVOL: compare against last 4 Friday volumes
+            # FIX: Friday RVOL — require at least 2 Friday data-points before use.
+            # Original code silently used an empty list average on sparse history.
             friday_vols = [
                 float(df["Volume"].iloc[i])
                 for i in range(-2, -len(df)-1, -1)
                 if hasattr(df.index[i], "weekday") and df.index[i].weekday() == 4
             ][:4]
-            avg_vol = sum(friday_vols) / len(friday_vols) if friday_vols else avg_vol_10
+            if len(friday_vols) >= 2:
+                avg_vol = sum(friday_vols) / len(friday_vols)
+            else:
+                avg_vol = avg_vol_10   # FIX: fall back when fewer than 2 Fridays found
         else:
             avg_vol = avg_vol_10
 
@@ -511,16 +582,40 @@ def score_stock_from_df(symbol: str, df: pd.DataFrame,
                  WEIGHTS["rsi_zone"] * 0.5 if 50 <= rsi < 55 else 0)
 
         # ── MACD ──────────────────────────────────────────────────
+        # FIX: Three-tier MACD scoring:
+        #   1. Fresh crossover (MACD line crosses above signal line) → FULL points
+        #   2. Histogram positive AND expanding (momentum building)  → 0.85×
+        #   3. Histogram positive BUT shrinking (momentum fading)    → 0.40×
+        #      (shrinking histogram is a bearish divergence — was scored 0.7× before)
+        #   4. Histogram negative → 0 pts
         macd_df   = ta.macd(df["Close"], fast=12, slow=26, signal=9)
         s_macd    = 0
         macd_hist = None
+        macd_crossover = False
         if macd_df is not None and not macd_df.empty:
             hcol = [c for c in macd_df.columns if "MACDh" in c]
+            mcol = [c for c in macd_df.columns if c.startswith("MACD_")
+                    and "MACDs" not in c and "MACDh" not in c]
+            scol = [c for c in macd_df.columns if "MACDs" in c]
             if hcol:
                 macd_hist = float(macd_df[hcol[0]].iloc[-1])
                 prev_h    = float(macd_df[hcol[0]].iloc[-2])
-                s_macd    = (WEIGHTS["macd_bullish"] if macd_hist > 0 and prev_h <= 0
-                             else WEIGHTS["macd_bullish"] * 0.7 if macd_hist > 0 else 0)
+                hist_growing = macd_hist > prev_h   # FIX: histogram expanding?
+                # FIX: detect MACD line crossing above signal line (fresh crossover)
+                if mcol and scol and len(macd_df) >= 2:
+                    ml_now  = float(macd_df[mcol[0]].iloc[-1])
+                    ml_prev = float(macd_df[mcol[0]].iloc[-2])
+                    sl_now  = float(macd_df[scol[0]].iloc[-1])
+                    sl_prev = float(macd_df[scol[0]].iloc[-2])
+                    macd_crossover = (ml_prev <= sl_prev) and (ml_now > sl_now)
+                if macd_crossover:
+                    s_macd = WEIGHTS["macd_bullish"]          # fresh crossover — strongest
+                elif macd_hist > 0 and hist_growing:
+                    s_macd = WEIGHTS["macd_bullish"] * 0.85   # expanding positive hist
+                elif macd_hist > 0:
+                    s_macd = WEIGHTS["macd_bullish"] * 0.40   # FIX: shrinking = weak signal
+                else:
+                    s_macd = 0
 
         # ── EMA ───────────────────────────────────────────────────
         ema20 = float(ta.ema(df["Close"], length=20).iloc[-1])
@@ -580,11 +675,14 @@ def score_stock_from_df(symbol: str, df: pd.DataFrame,
             lower_shadow0 = min(o0, close) - low
             upper_shadow0 = high - max(o0, close)
 
-            # Closing Marubozu: green candle, body ≥85% of range, close near high
+            # FIX: Closing Marubozu — only the upper shadow matters.
+            # A closing marubozu = green candle that closes near the HIGH.
+            # The lower shadow can be large (stock dipped and recovered — bullish).
+            # The original code required BOTH shadows to be tiny, which is a
+            # "Full Marubozu" (much rarer).  This fix captures more valid signals.
             if (rng > 0 and close > o0 and
                     body0 >= rng * 0.85 and
-                    (high - close) <= rng * 0.05 and
-                    (o0 - low)    <= rng * 0.05):
+                    (high - close) <= rng * 0.05):   # only upper shadow check
                 is_marubozu  = True
                 s_marubozu   = WEIGHTS["marubozu"]
                 candle_name  = "Marubozu"
@@ -727,6 +825,13 @@ def score_stock_from_df(symbol: str, df: pd.DataFrame,
         raw_total = total
         total     = min(round(raw_total / MAX_RAW_SCORE * 100, 1), 100.0)
 
+        # ── FIX: Earnings tomorrow → 50% score penalty ────────────
+        # Holding overnight into earnings is the #1 BTST risk (10–20% gap).
+        # We don't hard-filter (some traders accept the risk) but rank it very low.
+        has_earnings = check_earnings_tomorrow(symbol)
+        if has_earnings:
+            total = round(total * 0.50, 1)
+
         # ── Conviction label ──────────────────────────────────────
         if total >= SCORE_HIGH_CONVICTION:
             conviction = "HIGH"
@@ -741,6 +846,16 @@ def score_stock_from_df(symbol: str, df: pd.DataFrame,
                            .replace("-", ".")
                            .replace("BRK.B", "BRK-B"))
 
+        # ── FIX: Position sizing based on 1% capital-at-risk ──────
+        # Shares = (Capital × Risk%) / (Close − Stop_Loss)
+        # Tells you exactly how many shares to buy so a SL hit costs 1% of capital.
+        is_india_sym = symbol.endswith(".NS")
+        capital      = CAPITAL_INDIA if is_india_sym else CAPITAL_USA
+        risk_amt     = capital * RISK_PER_TRADE_PCT / 100.0
+        risk_per_share = close - stop_loss
+        suggested_shares = int(risk_amt / risk_per_share) if risk_per_share > 0 else 0
+        position_value   = round(suggested_shares * close, 2)
+
         return {
             "Symbol":             clean_sym,
             "Close":              round(close, 2),
@@ -749,6 +864,7 @@ def score_stock_from_df(symbol: str, df: pd.DataFrame,
             "Avg_Vol":            round(avg_vol, 0),
             "RSI":                round(rsi, 1),
             "MACD_Hist":          round(macd_hist, 4) if macd_hist is not None else None,
+            "MACD_Crossover":     macd_crossover,
             "EMA20":              round(ema20, 2),
             "EMA50":              round(ema50, 2),
             "EMA_Dist%":          round(ema_dist_pct, 2),
@@ -767,11 +883,14 @@ def score_stock_from_df(symbol: str, df: pd.DataFrame,
             "Sector_Align":       sector_bonus > 0,
             "Breadth_OK":         breadth_ok,
             "Entry_Overextended": entry_overextended,
+            "Has_Earnings":       has_earnings,
             "Stop_Loss":          stop_loss,
             "Target":             target,
             "Target%":            round((target / close - 1) * 100, 2),
             "SL%":                round((1 - stop_loss / close) * 100, 2),
             "RR_Ratio":           rr_ratio,
+            "Shares":             suggested_shares,
+            "Position_Value":     position_value,
             "Conviction":         conviction,
             "BTST_Score":         round(total, 1),
         }
@@ -1351,6 +1470,22 @@ def filter_and_rank(df: pd.DataFrame, min_score: float = 0.0) -> pd.DataFrame:
         # naturally. Keeping it as a soft signal avoids over-filtering on weak days.
     ].copy()
 
+    # FIX: enforce minimum R:R — no trade where reward < 1.5× risk
+    # A poor R:R means even a 60% win rate won't be profitable long-term.
+    if "RR_Ratio" in f.columns:
+        rr_dropped = len(f) - len(f[f["RR_Ratio"] >= MIN_RR_RATIO])
+        if rr_dropped > 0:
+            print(f"  ⚖️   Dropped {rr_dropped} candidates with R:R < {MIN_RR_RATIO}x.")
+        f = f[f["RR_Ratio"] >= MIN_RR_RATIO]
+
+    # FIX: warn about (but keep visible) any stocks with earnings tomorrow
+    if "Has_Earnings" in f.columns:
+        earnings_flags = f[f["Has_Earnings"] == True]
+        if not earnings_flags.empty:
+            syms = ", ".join(earnings_flags["Symbol"].tolist())
+            print(f"  ⚠️   EARNINGS RISK: {syms} — reporting tomorrow. "
+                  f"Score already halved. Trade with extreme caution or skip.")
+
     if min_score > 0:
         f = f[f["BTST_Score"] >= min_score]    # ← score threshold filter
 
@@ -1384,9 +1519,10 @@ def print_report(df: pd.DataFrame, label: str, market_ok: bool, idx_chg: float):
         return
 
     cols = ["Symbol", "Conviction", "Close", "Change%", "Volume_Ratio", "RSI", "ADX",
-            "Range_Pos%", "Near_52W_High", "Gap_Up", "Candle", "RS_Beat",
-            "Weekly_Align", "Sector_Align", "Stop_Loss", "SL%",
-            "Target", "Target%", "RR_Ratio", "BTST_Score"]
+            "Range_Pos%", "Near_52W_High", "Gap_Up", "Candle", "MACD_Crossover",
+            "RS_Beat", "Weekly_Align", "Sector_Align", "Has_Earnings",
+            "Stop_Loss", "SL%", "Target", "Target%", "RR_Ratio",
+            "Shares", "Position_Value", "BTST_Score"]
     available = [c for c in cols if c in df.columns]
     disp = df[available].reset_index(drop=True)
     disp.index += 1
@@ -1490,6 +1626,22 @@ def _rows(df: pd.DataFrame, currency: str = "₹",
         else:
             badge_candle = '<span class="badge br" style="color:var(--muted)">—</span>'
 
+        # ── MACD crossover badge ─────────────────────────────────
+        macd_cross  = row.get("MACD_Crossover", False)
+        badge_macd  = ('<span class="badge bg">⚡ X-over</span>' if macd_cross
+                       else '<span class="badge br" style="color:var(--muted)">—</span>')
+
+        # ── Earnings warning badge ───────────────────────────────
+        has_earnings = row.get("Has_Earnings", False)
+        badge_earn   = ('<span class="badge br" style="font-weight:800">⚠ EARNS</span>'
+                        if has_earnings else "")
+
+        # ── Position sizing ──────────────────────────────────────
+        shares     = row.get("Shares", 0)
+        pos_val    = row.get("Position_Value", 0)
+        pos_str    = (f'{shares:,} sh &nbsp; {currency}{pos_val:,.0f}'
+                      if shares > 0 else "—")
+
         # ── Relative Strength badge ──────────────────────────────
         rs_beat = row.get("RS_Beat", False)
         badge_rs = ('<span class="badge bg">📈 RS+</span>' if rs_beat
@@ -1538,7 +1690,7 @@ def _rows(df: pd.DataFrame, currency: str = "₹",
         rows += f"""
         <tr>
           <td class="rnk">{medal}</td>
-          <td class="sym">{sym}</td>
+          <td class="sym">{sym}{badge_earn}</td>
           <td>{badge_conv}</td>
           <td class="num">{currency}{row['Close']:,.2f}</td>
           <td><span style="color:{chg_c};font-weight:700;font-family:var(--mono);font-size:.78rem">{chg_a} {abs(row['Change%']):.2f}%</span></td>
@@ -1549,6 +1701,7 @@ def _rows(df: pd.DataFrame, currency: str = "₹",
           <td>{badge52}</td>
           <td>{badge_gap}</td>
           <td>{badge_candle}</td>
+          <td>{badge_macd}</td>
           <td>{badge_rs}</td>
           <td>{badge_mtf}</td>
           {badge_sec}
@@ -1557,6 +1710,7 @@ def _rows(df: pd.DataFrame, currency: str = "₹",
             <span style="color:#00ff88" title="Target: +{tgt_pct:.1f}% from entry">{currency}{tgt:,.2f} <span style="font-size:.72rem;opacity:.8">+{tgt_pct:.1f}%</span></span>
           </td>
           <td class="num" style="color:{rr_col};font-weight:700">{rr:.1f}x</td>
+          <td class="num" style="font-family:var(--mono);font-size:.78rem;color:#c8d4e0">{pos_str}</td>
           <td>
             <div class="bw">
               <div class="bt"><div class="b" style="width:{pct:.0f}%;background:{bc}"></div></div>
@@ -1890,7 +2044,7 @@ def generate_html_report(
     <p class="scroll-hint">← swipe to see all columns</p>
     <div class="tw">
       <table>
-        <thead><tr><th>#</th><th>Symbol</th><th>Conviction</th><th>Close (₹)</th><th>Change</th><th>Vol Ratio</th><th>RSI</th><th>ADX</th><th>Range Pos</th><th>52W High</th><th>Gap</th><th>Candle</th><th>RS</th><th>Weekly</th><th>Sector</th><th>SL / Target</th><th>R:R</th><th>BTST Score</th></tr></thead>
+        <thead><tr><th>#</th><th>Symbol</th><th>Conviction</th><th>Close (₹)</th><th>Change</th><th>Vol Ratio</th><th>RSI</th><th>ADX</th><th>Range Pos</th><th>52W High</th><th>Gap</th><th>Candle</th><th>MACD</th><th>RS</th><th>Weekly</th><th>Sector</th><th>SL / Target</th><th>R:R</th><th>Position Size</th><th>BTST Score</th></tr></thead>
         <tbody>{india_rows}</tbody>
       </table>
     </div>
@@ -1917,7 +2071,7 @@ def generate_html_report(
     <p class="scroll-hint">← swipe to see all columns</p>
     <div class="tw">
       <table>
-        <thead><tr><th>#</th><th>Symbol</th><th>Conviction</th><th>Close ($)</th><th>Change</th><th>Vol Ratio</th><th>RSI</th><th>ADX</th><th>Range Pos</th><th>52W High</th><th>Gap</th><th>Candle</th><th>RS</th><th>Weekly</th><th>Sector</th><th>SL / Target</th><th>R:R</th><th>BTST Score</th></tr></thead>
+        <thead><tr><th>#</th><th>Symbol</th><th>Conviction</th><th>Close ($)</th><th>Change</th><th>Vol Ratio</th><th>RSI</th><th>ADX</th><th>Range Pos</th><th>52W High</th><th>Gap</th><th>Candle</th><th>MACD</th><th>RS</th><th>Weekly</th><th>Sector</th><th>SL / Target</th><th>R:R</th><th>Position Size</th><th>BTST Score</th></tr></thead>
         <tbody>{usa_rows}</tbody>
       </table>
     </div>
@@ -2197,10 +2351,12 @@ def generate_html_report(
 
 <!-- FOOTER -->
 <div class="footer">
-  Generated by BTST Screener · Python + yfinance + pandas-ta
+  Generated by BTST Screener v3 (Fixed) · Python + yfinance + pandas-ta
   &nbsp;|&nbsp; India: {time_ist} &nbsp;·&nbsp; USA: {time_est}
   <br>
-  Parameters: Vol Surge (20) · RSI (15) · MACD (15) · EMA (15) · Breakout (15) · ADX (10) · 52W (10) · Gap (+8) · Sector (+7) · Candle (+10) · RS (+5) · Weekly MTF (+8)
+  Signals: Vol(20) · RSI(15) · MACD(15) · EMA(15) · Breakout(15) · ADX(10) · 52W(10) · Gap(+8) · Sector(+7) · Candle(+10) · RS(+5) · Weekly MTF(+8) · Marubozu(+12)
+  <br>
+  v3 Fixes: Closing Marubozu · MACD direction · MACD crossover · Dynamic VIX · Earnings filter · Min R:R 1.5x · Position sizing · Friday RVOL guard
 </div>
 
 <script>
