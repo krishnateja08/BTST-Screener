@@ -314,8 +314,10 @@ MAX_TARGET_PCT   = 5.0    # cap maximum target distance at +5.0% (was 3.0)
 # ── FIX #7: Default minimum BTST score ──
 # Previous default was 0.0 → top-15 picks regardless of quality. Most days that
 # means trading 50-score "noise" candidates and bleeding to costs/gap risk.
-# Default raised to GOOD tier (70). Override with --min-score 0 if you want all.
-DEFAULT_MIN_SCORE = 70.0
+# Default set to MODERATE tier (55) — strict enough to filter clear noise,
+# loose enough to surface signals on most days. Use --min-score 70 for GOOD
+# only or --min-score 80 for HIGH conviction only.
+DEFAULT_MIN_SCORE = 55.0
 
 IST = ZoneInfo("Asia/Kolkata")
 EST = ZoneInfo("America/New_York")
@@ -1920,6 +1922,9 @@ def generate_html_report(
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>BTST Screener — {date_str}</title>
+<!-- FIX: inline empty favicon — suppresses the harmless /favicon.ico 404
+     that browsers log to the console for any standalone HTML file. -->
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 16 16%22><text y=%2214%22 font-size=%2214%22>📈</text></svg>">
 <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;800&display=swap" rel="stylesheet">
 <style>
   :root {{
