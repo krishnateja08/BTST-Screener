@@ -1,6 +1,6 @@
 """
 ============================================================
-  BTST (Buy Today Sell Tomorrow) Stock Screener  v3 (Fixed)
+  BTST (Buy Today Sell Tomorrow) Stock Screener  v4
   India — Nifty 100 (NSE)  |  USA — S&P 500 Top 100 (NYSE/NASDAQ)
 ============================================================
 Requirements:
@@ -11,32 +11,36 @@ Usage:
     python btst_screener.py --india      # India only
     python btst_screener.py --usa        # USA only
     python btst_screener.py --no-orb     # skip ORB intraday scan
-    python btst_screener.py --min-score 70   # GOOD picks only (score ≥ 70)
-    python btst_screener.py --min-score 80   # HIGH conviction only (score ≥ 80)
+    python btst_screener.py --min-score 70   # GOOD picks only (default)
+    python btst_screener.py --min-score 80   # HIGH conviction only
+    python btst_screener.py --min-score 0    # disable score filter
     python btst_screener.py --backtest   # replay past CSV picks (last 30 days)
     python btst_screener.py --backtest --days 60   # extend backtest window
     python btst_screener.py --backtest --india      # India backtest only
 
-Bug-fixes & Improvements in v3:
-    ✅ FIX: Closing Marubozu — only upper shadow checked (was incorrectly
-             requiring both shadows to be tiny, making it a Full Marubozu)
-    ✅ FIX: MACD histogram direction — expanding histogram scores higher than
-             shrinking; a shrinking positive histogram is now penalised (was
-             all positive histograms scored identically)
-    ✅ FIX: MACD crossover detection — fresh MACD line crossing signal line
-             now detected separately and scored at full weight
-    ✅ FIX: Friday RVOL guard — now requires ≥ 2 Friday data-points before
-             using Friday-adjusted average (was silently dividing by zero)
-    ✅ FIX: Dynamic VIX threshold — uses 60-day rolling median × 1.30 instead
-             of hardcoded 18/20 (adapts to volatility regime)
-    ✅ NEW:  Earnings filter — stocks with earnings announced tomorrow are
-             automatically flagged with Has_Earnings=True and score is cut
-             by 50% (overnight gap risk from earnings is the #1 BTST killer)
-    ✅ NEW:  Minimum R:R filter — filter_and_rank() now enforces RR_Ratio ≥ 1.5
-             (no trade taken where reward < 1.5× the risk)
-    ✅ NEW:  Position sizing — output now includes Shares and Position_Value
-             columns based on 1% capital-at-risk per trade (capital = ₹5L / $10k)
-    ✅ NEW:  MACD line vs signal-line crossover used as primary conviction signal
+v4 Fixes (over v3):
+    ✅ FIX #2:  Earnings timezone — uses IST for .NS symbols and EST for US
+                tickers (was IST for everything, missing US earnings).
+    ✅ FIX #3:  Realistic entry price — adds SLIPPAGE_BPS (15bps) to close to
+                model real fills. R:R, SL%, Target%, and position sizing all
+                computed from Entry_Price instead of theoretical Close. Adds
+                Limit_Buy column = max acceptable buy price (don't chase above).
+    ✅ FIX #4:  Portfolio-level position cap — MAX_POSITIONS_PER_DAY (5) and
+                MAX_PORTFOLIO_EXPOSURE_PCT (80%). Pro-rata scales positions
+                when total exposure exceeds the cap. Prevents one bad
+                gap-down wiping the entire portfolio.
+    ✅ FIX #5:  Wider target / tighter SL — target ATR multiplier 1.5 → 2.5,
+                target % cap 3% → 5%. SL geometry now tight ATR-based,
+                anchored to swing low, capped at -2%. Natural R:R 1.7-2.5:1.
+    ✅ FIX #6:  Friday RVOL — cleaner mask-based logic, exclude today's row
+                from history, look at last 8 Fridays (was 4), require ≥ 3
+                data points (was 2). More reliable on Friday scans.
+    ✅ FIX #7:  Default --min-score raised from 0 → 70 (GOOD tier). Top-15
+                weak-score picks were a key reason daily P&L was bleeding.
+
+v3 fixes (still in place):
+    Closing Marubozu shadow check, MACD histogram direction, MACD line/signal
+    crossover, dynamic VIX threshold, earnings filter score penalty.
 
 Output:
     btst_report_YYYY-MM-DD.html    (combined HTML with BTST + ORB tabs)
@@ -282,6 +286,37 @@ RISK_PER_TRADE_PCT = 1.0       # never risk more than 1% of capital on a single 
 # ── Minimum R:R required to take a trade (FIX: new filter) ──
 MIN_RR_RATIO = 1.5   # reward must be ≥ 1.5× risk — a 1:1 trade is not worth BTST risk
 
+# ── FIX #3: Slippage (real-world entry price assumption) ──
+# A screener computes signals off the day's close, but real auto-traders fill
+# slightly ABOVE the close (spread + market impact + queue position). Modelling
+# this prevents falsely high R:R numbers that vanish at execution time.
+SLIPPAGE_BPS = 15    # one-way slippage in basis points (0.15%) — buying side
+# Maximum acceptable buy limit price = close × (1 + 2× SLIPPAGE_BPS / 10000).
+# If price has run above this when the order is placed, SKIP the trade.
+
+# ── FIX #4: Portfolio-level position caps ──
+# Each trade alone risks RISK_PER_TRADE_PCT of capital, but with 15 picks the
+# total deployed capital can blow past 100% — one bad gap-down then wipes the
+# day. These caps enforce sane portfolio construction.
+MAX_POSITIONS_PER_DAY     = 5     # never take more than N BTST positions in a day
+MAX_PORTFOLIO_EXPOSURE_PCT = 80   # total position value ≤ this % of capital
+
+# ── FIX #5: Wider target / tighter SL geometry ──
+# Previous version capped SL at -2% and target at +3% → max R:R 1.5:1.
+# After ~0.3% round-trip costs that's marginal even at 55% win rate. New
+# geometry: tight ATR-based SL (capped at -2%), wider ATR-based target
+# (capped at +5%) → natural R:R lands between 1.7:1 and 2.5:1.
+SL_ATR_MULT      = 1.0    # SL = close − this many ATRs (anchored to swing low)
+TARGET_ATR_MULT  = 2.5    # target = close + this many ATRs (was 1.5)
+MAX_SL_PCT       = 2.0    # cap maximum SL distance at -2.0% (unchanged)
+MAX_TARGET_PCT   = 5.0    # cap maximum target distance at +5.0% (was 3.0)
+
+# ── FIX #7: Default minimum BTST score ──
+# Previous default was 0.0 → top-15 picks regardless of quality. Most days that
+# means trading 50-score "noise" candidates and bleeding to costs/gap risk.
+# Default raised to GOOD tier (70). Override with --min-score 0 if you want all.
+DEFAULT_MIN_SCORE = 70.0
+
 IST = ZoneInfo("Asia/Kolkata")
 EST = ZoneInfo("America/New_York")
 
@@ -370,7 +405,11 @@ def check_earnings_tomorrow(symbol: str) -> bool:
                 dates = pd.Series([dates])
         else:
             return False
-        tomorrow = (datetime.now(tz=IST) + timedelta(days=1)).date()
+        # FIX #2: Use the stock's local timezone — IST for .NS, EST for US tickers.
+        # Previously used IST for everything, which skipped US earnings when the
+        # IST "tomorrow" boundary was already EST "today" (or vice versa).
+        tz_local = IST if symbol.endswith(".NS") else EST
+        tomorrow = (datetime.now(tz=tz_local) + timedelta(days=1)).date()
         for d in dates:
             if hasattr(d, "date") and d.date() == tomorrow:
                 return True
@@ -557,17 +596,23 @@ def score_stock_from_df(symbol: str, df: pd.DataFrame,
         weekday    = df.index[-1].weekday() if hasattr(df.index[-1], "weekday") else -1
 
         if weekday == 4 and len(df) >= 10:
-            # FIX: Friday RVOL — require at least 2 Friday data-points before use.
-            # Original code silently used an empty list average on sparse history.
-            friday_vols = [
-                float(df["Volume"].iloc[i])
-                for i in range(-2, -len(df)-1, -1)
-                if hasattr(df.index[i], "weekday") and df.index[i].weekday() == 4
-            ][:4]
-            if len(friday_vols) >= 2:
-                avg_vol = sum(friday_vols) / len(friday_vols)
-            else:
-                avg_vol = avg_vol_10   # FIX: fall back when fewer than 2 Fridays found
+            # FIX #6: Cleaner Friday-RVOL — use pandas mask, exclude today's row,
+            # look at the last 8 Fridays (≈ 2 months), require ≥ 3 data points.
+            # Previous version used a manual reverse-loop that was harder to
+            # reason about and only kept 4 Fridays with a 2-point minimum.
+            try:
+                past = df.iloc[:-1]   # exclude today's bar from history
+                if hasattr(past.index, "weekday"):
+                    fri_mask    = past.index.weekday == 4
+                    friday_vols = past.loc[fri_mask, "Volume"].tail(8)
+                    if len(friday_vols) >= 3:
+                        avg_vol = float(friday_vols.mean())
+                    else:
+                        avg_vol = avg_vol_10   # not enough Fridays — use 10-day avg
+                else:
+                    avg_vol = avg_vol_10
+            except Exception:
+                avg_vol = avg_vol_10
         else:
             avg_vol = avg_vol_10
 
@@ -806,15 +851,20 @@ def score_stock_from_df(symbol: str, df: pd.DataFrame,
         if entry_overextended:
             total *= 0.70   # heavy penalty — still shows up but ranks low
 
-        # ── Stop-Loss and Target ──────────────────────────────────
-        stop_loss = round(max(low, close - atr_val), 2)
-        # Next-day target range: 1.5% to 3% above close (min of ATR-based and 3% cap)
-        target_atr  = close + 1.5 * atr_val
-        target_pct3 = close * 1.03
-        target      = round(min(target_atr, target_pct3), 2)
-        # Conservative SL: also cap loss at –2% to enforce discipline
-        sl_pct2     = close * 0.98
-        stop_loss   = round(max(stop_loss, sl_pct2), 2)
+        # ── FIX #5: Improved Stop-Loss and Target geometry ─────────
+        # Old version: SL ≤ -2%, target ≤ +3% → max R:R 1.5:1 (marginal after costs).
+        # New version: ATR-driven, target uncapped up to +5%, SL anchored to
+        # swing low. Natural R:R lands between 1.7:1 and 2.5:1.
+        sl_atr      = close - SL_ATR_MULT * atr_val
+        sl_pct_cap  = close * (1 - MAX_SL_PCT / 100)
+        # max(low, sl_atr, sl_pct_cap) → take the TIGHTEST of the three (highest price)
+        stop_loss   = round(max(low, sl_atr, sl_pct_cap), 2)
+
+        tgt_atr     = close + TARGET_ATR_MULT * atr_val
+        tgt_pct_cap = close * (1 + MAX_TARGET_PCT / 100)
+        # min(tgt_atr, tgt_pct_cap) → don't promise more than +MAX_TARGET_PCT%
+        target      = round(min(tgt_atr, tgt_pct_cap), 2)
+
         risk        = close - stop_loss
         reward      = target - close
         rr_ratio    = round(reward / risk, 2) if risk > 0 else 0.0
@@ -846,15 +896,27 @@ def score_stock_from_df(symbol: str, df: pd.DataFrame,
                            .replace("-", ".")
                            .replace("BRK.B", "BRK-B"))
 
+        # ── FIX #3: Realistic entry price (accounts for slippage) ──
+        # Auto-traders cannot fill exactly at the daily close. They fill slightly
+        # above (spread + market impact). Recompute R:R using this real entry,
+        # so picks that look profitable on paper but unprofitable after slippage
+        # get filtered out by MIN_RR_RATIO downstream.
+        entry_price    = round(close * (1 + SLIPPAGE_BPS / 10000), 2)
+        limit_buy_max  = round(close * (1 + 2 * SLIPPAGE_BPS / 10000), 2)
+        # Recompute R:R from realistic entry (this overrides the values set above)
+        risk        = entry_price - stop_loss
+        reward      = target - entry_price
+        rr_ratio    = round(reward / risk, 2) if risk > 0 else 0.0
+
         # ── FIX: Position sizing based on 1% capital-at-risk ──────
-        # Shares = (Capital × Risk%) / (Close − Stop_Loss)
-        # Tells you exactly how many shares to buy so a SL hit costs 1% of capital.
+        # Shares = (Capital × Risk%) / (Entry_Price − Stop_Loss)
+        # FIX #3: Uses Entry_Price (incl. slippage), not theoretical Close.
         is_india_sym = symbol.endswith(".NS")
         capital      = CAPITAL_INDIA if is_india_sym else CAPITAL_USA
         risk_amt     = capital * RISK_PER_TRADE_PCT / 100.0
-        risk_per_share = close - stop_loss
+        risk_per_share = entry_price - stop_loss
         suggested_shares = int(risk_amt / risk_per_share) if risk_per_share > 0 else 0
-        position_value   = round(suggested_shares * close, 2)
+        position_value   = round(suggested_shares * entry_price, 2)
 
         return {
             "Symbol":             clean_sym,
@@ -884,10 +946,12 @@ def score_stock_from_df(symbol: str, df: pd.DataFrame,
             "Breadth_OK":         breadth_ok,
             "Entry_Overextended": entry_overextended,
             "Has_Earnings":       has_earnings,
+            "Entry_Price":        entry_price,
+            "Limit_Buy":          limit_buy_max,
             "Stop_Loss":          stop_loss,
             "Target":             target,
-            "Target%":            round((target / close - 1) * 100, 2),
-            "SL%":                round((1 - stop_loss / close) * 100, 2),
+            "Target%":            round((target / entry_price - 1) * 100, 2),
+            "SL%":                round((1 - stop_loss / entry_price) * 100, 2),
             "RR_Ratio":           rr_ratio,
             "Shares":             suggested_shares,
             "Position_Value":     position_value,
@@ -1497,7 +1561,29 @@ def filter_and_rank(df: pd.DataFrame, min_score: float = 0.0) -> pd.DataFrame:
         print(f"  🔍  Filtered out {dropped} candidates "
               f"(liquidity/overextension/score checks).")
 
-    return f.head(15)
+    # ── FIX #4: Portfolio-level position cap + exposure scaling ──────
+    # Each trade alone risks 1% of capital, but with N picks the total deployed
+    # capital can exceed 100% → one gap-down then wipes the day. Cap both:
+    #   (a) number of positions  ≤ MAX_POSITIONS_PER_DAY
+    #   (b) total position value ≤ MAX_PORTFOLIO_EXPOSURE_PCT of capital
+    # Step (b) scales every position pro-rata so exposure fits the cap.
+    f = f.head(MAX_POSITIONS_PER_DAY).copy()
+
+    if not f.empty and "Position_Value" in f.columns and "Shares" in f.columns:
+        capital   = CAPITAL_INDIA if is_india else CAPITAL_USA
+        max_value = capital * MAX_PORTFOLIO_EXPOSURE_PCT / 100.0
+        total_val = float(f["Position_Value"].sum())
+        if total_val > max_value and total_val > 0:
+            scale = max_value / total_val
+            f["Shares"]         = (f["Shares"].astype(float) * scale).astype(int)
+            f["Position_Value"] = (f["Position_Value"].astype(float) * scale).round(2)
+            print(f"  ⚖️   Portfolio exposure {total_val:,.0f} > cap {max_value:,.0f} "
+                  f"→ scaled positions by {scale:.2%}.")
+        else:
+            print(f"  ⚖️   Portfolio exposure {total_val:,.0f} / "
+                  f"cap {max_value:,.0f} ({MAX_PORTFOLIO_EXPOSURE_PCT}%). OK ✅")
+
+    return f
 
 
 
@@ -1518,7 +1604,8 @@ def print_report(df: pd.DataFrame, label: str, market_ok: bool, idx_chg: float):
         print(f"\n  {Fore.YELLOW}No strong candidates found.{Style.RESET_ALL}")
         return
 
-    cols = ["Symbol", "Conviction", "Close", "Change%", "Volume_Ratio", "RSI", "ADX",
+    cols = ["Symbol", "Conviction", "Close", "Entry_Price", "Limit_Buy", "Change%",
+            "Volume_Ratio", "RSI", "ADX",
             "Range_Pos%", "Near_52W_High", "Gap_Up", "Candle", "MACD_Crossover",
             "RS_Beat", "Weekly_Align", "Sector_Align", "Has_Earnings",
             "Stop_Loss", "SL%", "Target", "Target%", "RR_Ratio",
@@ -2474,10 +2561,13 @@ def run_backtest(prefix: str, days: int = 30):
             if df.empty or "Symbol" not in df.columns:
                 continue
             for _, row in df.iterrows():
+                # FIX #3: Prefer Entry_Price (incl. slippage) over Close for backtest.
+                # Old CSVs (pre-fix) only have Close — fall back to that for them.
+                entry_val = float(row.get("Entry_Price", row.get("Close", 0)) or 0)
                 all_rows.append({
                     "date_str": date_str,
                     "Symbol":   str(row.get("Symbol", "")),
-                    "Entry":    float(row.get("Close", 0)),
+                    "Entry":    entry_val,
                     "SL":       float(row.get("Stop_Loss", 0)),
                     "Target":   float(row.get("Target", 0)),
                     "Score":    float(row.get("BTST_Score", 0)),
@@ -2764,9 +2854,11 @@ def main():
                         help="Replay past CSV picks against next-day actuals")
     parser.add_argument("--days",      type=int, default=30,
                         help="Calendar days to look back for backtest (default: 30)")
-    parser.add_argument("--min-score", type=float, default=0.0,
+    parser.add_argument("--min-score", type=float, default=DEFAULT_MIN_SCORE,
                         help=f"Only show picks with BTST Score >= this value "
-                             f"(e.g. --min-score 70 for GOOD, --min-score 80 for HIGH conviction)")
+                             f"(default: {DEFAULT_MIN_SCORE:.0f} = GOOD tier). "
+                             f"Use --min-score 80 for HIGH conviction only, "
+                             f"or --min-score 0 to disable.")
     args      = parser.parse_args()
     run_india = not args.usa   or args.india
     run_usa   = not args.india or args.usa
