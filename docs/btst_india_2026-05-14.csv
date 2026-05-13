@@ -1,0 +1,4 @@
+Symbol,Close,Change%,Volume_Ratio,Avg_Vol,RSI,MACD_Hist,MACD_Crossover,EMA20,EMA50,EMA_Dist%,ADX,Range_Pos%,ATR,52W_High,Near_52W_High,Candle,Marubozu,FinalHrFade,RS_Beat,Weekly_Align,Gap_Up,Gap_Pct,Sector_Align,Breadth_OK,Entry_Overextended,Has_Earnings,Stop_Loss,Target,Target%,SL%,RR_Ratio,Shares,Position_Value,Conviction,BTST_Score
+ONGC,294.5,4.8,2.94,17725687.0,58.1,-1.2462,False,287.18,280.18,2.55,27.3,58.6,7.57,307.5,True,Morning Star,False,True,True,True,True,2.1,False,False,False,False,288.61,303.33,3.0,2.0,1.5,848,249736.0,WEAK,24.9
+PIDILITIND,1453.0,1.1,1.31,1351795.0,60.8,8.5721,False,1402.9,1397.56,3.57,17.8,48.5,37.11,1574.95,False,,False,True,True,True,False,-0.29,False,False,False,False,1427.6,1496.59,3.0,1.75,1.72,196,284788.0,WEAK,22.8
+TATASTEEL,212.0,-0.04,1.31,21590820.0,54.6,-0.5432,False,211.06,205.22,0.44,20.7,10.4,4.45,219.2,True,,False,True,True,True,False,-0.04,False,False,False,False,211.5,218.36,3.0,0.24,12.72,10000,2120000.0,WEAK,21.5
