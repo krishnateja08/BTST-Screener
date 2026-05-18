@@ -1,0 +1,8 @@
+Symbol,Close,Change%,Volume_Ratio,Avg_Vol,RSI,MACD_Hist,MACD_Crossover,EMA20,EMA50,EMA_Dist%,ADX,Range_Pos%,ATR,52W_High,Near_52W_High,Candle,Marubozu,FinalHrFade,RS_Beat,Weekly_Align,Gap_Up,Gap_Pct,Sector_Align,Breadth_OK,Entry_Overextended,Has_Earnings,Stop_Loss,Target,Target%,SL%,RR_Ratio,Shares,Position_Value,Conviction,BTST_Score
+COST,1076.47,2.62,1.16,1879430.0,72.1,6.1362,False,1020.51,1003.73,5.48,12.6,90.4,20.41,1079.83,True,,False,False,True,True,False,0.1,True,True,False,False,1056.06,1107.09,2.84,1.9,1.5,4,4305.88,MODERATE,60.6
+XOM,160.49,1.63,1.13,17558110.0,63.7,1.2804,False,151.92,150.85,5.64,15.0,80.9,4.31,175.22,False,,False,False,True,True,False,-0.38,True,True,False,False,157.28,165.3,3.0,2.0,1.5,31,4975.19,WEAK,54.0
+ADBE,255.64,3.25,1.15,4382640.0,56.3,0.2236,True,246.67,251.86,3.64,14.0,95.0,9.22,422.95,False,,False,False,True,False,False,0.0,False,True,False,False,250.53,263.31,3.0,2.0,1.5,19,4857.16,WEAK,45.1
+ADP,222.94,3.94,1.12,2887450.0,65.1,1.1037,False,210.01,210.63,6.16,22.4,95.5,6.0,321.84,False,Marubozu,True,False,True,True,False,0.42,False,True,True,False,218.48,229.63,3.0,2.0,1.5,22,4904.68,WEAK,41.1
+JNJ,228.92,0.97,1.21,7602770.0,49.6,0.8903,False,228.08,230.76,0.37,19.3,79.8,4.24,251.71,False,,False,False,True,True,False,0.0,True,True,False,False,225.86,235.27,2.77,1.34,2.08,32,7325.44,WEAK,37.4
+ADI,418.58,0.26,1.19,3549540.0,63.7,-0.7855,False,403.01,372.44,3.86,40.7,30.9,11.94,435.72,True,,False,True,True,True,False,2.02,False,True,False,False,414.07,431.14,3.0,1.08,2.78,22,9208.76,WEAK,37.3
+HON,217.23,1.87,1.35,3632020.0,49.2,0.9315,False,216.53,220.3,0.32,20.5,72.2,5.0,246.82,False,,False,False,True,False,False,0.41,False,True,False,False,213.02,223.75,3.0,1.94,1.55,23,4996.29,WEAK,24.2
