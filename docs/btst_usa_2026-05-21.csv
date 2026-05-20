@@ -1,0 +1,4 @@
+Symbol,Close,Change%,Volume_Ratio,Avg_Vol,RSI,MACD_Hist,MACD_Crossover,EMA20,EMA50,EMA_Dist%,ADX,Range_Pos%,ATR,52W_High,Near_52W_High,Candle,Marubozu,FinalHrFade,RS_Beat,Weekly_Align,Gap_Up,Gap_Pct,Sector_Align,Breadth_OK,Entry_Overextended,Has_Earnings,Stop_Loss,Target,Target%,SL%,RR_Ratio,Shares,Position_Value,Conviction,BTST_Score
+GS,982.12,5.75,1.23,1973760.0,63.8,0.5994,True,936.27,911.13,4.9,15.0,98.6,25.82,982.72,True,Marubozu,True,False,True,True,True,1.75,True,True,False,False,962.48,1011.58,3.0,2.0,1.5,5,4910.6,MODERATE,61.8
+TJX,159.21,5.66,1.38,6714860.0,60.8,0.3764,True,153.11,154.83,3.98,26.1,82.9,3.69,165.28,True,,False,False,True,True,True,1.46,True,True,False,False,156.03,163.99,3.0,2.0,1.5,31,4935.51,MODERATE,58.5
+GOOGL,388.91,0.32,1.13,26994890.0,62.7,-2.2286,False,379.4,352.55,2.51,46.9,54.8,10.16,408.61,True,,False,True,False,True,False,0.01,True,True,False,False,382.9,400.58,3.0,1.55,1.94,16,6222.56,WEAK,44.6
