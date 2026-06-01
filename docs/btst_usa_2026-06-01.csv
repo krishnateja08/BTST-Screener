@@ -1,0 +1,2 @@
+Symbol,Close,Change%,Volume_Ratio,Avg_Vol,RSI,MACD_Hist,MACD_Crossover,EMA20,EMA50,EMA_Dist%,ADX,Range_Pos%,ATR,52W_High,Near_52W_High,Candle,Marubozu,FinalHrFade,RS_Beat,Weekly_Align,Gap_Up,Gap_Pct,Sector_Align,Breadth_OK,Entry_Overextended,Has_Earnings,Stop_Loss,Target,Target%,SL%,RR_Ratio,Shares,Position_Value,Conviction,BTST_Score
+ORCL,243.1,7.67,1.24,18237910.0,79.7,3.8129,False,196.03,181.63,24.02,31.5,93.5,10.32,343.01,False,,False,False,True,True,True,2.09,False,True,True,False,238.24,250.4,3.0,2.0,1.5,20,4862.1,WEAK,26.8
