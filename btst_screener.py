@@ -95,18 +95,43 @@ NIFTY100_SYMBOLS = [
     "PETRONET.NS", "IGL.NS", "MGL.NS", "SAIL.NS", "NMDC.NS",
 ]
 
-# S&P 500 Top 100 by market cap (Yahoo Finance tickers)
+# USA symbols — synced from master_watchlist.py (138 symbols across 11 sectors)
+# Removed (not in master watchlist): ABT, ACN, ADI, AON, APH, BRK-B, BSX, CME,
+#   DHR, ELV, IBM, ICE, INTU, KLAC, MCO, PFE, PH, TXN, UBER, ZTS
+# Added: AEP, AMT, APD, C, CBRE, CHTR, COF, COP, CTAS, CVS, D, DIS, DLR, DOW,
+#   EBAY, ECL, EOG, EQIX, EXC, FAST, FCX, FDX, GEV, GOOG, HOOD, INTC, KMI, LMT,
+#   LULU, MAR, MDT, MNST, NEM, NKE, NUE, O, PEG, PGR, PM, PSA, PSX, RBLX, ROST,
+#   SBUX, SLB, SMCI, SNPS, SOFI, SPG, SPOT, SRE, TMUS, UPS, VST, VTR, WEC, WELL, XEL
 SP500_TOP100_SYMBOLS = [
-    "AAPL", "MSFT", "NVDA", "AMZN", "GOOGL", "META", "TSLA", "BRK-B", "AVGO", "JPM",
-    "LLY", "UNH", "XOM", "V", "MA", "COST", "HD", "PG", "JNJ", "ABBV",
-    "WMT", "NFLX", "BAC", "CRM", "ORCL", "CVX", "MRK", "KO", "AMD", "PEP",
-    "TMO", "ADBE", "ACN", "LIN", "MCD", "CSCO", "WFC", "ABT", "IBM", "GE",
-    "DHR", "AXP", "CAT", "ISRG", "INTU", "NOW", "QCOM", "VZ", "GS", "RTX",
-    "SPGI", "BKNG", "AMGN", "TXN", "MS", "BLK", "PFE", "SYK", "AMAT", "NEE",
-    "PLD", "UNP", "HON", "LOW", "T", "CMCSA", "UBER", "ETN", "DE", "BSX",
-    "ADP", "VRTX", "PANW", "CB", "TJX", "BMY", "GILD", "SO", "SCHW", "ZTS",
-    "MMC", "LRCX", "ADI", "BA", "MO", "ELV", "DUK", "CI", "MDLZ", "APH",
-    "PH", "ICE", "SHW", "KLAC", "MCO", "AON", "CME", "REGN", "CEG", "CL",
+    # Technology (17)
+    "NVDA", "MSFT", "AAPL", "AVGO", "AMD", "ORCL", "ADBE", "PANW",
+    "NOW", "SNPS", "CRM", "CSCO", "INTC", "QCOM", "AMAT", "LRCX", "SMCI",
+    # Communication Services (12)
+    "GOOGL", "GOOG", "META", "NFLX", "CMCSA", "DIS",
+    "TMUS", "VZ", "T", "CHTR", "SPOT", "RBLX",
+    # Consumer Discretionary (13)
+    "AMZN", "TSLA", "HD", "MCD", "TJX", "BKNG",
+    "LOW", "SBUX", "NKE", "MAR", "ROST", "EBAY", "LULU",
+    # Consumer Staples (10)
+    "WMT", "PG", "KO", "PEP", "COST", "PM", "MO", "MDLZ", "CL", "MNST",
+    # Health Care (16)
+    "LLY", "UNH", "JNJ", "MRK", "ABBV", "TMO", "AMGN", "BMY",
+    "GILD", "ISRG", "VRTX", "CVS", "CI", "MDT", "SYK", "REGN",
+    # Financials (18)
+    "JPM", "BAC", "MS", "GS", "V", "MA", "AXP", "BLK",
+    "SPGI", "C", "WFC", "SCHW", "COF", "PGR", "CB", "MMC", "HOOD", "SOFI",
+    # Industrials (15)
+    "GE", "CAT", "UNP", "HON", "LMT", "UPS", "RTX", "DE",
+    "FDX", "BA", "GEV", "ETN", "ADP", "FAST", "CTAS",
+    # Energy (12)
+    "XOM", "CVX", "COP", "NEE", "SO", "DUK", "CEG", "VST",
+    "SLB", "EOG", "KMI", "PSX",
+    # Materials (8)
+    "LIN", "FCX", "SHW", "NEM", "APD", "ECL", "NUE", "DOW",
+    # Real Estate (10)
+    "PLD", "AMT", "EQIX", "DLR", "WELL", "SPG", "PSA", "O", "CBRE", "VTR",
+    # Utilities (7)
+    "EXC", "XEL", "AEP", "SRE", "D", "PEG", "WEC",
 ]
 
 # ── Index / VIX symbols ────────────────────────────────────
@@ -175,43 +200,55 @@ INDIA_SECTOR_MAP: dict[str, str] = {
 USA_SECTOR_MAP: dict[str, str] = {
     # Technology → XLK
     **{s: "XLK" for s in [
-        "AAPL","MSFT","NVDA","AVGO","AMD","ADBE","CRM","QCOM","INTU",
-        "NOW","PANW","AMAT","LRCX","ADI","KLAC","IBM","ACN","APH",
-    ]},
-    # Financials → XLF
-    **{s: "XLF" for s in [
-        "JPM","BAC","WFC","GS","MS","V","MA","AXP","BLK","SCHW",
-        "SPGI","CB","MMC","ICE","CME","MCO","AON","BRK-B",
-    ]},
-    # Healthcare → XLV
-    **{s: "XLV" for s in [
-        "UNH","LLY","JNJ","ABBV","MRK","TMO","DHR","ISRG","BMY",
-        "AMGN","GILD","VRTX","PFE","SYK","ZTS","ELV","CI","BSX",
-    ]},
-    # Energy → XLE
-    **{s: "XLE" for s in ["XOM","CVX"]},
-    # Consumer Discretionary → XLY
-    **{s: "XLY" for s in [
-        "AMZN","TSLA","HD","MCD","LOW","TJX","BKNG","UBER",
-    ]},
-    # Consumer Staples → XLP
-    **{s: "XLP" for s in [
-        "WMT","PG","KO","PEP","COST","MDLZ","MO","CL",
-    ]},
-    # Industrials → XLI
-    **{s: "XLI" for s in [
-        "GE","CAT","HON","UNP","RTX","ETN","DE","ADP","BA","PH",
+        "NVDA","MSFT","AAPL","AVGO","AMD","ORCL","ADBE","PANW",
+        "NOW","SNPS","CRM","CSCO","INTC","QCOM","AMAT","LRCX","SMCI",
     ]},
     # Communication Services → XLC
     **{s: "XLC" for s in [
-        "GOOGL","META","NFLX","CMCSA","T","VZ",
+        "GOOGL","GOOG","META","NFLX","CMCSA","DIS",
+        "TMUS","VZ","T","CHTR","SPOT","RBLX",
+    ]},
+    # Consumer Discretionary → XLY
+    **{s: "XLY" for s in [
+        "AMZN","TSLA","HD","MCD","TJX","BKNG",
+        "LOW","SBUX","NKE","MAR","ROST","EBAY","LULU",
+    ]},
+    # Consumer Staples → XLP
+    **{s: "XLP" for s in [
+        "WMT","PG","KO","PEP","COST","PM","MO","MDLZ","CL","MNST",
+    ]},
+    # Healthcare → XLV
+    **{s: "XLV" for s in [
+        "LLY","UNH","JNJ","MRK","ABBV","TMO","AMGN","BMY",
+        "GILD","ISRG","VRTX","CVS","CI","MDT","SYK","REGN",
+    ]},
+    # Financials → XLF
+    **{s: "XLF" for s in [
+        "JPM","BAC","MS","GS","V","MA","AXP","BLK",
+        "SPGI","C","WFC","SCHW","COF","PGR","CB","MMC","HOOD","SOFI",
+    ]},
+    # Industrials → XLI
+    **{s: "XLI" for s in [
+        "GE","CAT","UNP","HON","LMT","UPS","RTX","DE",
+        "FDX","BA","GEV","ETN","ADP","FAST","CTAS",
+    ]},
+    # Energy → XLE
+    **{s: "XLE" for s in [
+        "XOM","CVX","COP","NEE","SO","DUK","CEG","VST",
+        "SLB","EOG","KMI","PSX",
+    ]},
+    # Materials → XLB
+    **{s: "XLB" for s in [
+        "LIN","FCX","SHW","NEM","APD","ECL","NUE","DOW",
+    ]},
+    # Real Estate → XLRE
+    **{s: "XLRE" for s in [
+        "PLD","AMT","EQIX","DLR","WELL","SPG","PSA","O","CBRE","VTR",
     ]},
     # Utilities → XLU
-    **{s: "XLU" for s in ["NEE","SO","DUK","CEG"]},
-    # Real Estate → XLRE
-    **{s: "XLRE" for s in ["PLD"]},
-    # Materials → XLB
-    **{s: "XLB" for s in ["LIN","SHW"]},
+    **{s: "XLU" for s in [
+        "EXC","XEL","AEP","SRE","D","PEG","WEC",
+    ]},
 }
 
 LOOKBACK_DAYS  = 365          # extended to 1 year for 52-week high calculation
