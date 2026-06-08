@@ -1,0 +1,2 @@
+Symbol,Close,Change%,Volume_Ratio,Avg_Vol,RSI,MACD_Hist,MACD_Crossover,EMA20,EMA50,EMA_Dist%,ADX,Range_Pos%,ATR,52W_High,Near_52W_High,Candle,Marubozu,FinalHrFade,RS_Beat,Weekly_Align,Gap_Up,Gap_Pct,Sector_Align,Breadth_OK,Entry_Overextended,Has_Earnings,Stop_Loss,Target,Target%,SL%,RR_Ratio,Shares,Position_Value,Conviction,BTST_Score
+LRCX,324.45,6.98,1.23,9260500.0,58.5,-0.3545,False,308.68,282.51,5.11,22.1,60.3,16.76,346.19,False,,False,False,True,True,True,5.03,True,True,False,False,317.96,334.18,3.0,2.0,1.5,15,4866.75,WEAK,52.9
