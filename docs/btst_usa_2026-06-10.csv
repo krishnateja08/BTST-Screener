@@ -1,11 +1,4 @@
 Symbol,Close,Change%,Volume_Ratio,Avg_Vol,RSI,MACD_Hist,MACD_Crossover,EMA20,EMA50,EMA_Dist%,ADX,Range_Pos%,ATR,52W_High,Near_52W_High,Candle,Marubozu,FinalHrFade,RS_Beat,Weekly_Align,Gap_Up,Gap_Pct,Sector_Align,Breadth_OK,Entry_Overextended,Has_Earnings,Stop_Loss,Target,Target%,SL%,RR_Ratio,Shares,Position_Value,Conviction,BTST_Score
-SPG,211.89,2.19,1.18,1857960.0,63.6,0.4463,False,205.29,201.51,3.21,13.8,84.9,3.96,213.08,True,Engulfing,False,False,True,True,False,-0.22,True,True,False,False,207.93,217.83,2.8,1.87,1.5,25,5297.25,MODERATE,61.8
-LIN,515.59,2.72,1.13,2601600.0,58.9,0.3256,True,504.76,499.52,2.15,10.6,86.1,10.12,519.64,True,,False,False,True,True,True,0.88,True,True,False,False,506.36,530.78,2.95,1.79,1.65,10,5155.9,MODERATE,61.3
-SHW,310.55,3.67,1.15,2260740.0,52.1,1.0935,False,305.77,314.44,1.56,20.5,98.2,8.24,376.95,False,Marubozu,True,False,True,False,True,1.14,True,True,False,False,304.34,319.87,3.0,2.0,1.5,16,4968.8,MODERATE,55.8
-UNH,413.0,1.58,1.17,7346390.0,73.9,0.4826,True,386.44,362.13,6.87,39.9,100.0,9.92,413.0,True,,False,False,True,True,True,0.84,True,True,True,False,407.44,425.39,3.0,1.35,2.23,17,7021.0,WEAK,49.7
-LOW,217.37,4.52,1.22,3059480.0,48.3,0.6878,True,216.05,226.43,0.61,39.0,99.8,6.06,291.66,False,Marubozu,True,False,True,False,True,0.62,True,True,False,False,213.02,223.89,3.0,2.0,1.5,22,4782.14,WEAK,37.0
-MO,71.56,0.38,1.19,8059360.0,53.6,-0.2246,False,71.04,69.47,0.74,17.4,61.2,1.57,74.56,True,,False,False,True,True,False,0.0,True,True,False,False,70.35,73.71,3.0,1.69,1.78,82,5867.92,WEAK,36.4
-AMGN,344.57,-0.34,1.38,2371720.0,56.8,1.9623,False,338.12,339.65,1.91,13.5,27.7,8.03,388.36,False,,False,True,False,True,False,0.73,True,True,False,False,342.62,354.9,3.0,0.56,5.31,51,17572.82,WEAK,32.7
-LRCX,327.16,0.84,1.5,9622510.0,59.4,-0.5562,False,310.44,284.26,5.39,22.3,49.1,18.64,349.09,False,,False,True,True,True,False,3.4,False,True,False,False,320.62,336.97,3.0,2.0,1.5,15,4907.4,WEAK,32.2
-O,61.25,2.07,1.17,6764000.0,49.5,-0.0209,False,61.1,61.66,0.25,22.2,83.3,1.05,67.05,False,,False,False,True,False,False,0.38,True,True,False,False,60.2,62.82,2.56,1.71,1.5,95,5818.75,WEAK,31.0
-AMAT,499.21,1.43,1.35,8169900.0,64.1,3.1257,False,457.34,422.36,9.16,19.2,55.0,26.71,525.98,False,,False,True,True,True,False,2.2,False,True,True,False,489.23,514.19,3.0,2.0,1.5,10,4992.1,WEAK,25.3
+LRCX,324.45,6.98,1.24,9261470.0,58.5,-0.3545,False,308.68,282.51,5.11,22.1,60.3,16.76,346.19,False,,False,False,True,True,True,5.03,True,True,False,False,317.96,334.18,3.0,2.0,1.5,15,4866.75,WEAK,52.9
+LLY,1149.15,1.57,1.32,3416650.0,70.5,5.8958,False,1062.74,1012.74,8.13,33.5,14.2,36.87,1182.73,True,,False,True,True,True,False,2.44,False,True,True,False,1143.6,1183.62,3.0,0.48,6.21,18,20684.7,WEAK,33.3
+ECL,257.41,-0.22,1.25,1760930.0,50.9,1.1008,False,255.8,260.71,0.63,19.9,43.5,6.37,308.44,False,,False,True,False,False,False,-1.06,False,True,False,False,255.0,265.13,3.0,0.94,3.2,41,10553.81,WEAK,17.2
