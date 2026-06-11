@@ -1,0 +1,7 @@
+Symbol,Close,Change%,Volume_Ratio,Avg_Vol,RSI,MACD_Hist,MACD_Crossover,EMA20,EMA50,EMA_Dist%,ADX,Range_Pos%,ATR,52W_High,Near_52W_High,Candle,Marubozu,FinalHrFade,RS_Beat,Weekly_Align,Gap_Up,Gap_Pct,Sector_Align,Breadth_OK,Entry_Overextended,Has_Earnings,Stop_Loss,Target,Target%,SL%,RR_Ratio,Shares,Position_Value,Conviction,BTST_Score
+RTX,184.21,3.83,1.11,5792240.0,57.3,1.1134,False,178.39,181.54,3.26,21.5,97.0,4.64,213.61,False,Marubozu,True,False,True,True,False,0.34,True,True,False,False,180.53,189.74,3.0,2.0,1.5,27,4973.67,GOOD,77.5
+SBUX,102.28,3.56,1.25,8254650.0,56.8,-0.088,False,99.47,99.34,2.83,24.3,92.6,2.77,108.25,False,,False,False,True,True,False,0.2,True,True,False,False,100.23,105.35,3.0,2.0,1.5,48,4909.44,MODERATE,59.7
+CVS,100.48,2.51,1.49,7805330.0,72.7,0.2521,False,93.63,88.09,7.32,37.6,99.7,2.43,100.49,True,,False,False,True,True,False,0.22,True,True,True,False,98.47,103.49,3.0,2.0,1.5,49,4923.52,WEAK,53.2
+MRK,120.76,1.4,1.13,11598270.0,58.8,0.2956,False,117.7,116.31,2.6,18.0,29.3,3.17,124.22,True,,False,True,False,True,True,0.8,True,True,False,False,119.95,124.38,3.0,0.67,4.47,123,14853.48,WEAK,49.3
+AMGN,354.06,4.84,1.77,2631610.0,61.9,1.8965,False,339.6,340.15,4.26,13.5,74.1,9.14,388.36,False,,False,False,True,True,True,1.53,True,True,False,False,346.98,364.68,3.0,2.0,1.5,14,4956.84,WEAK,47.9
+TMUS,185.82,0.15,1.33,5387250.0,48.2,0.0789,True,185.57,190.77,0.14,18.3,42.8,5.18,256.72,False,,False,True,False,False,False,-0.53,True,True,False,False,183.56,191.39,3.0,1.22,2.46,44,8176.08,WEAK,22.9
