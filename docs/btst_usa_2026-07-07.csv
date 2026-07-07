@@ -1,4 +1,6 @@
 Symbol,Close,Change%,Volume_Ratio,Avg_Vol,RSI,MACD_Hist,MACD_Crossover,EMA20,EMA50,EMA_Dist%,ADX,Range_Pos%,ATR,52W_High,Near_52W_High,Candle,Marubozu,FinalHrFade,RS_Beat,Weekly_Align,Gap_Up,Gap_Pct,Sector_Align,Breadth_OK,Entry_Overextended,Has_Earnings,Stop_Loss,Target,Target%,SL%,RR_Ratio,Shares,Position_Value,Conviction,BTST_Score
-BA,234.54,3.55,1.14,6156030.0,62.3,1.258,False,221.54,221.61,5.87,10.7,96.4,6.82,254.35,False,Marubozu,True,False,True,True,False,0.29,True,True,False,False,229.85,241.58,3.0,2.0,1.5,21,4925.34,GOOD,70.4
-ISRG,432.83,1.6,1.15,2845350.0,59.7,3.6777,False,413.37,427.5,4.71,21.9,62.7,12.97,603.88,False,,False,False,True,False,True,0.7,False,True,False,False,424.17,445.81,3.0,2.0,1.5,11,4761.13,WEAK,44.3
+BA,234.54,3.55,1.14,6156030.0,62.3,1.258,False,221.54,221.61,5.87,10.7,96.1,6.83,254.35,False,Marubozu,True,False,True,True,False,0.29,True,True,False,False,229.85,241.58,3.0,2.0,1.5,21,4925.34,GOOD,70.4
+TSLA,419.77,6.69,1.11,49215570.0,54.7,2.5868,False,404.07,403.94,3.88,15.2,99.2,20.32,498.83,False,,False,False,True,True,True,1.03,True,True,False,False,411.37,432.36,3.0,2.0,1.5,11,4617.47,MODERATE,56.4
+ISRG,432.83,1.6,1.2,2845350.0,59.7,3.6777,False,413.37,427.5,4.71,21.9,62.7,12.97,603.88,False,,False,False,True,False,True,0.69,False,True,False,False,424.17,445.81,3.0,2.0,1.5,11,4761.13,WEAK,44.3
+RTX,201.37,1.06,1.27,5183980.0,69.9,1.5409,False,187.76,185.05,7.25,27.4,74.3,4.67,213.61,False,,False,False,True,True,False,0.38,True,True,True,False,197.96,207.41,3.0,1.69,1.77,29,5839.73,WEAK,41.5
 MCD,279.5,-0.4,1.22,5514370.0,52.4,0.6186,False,275.98,282.56,1.27,19.3,79.6,5.97,339.85,False,,False,False,False,False,False,-0.2,True,True,False,False,273.91,287.88,3.0,2.0,1.5,17,4751.5,WEAK,33.8
