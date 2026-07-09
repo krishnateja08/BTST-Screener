@@ -1,0 +1,3 @@
+Symbol,Close,Change%,Volume_Ratio,Avg_Vol,RSI,MACD_Hist,MACD_Crossover,EMA20,EMA50,EMA_Dist%,ADX,Range_Pos%,ATR,52W_High,Near_52W_High,Candle,Marubozu,FinalHrFade,RS_Beat,Weekly_Align,Gap_Up,Gap_Pct,Sector_Align,Breadth_OK,Entry_Overextended,Has_Earnings,Stop_Loss,Target,Target%,SL%,RR_Ratio,Shares,Position_Value,Conviction,BTST_Score
+TORNTPHARM,4866.4,0.2,2.24,458371.0,75.6,32.255,False,4626.97,4488.19,5.17,29.9,33.6,101.23,4948.0,True,,False,True,True,True,False,-0.14,False,False,False,False,4825.1,5012.39,3.0,0.85,3.53,121,588834.39,WEAK,28.7
+NAUKRI,1179.0,1.69,3.38,3242796.0,77.9,18.3057,False,1029.84,1011.16,14.48,21.3,15.3,39.24,1475.48,False,,False,True,True,True,True,1.08,False,False,False,False,1172.0,1214.37,3.0,0.59,5.05,714,841806.0,WEAK,25.2
