@@ -1,4 +1,6 @@
 Symbol,Close,Change%,Volume_Ratio,Avg_Vol,RSI,MACD_Hist,MACD_Crossover,EMA20,EMA50,EMA_Dist%,ADX,Range_Pos%,ATR,52W_High,Near_52W_High,Candle,Marubozu,FinalHrFade,RS_Beat,Weekly_Align,Gap_Up,Gap_Pct,Sector_Align,Breadth_OK,Entry_Overextended,Has_Earnings,Stop_Loss,Target,Target%,SL%,RR_Ratio,Shares,Position_Value,Conviction,BTST_Score
-XOM,144.51,4.05,1.15,16031560.0,54.9,0.9423,False,140.71,144.36,2.7,20.1,84.8,3.53,175.22,False,,False,False,True,True,True,1.47,True,True,False,False,141.62,148.85,3.0,2.0,1.5,34,4913.34,WEAK,34.8
+EOG,139.61,4.11,1.14,3332450.0,58.4,0.7816,False,134.2,134.49,4.03,14.2,80.9,3.84,150.7,False,Morning Star,False,False,True,True,True,1.64,True,True,False,False,136.82,143.8,3.0,2.0,1.5,35,4886.35,MODERATE,56.3
+XOM,144.51,4.05,1.17,16031560.0,54.9,0.9423,False,140.71,144.36,2.7,20.1,84.8,3.53,175.22,False,,False,False,True,True,True,1.47,True,True,False,False,141.62,148.85,3.0,2.0,1.5,34,4913.34,WEAK,34.8
+CRM,171.22,4.84,1.1,12789930.0,55.1,1.8926,False,164.93,171.03,3.81,13.5,77.5,6.97,271.7,False,,False,False,True,False,True,1.59,False,True,False,False,167.8,176.36,3.0,2.0,1.5,29,4965.38,WEAK,33.9
 PSX,198.29,5.27,1.13,2733330.0,72.5,2.6164,False,180.01,175.75,10.15,19.1,96.1,5.93,198.58,True,,False,False,True,True,True,2.06,True,True,True,False,194.32,204.24,3.0,2.0,1.5,25,4957.25,WEAK,28.4
-FAST,47.05,1.2,1.23,8389680.0,53.9,-0.1268,False,46.74,46.02,0.67,17.5,40.9,1.1,49.83,False,,False,True,True,True,False,1.8,False,True,False,False,46.63,48.46,3.0,0.89,3.36,238,11197.9,WEAK,22.4
+FAST,47.05,1.2,1.25,8389680.0,53.9,-0.1268,False,46.74,46.02,0.67,17.5,40.6,1.1,49.83,False,,False,True,True,True,False,1.81,False,True,False,False,46.64,48.46,3.0,0.87,3.44,243,11433.15,WEAK,22.4
