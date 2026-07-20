@@ -1,0 +1,10 @@
+Symbol,Close,Change%,Volume_Ratio,Avg_Vol,RSI,MACD_Hist,MACD_Crossover,EMA20,EMA50,EMA_Dist%,ADX,Range_Pos%,ATR,52W_High,Near_52W_High,Candle,Marubozu,FinalHrFade,RS_Beat,Weekly_Align,Gap_Up,Gap_Pct,Sector_Align,Breadth_OK,Entry_Overextended,Has_Earnings,Stop_Loss,Target,Target%,SL%,RR_Ratio,Shares,Position_Value,Conviction,BTST_Score
+UPS,117.72,0.46,1.64,4365425.0,69.6,0.6094,False,111.32,107.79,5.75,17.4,66.8,2.81,118.73,True,,False,False,True,True,False,-0.24,False,True,False,False,116.31,121.25,3.0,1.2,2.5,70,8240.4,WEAK,44.8
+CB,352.16,2.46,1.39,2141225.0,57.8,-1.0079,False,343.83,335.48,2.42,23.6,65.8,8.03,365.29,True,,False,False,True,True,True,1.43,False,True,False,False,347.45,362.72,3.0,1.34,2.24,21,7395.36,WEAK,39.7
+EOG,139.89,1.78,1.23,3446450.0,59.7,0.9851,False,134.73,134.13,3.83,15.7,49.4,3.68,149.59,False,,False,True,True,True,True,1.33,True,True,False,False,138.7,144.09,3.0,0.85,3.53,84,11750.76,WEAK,38.1
+BAC,61.27,-0.36,1.26,35623150.0,70.3,0.0888,False,58.91,56.23,4.01,39.8,41.8,1.26,62.12,True,,False,True,True,True,False,-0.39,False,True,False,False,60.66,63.11,3.0,1.0,3.02,163,9987.01,WEAK,35.1
+XOM,147.36,0.97,1.14,16683700.0,59.5,1.4727,False,142.4,144.57,3.48,19.7,6.7,3.38,175.22,False,,False,True,True,True,False,2.11,True,True,False,False,147.17,151.78,3.0,0.13,23.26,526,77511.36,WEAK,33.7
+PLD,149.79,-0.18,1.16,4135700.0,64.9,1.0429,False,143.11,141.78,4.66,14.6,33.5,3.48,153.35,True,,False,True,True,True,False,-0.01,False,True,False,False,148.0,154.28,3.0,1.2,2.51,55,8238.45,WEAK,33.7
+UNH,426.09,0.64,1.32,8138425.0,58.1,-1.5241,False,418.99,398.24,1.69,45.3,8.0,12.43,461.62,False,,False,True,True,True,False,0.79,False,True,False,False,425.1,438.87,3.0,0.23,12.91,101,43035.09,WEAK,30.2
+UNP,301.75,0.78,1.26,2792900.0,77.6,2.1739,False,282.32,272.53,6.88,36.1,72.3,5.69,303.15,True,,False,False,True,True,False,0.24,False,True,True,False,298.1,310.28,2.83,1.21,2.34,27,8147.25,WEAK,25.9
+PANW,358.68,1.32,1.13,6879375.0,67.4,-0.0264,False,328.27,288.47,9.26,47.2,57.4,16.52,368.8,True,Engulfing,False,True,True,True,False,-1.97,False,True,True,False,351.51,369.44,3.0,2.0,1.5,13,4662.84,WEAK,25.2
