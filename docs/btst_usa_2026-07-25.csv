@@ -1,0 +1,4 @@
+Symbol,Close,Change%,Volume_Ratio,Avg_Vol,RSI,MACD_Hist,MACD_Crossover,EMA20,EMA50,EMA_Dist%,ADX,Range_Pos%,ATR,52W_High,Near_52W_High,Candle,Marubozu,FinalHrFade,RS_Beat,Weekly_Align,Gap_Up,Gap_Pct,Sector_Align,Breadth_OK,Entry_Overextended,Has_Earnings,Stop_Loss,Target,Target%,SL%,RR_Ratio,Shares,Position_Value,Conviction,BTST_Score
+PLD,147.63,1.73,1.61,3979600.0,56.7,0.4455,False,144.6,142.71,2.09,15.4,83.4,3.67,153.35,True,,False,False,True,True,False,-0.01,True,True,False,False,144.68,152.06,3.0,2.0,1.5,33,4871.79,MODERATE,64.1
+RTX,212.79,1.74,1.28,4602125.0,74.0,1.0708,False,196.09,190.6,8.52,28.1,62.7,5.55,214.89,True,,False,False,True,True,True,0.8,True,True,True,False,209.26,219.17,3.0,1.66,1.81,28,5958.12,WEAK,43.8
+T,24.13,5.1,1.27,63285100.0,69.3,0.3939,False,22.14,22.75,9.0,34.5,100.0,0.75,28.75,False,Marubozu,True,False,True,True,False,0.17,True,True,True,False,23.65,24.85,2.98,1.99,1.5,208,5019.04,WEAK,35.1
