@@ -1,0 +1,9 @@
+Symbol,Close,Change%,Volume_Ratio,Avg_Vol,RSI,MACD_Hist,MACD_Crossover,EMA20,EMA50,EMA_Dist%,ADX,Range_Pos%,ATR,52W_High,Near_52W_High,Candle,Marubozu,FinalHrFade,RS_Beat,Weekly_Align,Gap_Up,Gap_Pct,Sector_Align,Breadth_OK,Entry_Overextended,Has_Earnings,Stop_Loss,Target,Target%,SL%,RR_Ratio,Shares,Position_Value,Conviction,BTST_Score
+KO,84.07,3.57,1.25,15910600.0,56.6,-0.1653,False,82.39,81.09,2.04,14.5,96.0,1.78,85.68,True,,False,False,True,True,True,2.35,True,True,False,False,82.5,86.59,3.0,1.87,1.61,63,5296.41,MODERATE,62.7
+NUE,247.86,2.78,1.52,1107500.0,61.5,1.9082,False,235.91,232.4,5.07,17.2,53.1,7.13,270.24,False,,False,True,True,True,False,3.3,True,True,False,False,244.04,255.3,3.0,1.54,1.95,26,6444.36,WEAK,50.4
+AMGN,376.26,1.28,1.22,2189920.0,64.4,0.2834,True,363.49,355.19,3.51,19.3,23.7,9.01,388.36,True,,False,True,True,True,False,1.9,True,True,False,False,374.39,387.55,3.0,0.5,6.04,53,19941.78,WEAK,46.1
+CBRE,143.88,6.15,1.48,1427630.0,58.3,-0.0958,False,138.45,137.61,3.92,15.2,82.2,4.43,174.27,False,Morning Star,False,False,True,True,True,3.98,True,True,False,False,141.0,148.2,3.0,2.0,1.5,34,4891.92,WEAK,42.7
+EQIX,1046.79,1.28,1.12,443500.0,52.2,2.6438,False,1036.46,1043.25,1.0,17.3,11.4,26.55,1124.0,False,,False,True,True,True,False,4.91,True,True,False,False,1041.78,1078.19,3.0,0.48,6.27,19,19889.01,WEAK,37.9
+SPGI,439.83,4.72,1.53,1431230.0,57.0,-1.6501,False,428.76,416.7,2.58,19.0,71.9,13.74,543.27,False,,False,False,True,True,True,3.1,True,True,False,False,431.8,453.02,3.0,1.83,1.64,12,5277.96,WEAK,36.6
+LULU,117.83,6.51,1.14,2429110.0,51.1,0.183,True,116.3,122.06,1.32,14.7,79.3,4.64,225.98,False,,False,False,True,False,True,6.29,True,True,False,False,115.76,121.36,3.0,1.76,1.71,48,5655.84,WEAK,31.0
+RTX,218.42,4.43,1.38,4542330.0,77.1,1.4301,False,196.62,190.82,11.08,28.5,70.1,5.94,220.39,True,,False,False,True,True,True,2.51,True,True,True,False,214.05,224.97,3.0,2.0,1.5,22,4805.24,WEAK,27.7
