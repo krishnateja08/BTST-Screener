@@ -1,0 +1,11 @@
+Symbol,Close,Change%,Volume_Ratio,Avg_Vol,RSI,MACD_Hist,MACD_Crossover,EMA20,EMA50,EMA_Dist%,ADX,Range_Pos%,ATR,52W_High,Near_52W_High,Candle,Marubozu,FinalHrFade,RS_Beat,Weekly_Align,Gap_Up,Gap_Pct,Sector_Align,Breadth_OK,Entry_Overextended,Has_Earnings,Stop_Loss,Target,Target%,SL%,RR_Ratio,Shares,Position_Value,Conviction,BTST_Score
+SCHW,108.02,1.57,1.33,7281570.0,71.2,0.115,False,102.96,98.69,4.91,35.1,74.0,2.23,108.55,True,,False,False,True,True,True,0.6,True,True,False,False,106.51,111.26,3.0,1.4,2.15,66,7129.32,MODERATE,57.6
+DIS,101.76,3.65,1.62,12847060.0,60.8,0.5829,False,97.62,98.48,4.24,12.1,59.2,2.43,118.07,False,,False,True,True,True,False,3.88,False,True,False,False,99.72,104.81,3.0,2.0,1.5,49,4986.24,WEAK,38.7
+C,137.64,0.56,1.1,10730620.0,56.9,0.642,False,133.79,133.06,2.87,22.8,24.6,3.65,147.21,False,,False,True,True,True,False,0.31,True,True,False,False,137.14,141.77,3.0,0.36,8.26,200,27528.0,WEAK,36.2
+LLY,1169.86,4.86,2.24,2453160.0,51.3,-8.0891,False,1166.2,1137.72,0.31,17.9,40.0,41.38,1249.45,False,,False,True,True,True,False,5.23,True,True,False,False,1146.46,1204.96,3.0,2.0,1.5,4,4679.44,WEAK,36.0
+NUE,274.74,0.26,1.25,1601620.0,71.9,3.6787,False,250.99,240.6,9.46,27.5,27.1,8.59,280.11,True,,False,True,True,True,False,0.72,True,True,True,False,272.74,282.98,3.0,0.73,4.12,50,13737.0,WEAK,34.3
+MRK,128.33,0.26,1.11,8572820.0,54.0,-0.3742,False,127.72,124.08,0.48,18.9,22.0,3.42,135.05,True,,False,True,True,True,False,1.1,True,True,False,False,127.56,132.18,3.0,0.6,5.0,129,16554.57,WEAK,33.5
+AMGN,407.83,4.57,1.98,2831840.0,72.5,2.039,False,377.8,364.38,7.95,28.1,66.7,11.56,416.22,True,,False,False,True,True,True,0.86,True,True,True,False,399.67,420.06,3.0,2.0,1.5,12,4893.96,WEAK,32.7
+NVDA,219.22,3.43,1.17,133143400.0,61.6,1.4606,False,204.85,204.45,7.02,15.4,48.5,7.88,236.26,False,,False,True,True,True,True,2.32,False,True,True,False,216.4,225.8,3.0,1.29,2.33,35,7672.7,WEAK,27.1
+BKNG,207.02,6.56,1.56,6580120.0,69.3,1.6392,False,187.97,180.57,10.14,22.1,52.0,7.76,229.86,False,,False,True,True,True,False,6.93,True,True,True,False,202.88,213.23,3.0,2.0,1.5,24,4968.48,WEAK,23.8
+NEM,104.29,6.71,1.24,6682040.0,63.8,1.3567,False,95.52,98.4,9.19,12.1,53.6,3.82,134.29,False,,False,True,True,True,True,6.19,True,True,True,False,102.77,107.42,3.0,1.46,2.06,65,6778.85,WEAK,21.3
