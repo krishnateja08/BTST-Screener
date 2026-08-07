@@ -1,0 +1,8 @@
+Symbol,Close,Change%,Volume_Ratio,Avg_Vol,RSI,MACD_Hist,MACD_Crossover,EMA20,EMA50,EMA_Dist%,ADX,Range_Pos%,ATR,52W_High,Near_52W_High,Candle,Marubozu,FinalHrFade,RS_Beat,Weekly_Align,Gap_Up,Gap_Pct,Sector_Align,Breadth_OK,Entry_Overextended,Has_Earnings,Stop_Loss,Target,Target%,SL%,RR_Ratio,Shares,Position_Value,Conviction,BTST_Score
+BKNG,214.42,3.39,1.37,5195800.0,73.2,2.4059,False,192.16,182.91,11.58,26.3,85.2,7.69,229.86,False,Morning Star,False,False,True,True,False,-0.07,True,True,True,False,210.13,220.85,3.0,2.0,1.5,23,4931.66,WEAK,50.2
+FAST,51.84,2.05,1.2,8360150.0,72.5,0.5286,False,48.01,46.77,7.98,21.9,96.5,1.35,51.9,True,,False,False,True,True,False,-0.44,True,True,True,False,50.8,53.4,3.01,2.01,1.5,96,4976.64,WEAK,46.1
+CEG,269.89,3.37,1.13,2210675.0,54.9,0.5312,False,263.68,265.93,2.36,13.8,88.6,10.69,411.04,False,,False,False,True,False,True,1.08,False,True,False,False,264.49,277.99,3.0,2.0,1.5,18,4858.02,WEAK,44.0
+NOW,124.88,6.42,1.32,19363725.0,67.0,1.8388,False,110.75,106.92,12.76,14.1,75.5,6.76,194.73,False,,False,False,True,True,True,3.68,True,True,True,False,122.38,128.63,3.0,2.0,1.5,40,4995.2,WEAK,42.4
+EBAY,111.98,1.67,1.52,3622125.0,50.3,-0.3483,False,111.87,110.63,0.1,12.3,33.0,3.85,118.98,False,,False,True,True,True,True,1.31,True,True,False,False,110.41,115.34,3.0,1.4,2.14,63,7054.74,WEAK,41.9
+GILD,133.21,1.8,1.25,6225100.0,53.6,-0.0533,False,131.65,131.07,1.18,15.4,74.9,4.15,155.38,False,,False,False,True,True,True,0.95,True,True,False,False,130.59,137.21,3.0,1.97,1.53,38,5061.98,WEAK,36.3
+NEM,112.98,7.16,1.23,7544625.0,72.3,2.3027,False,98.03,99.24,15.25,16.2,79.2,4.11,134.29,False,,False,False,True,True,True,4.83,True,True,True,False,110.72,116.37,3.0,2.0,1.5,44,4971.12,WEAK,31.1
