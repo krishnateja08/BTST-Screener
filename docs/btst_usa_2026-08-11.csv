@@ -1,0 +1,4 @@
+Symbol,Close,Change%,Volume_Ratio,Avg_Vol,RSI,MACD_Hist,MACD_Crossover,EMA20,EMA50,EMA_Dist%,ADX,Range_Pos%,ATR,52W_High,Near_52W_High,Candle,Marubozu,FinalHrFade,RS_Beat,Weekly_Align,Gap_Up,Gap_Pct,Sector_Align,Breadth_OK,Entry_Overextended,Has_Earnings,Stop_Loss,Target,Target%,SL%,RR_Ratio,Shares,Position_Value,Conviction,BTST_Score
+NEM,117.26,3.79,1.2,7069890.0,75.4,2.841,False,99.86,99.95,17.42,19.0,89.8,4.16,134.29,False,,False,False,True,True,True,1.79,True,True,True,False,114.91,120.78,3.0,2.0,1.5,42,4924.92,WEAK,32.7
+SMCI,31.46,1.06,1.5,36172420.0,55.7,0.5608,False,29.33,30.02,7.25,15.4,1.8,2.28,58.78,False,,False,True,True,True,False,2.76,False,True,True,False,31.42,32.4,2.99,0.13,23.5,2500,78650.0,WEAK,27.1
+VRTX,523.91,5.61,1.92,1391570.0,70.2,2.6475,False,486.44,476.4,7.7,18.2,15.5,16.41,546.17,True,,False,True,True,True,False,8.85,True,True,True,False,519.82,539.63,3.0,0.78,3.84,24,12573.84,WEAK,23.8
