@@ -1,4 +1,10 @@
 Symbol,Close,Change%,Volume_Ratio,Avg_Vol,RSI,MACD_Hist,MACD_Crossover,EMA20,EMA50,EMA_Dist%,ADX,Range_Pos%,ATR,52W_High,Near_52W_High,Candle,Marubozu,FinalHrFade,RS_Beat,Weekly_Align,Gap_Up,Gap_Pct,Sector_Align,Breadth_OK,Entry_Overextended,Has_Earnings,Stop_Loss,Target,Target%,SL%,RR_Ratio,Shares,Position_Value,Conviction,BTST_Score
-NEM,117.26,3.79,1.2,7069890.0,75.4,2.841,False,99.86,99.95,17.42,19.0,89.8,4.16,134.29,False,,False,False,True,True,True,1.79,True,True,True,False,114.91,120.78,3.0,2.0,1.5,42,4924.92,WEAK,32.7
-SMCI,31.46,1.06,1.5,36172420.0,55.7,0.5608,False,29.33,30.02,7.25,15.4,1.8,2.28,58.78,False,,False,True,True,True,False,2.76,False,True,True,False,31.42,32.4,2.99,0.13,23.5,2500,78650.0,WEAK,27.1
-VRTX,523.91,5.61,1.92,1391570.0,70.2,2.6475,False,486.44,476.4,7.7,18.2,15.5,16.41,546.17,True,,False,True,True,True,False,8.85,True,True,True,False,519.82,539.63,3.0,0.78,3.84,24,12573.84,WEAK,23.8
+JNJ,261.81,0.99,1.17,7667830.0,58.3,-0.5754,False,257.08,250.36,1.84,17.9,94.5,5.95,274.9,True,,False,False,True,True,False,-0.07,True,True,False,False,258.55,269.66,3.0,1.25,2.41,30,7854.3,WEAK,52.9
+PSX,215.52,5.69,1.19,2596670.0,66.8,-0.844,False,203.66,192.97,5.82,24.5,96.3,6.94,216.08,True,Marubozu,True,False,True,True,True,1.96,True,True,False,False,211.21,221.99,3.0,2.0,1.5,23,4956.96,WEAK,51.1
+CVX,194.91,4.48,1.69,8102180.0,59.4,-0.3192,False,188.56,185.58,3.37,19.7,98.7,4.66,212.76,False,Marubozu,True,False,True,True,True,1.24,True,True,False,False,191.01,200.76,3.0,2.0,1.5,25,4872.75,WEAK,51.1
+FDX,325.08,2.04,1.15,1455780.0,60.3,1.4647,False,314.66,314.44,3.31,17.1,88.5,7.52,344.08,False,,False,False,True,True,False,-0.3,False,True,False,False,318.58,334.83,3.0,2.0,1.5,15,4876.2,WEAK,48.0
+XOM,159.79,4.41,1.37,14456180.0,65.1,0.0789,True,152.42,149.39,4.83,20.3,90.2,4.03,175.22,False,,False,False,True,True,True,0.95,True,True,False,False,156.59,164.58,3.0,2.0,1.5,31,4953.49,WEAK,45.7
+EOG,142.22,5.55,1.11,3181730.0,53.5,-0.8809,False,140.08,137.84,1.53,18.0,93.5,4.49,149.59,True,,False,False,True,True,True,1.81,True,True,False,False,139.38,146.49,3.0,2.0,1.5,35,4977.7,WEAK,39.4
+NEM,117.26,3.79,1.42,7071260.0,75.4,2.841,False,99.86,99.95,17.42,19.0,89.8,4.16,134.29,False,,False,False,True,True,True,1.79,True,True,True,False,114.91,120.78,3.0,2.0,1.5,42,4924.92,WEAK,32.7
+SMCI,31.46,1.06,1.55,36185450.0,55.7,0.5608,False,29.33,30.02,7.25,15.4,1.5,2.28,58.78,False,,False,True,True,True,False,2.79,False,True,True,False,31.43,32.4,2.99,0.1,31.33,3333,104856.18,WEAK,27.1
+VRTX,523.91,5.61,1.93,1391570.0,70.2,2.6475,False,486.44,476.4,7.7,18.2,15.5,16.41,546.17,True,,False,True,True,True,False,8.75,True,True,True,False,519.82,539.63,3.0,0.78,3.84,24,12573.84,WEAK,23.8
