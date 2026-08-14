@@ -1,0 +1,2 @@
+Symbol,Close,Change%,Volume_Ratio,Avg_Vol,RSI,MACD_Hist,MACD_Crossover,EMA20,EMA50,EMA_Dist%,ADX,Range_Pos%,ATR,52W_High,Near_52W_High,Candle,Marubozu,FinalHrFade,RS_Beat,Weekly_Align,Gap_Up,Gap_Pct,Sector_Align,Breadth_OK,Entry_Overextended,Has_Earnings,Stop_Loss,Target,Target%,SL%,RR_Ratio,Shares,Position_Value,Conviction,BTST_Score
+SMCI,39.84,1.74,1.64,37325800.0,70.7,1.3352,False,31.99,31.08,24.56,21.8,59.4,2.63,58.78,False,,False,True,True,True,False,-0.05,False,True,True,False,39.04,41.04,3.01,2.01,1.5,124,4940.16,WEAK,28.9
