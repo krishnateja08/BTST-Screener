@@ -1,0 +1,3 @@
+Symbol,Close,Change%,Volume_Ratio,Avg_Vol,RSI,MACD_Hist,MACD_Crossover,EMA20,EMA50,EMA_Dist%,ADX,Range_Pos%,ATR,52W_High,Near_52W_High,Candle,Marubozu,FinalHrFade,RS_Beat,Weekly_Align,Gap_Up,Gap_Pct,Sector_Align,Breadth_OK,Entry_Overextended,Has_Earnings,Stop_Loss,Target,Target%,SL%,RR_Ratio,Shares,Position_Value,Conviction,BTST_Score
+GE,369.43,0.29,1.79,3005890.0,56.0,-0.4305,False,364.07,353.12,1.47,15.2,47.7,9.18,388.84,True,,False,False,True,True,False,-0.14,False,True,False,False,366.76,380.51,3.0,0.72,4.15,37,13668.91,WEAK,38.2
+SOFI,18.31,0.11,1.34,50943730.0,55.5,0.099,False,17.82,17.59,2.75,14.7,17.7,0.79,32.73,False,,False,True,True,True,False,2.19,False,True,False,False,18.17,18.86,3.0,0.76,3.93,714,13073.34,WEAK,26.2
