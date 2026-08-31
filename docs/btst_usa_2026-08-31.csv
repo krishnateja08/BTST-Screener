@@ -1,0 +1,2 @@
+Symbol,Close,Change%,Volume_Ratio,Avg_Vol,RSI,MACD_Hist,MACD_Crossover,EMA20,EMA50,EMA_Dist%,ADX,Range_Pos%,ATR,52W_High,Near_52W_High,Candle,Marubozu,FinalHrFade,RS_Beat,Weekly_Align,Gap_Up,Gap_Pct,Sector_Align,Breadth_OK,Entry_Overextended,Has_Earnings,Stop_Loss,Target,Target%,SL%,RR_Ratio,Shares,Position_Value,Conviction,BTST_Score
+SLB,58.72,2.42,1.25,10082060.0,74.0,0.4137,False,53.62,51.99,9.51,27.5,29.9,1.8,60.46,True,,False,True,True,True,True,1.49,True,True,True,False,57.97,60.48,3.01,1.27,2.37,134,7867.81,WEAK,36.0
