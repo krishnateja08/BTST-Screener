@@ -1,0 +1,8 @@
+Symbol,Close,Change%,Volume_Ratio,Avg_Vol,RSI,MACD_Hist,MACD_Crossover,EMA20,EMA50,EMA_Dist%,ADX,Range_Pos%,ATR,52W_High,Near_52W_High,Candle,Marubozu,FinalHrFade,RS_Beat,Weekly_Align,Gap_Up,Gap_Pct,Sector_Align,Breadth_OK,Entry_Overextended,Has_Earnings,Stop_Loss,Target,Target%,SL%,RR_Ratio,Shares,Position_Value,Conviction,BTST_Score
+GILD,150.99,-0.15,1.14,5235200.0,67.7,0.2766,False,144.85,139.0,4.25,40.1,90.3,3.62,155.38,True,,False,False,True,True,False,-1.32,False,True,False,False,149.23,155.52,3.0,1.17,2.56,56,8455.72,MODERATE,56.5
+META,616.77,1.0,1.26,12474675.0,62.4,6.8669,False,583.58,589.69,5.69,12.6,94.3,20.09,788.22,False,,False,False,True,True,False,0.3,False,True,False,False,605.27,635.27,3.0,1.86,1.61,8,4934.16,WEAK,48.6
+MDT,94.17,1.15,1.27,6815625.0,64.5,-0.1284,False,91.05,87.82,3.43,30.4,76.5,2.28,103.76,False,,False,False,True,True,False,-0.37,False,True,False,False,92.31,97.0,3.01,1.98,1.52,53,4991.01,WEAK,46.3
+NVDA,230.36,0.84,1.11,118834000.0,60.4,0.8364,False,219.3,213.81,5.04,17.6,14.2,7.38,236.26,True,,False,True,True,True,False,1.18,True,True,False,False,229.63,237.27,3.0,0.32,9.47,136,31328.96,WEAK,43.8
+CEG,298.96,4.88,1.33,2108300.0,66.9,1.5121,False,278.82,273.24,7.22,16.9,95.1,10.14,410.41,False,Marubozu,True,False,True,True,False,-0.35,False,True,True,False,292.98,307.93,3.0,2.0,1.5,16,4783.36,WEAK,39.0
+ORCL,158.78,3.08,1.27,20553625.0,61.0,0.9114,False,147.28,148.72,7.81,14.8,69.2,6.77,341.82,False,,False,False,True,True,False,3.52,True,True,True,False,156.71,163.54,3.0,1.3,2.3,48,7621.44,WEAK,31.9
+SMCI,39.59,4.54,1.33,39994700.0,62.7,-0.081,False,36.31,33.96,9.02,25.1,55.9,2.36,58.78,False,,False,True,True,True,True,0.9,True,True,True,False,38.8,40.78,3.01,2.0,1.51,126,4988.34,WEAK,27.9
