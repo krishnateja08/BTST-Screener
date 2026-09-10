@@ -1,5 +1,1 @@
 Symbol,Close,Change%,Volume_Ratio,Avg_Vol,RSI,MACD_Hist,MACD_Crossover,EMA20,EMA50,EMA_Dist%,ADX,Range_Pos%,ATR,52W_High,Near_52W_High,Candle,Marubozu,FinalHrFade,RS_Beat,Weekly_Align,Gap_Up,Gap_Pct,Sector_Align,Breadth_OK,Entry_Overextended,Has_Earnings,Stop_Loss,Target,Target%,SL%,RR_Ratio,Shares,Position_Value,Conviction,BTST_Score
-QCOM,176.4,1.33,1.28,11553150.0,62.3,2.0896,False,166.76,170.2,5.78,17.7,40.9,6.67,257.56,False,,False,True,True,True,False,0.25,False,True,False,False,173.32,181.69,3.0,1.75,1.72,32,5644.8,WEAK,33.6
-INTC,106.24,1.69,1.11,86289220.0,63.4,2.0146,False,95.47,98.19,11.28,15.5,88.3,5.37,142.35,False,,False,False,True,True,False,-1.57,False,True,True,False,104.12,109.43,3.0,2.0,1.5,47,4993.28,WEAK,31.5
-AMD,521.09,3.04,1.31,16849310.0,60.4,5.4966,False,481.96,482.27,8.12,11.2,72.1,23.22,584.73,False,,False,False,True,True,False,0.37,False,True,True,False,510.67,536.73,3.0,2.0,1.5,9,4689.85,WEAK,27.7
-META,653.69,6.55,2.05,17279560.0,70.4,9.512,False,592.83,593.09,10.27,15.0,78.4,21.49,788.22,False,,False,False,True,True,True,5.73,False,True,True,False,640.62,673.3,3.0,2.0,1.5,7,4575.83,WEAK,27.0
