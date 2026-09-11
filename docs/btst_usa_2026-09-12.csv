@@ -1,0 +1,11 @@
+Symbol,Close,Change%,Volume_Ratio,Avg_Vol,RSI,MACD_Hist,MACD_Crossover,EMA20,EMA50,EMA_Dist%,ADX,Range_Pos%,ATR,52W_High,Near_52W_High,Candle,Marubozu,FinalHrFade,RS_Beat,Weekly_Align,Gap_Up,Gap_Pct,Sector_Align,Breadth_OK,Entry_Overextended,Has_Earnings,Stop_Loss,Target,Target%,SL%,RR_Ratio,Shares,Position_Value,Conviction,BTST_Score
+T,26.06,2.0,1.61,26574000.0,62.0,-0.099,False,25.37,24.54,2.71,32.0,66.7,0.56,28.75,False,,False,False,True,True,True,0.86,True,True,False,False,25.66,26.84,2.99,1.53,1.95,250,6515.0,MODERATE,60.8
+AAPL,332.27,1.75,1.32,38340625.0,62.8,1.3147,False,319.01,313.94,4.16,13.9,60.2,8.04,344.27,True,,False,False,True,True,False,0.32,True,True,False,False,326.3,342.24,3.0,1.8,1.67,16,5316.32,MODERATE,56.0
+PG,145.27,1.61,1.62,7122975.0,50.1,-0.0426,False,145.08,145.53,0.13,7.9,89.1,2.44,164.77,False,Morning Star,False,False,True,False,True,0.52,True,True,False,False,143.55,148.93,2.52,1.18,2.13,58,8425.66,WEAK,45.1
+QCOM,181.97,2.88,1.51,7652150.0,67.4,2.3864,False,169.08,170.91,7.62,20.5,64.1,7.2,257.56,False,,False,False,True,True,True,0.77,True,True,True,False,178.33,187.43,3.0,2.0,1.5,27,4913.19,WEAK,43.8
+WFC,90.29,0.94,1.22,10530125.0,61.7,0.3652,False,87.81,86.34,2.82,16.6,38.4,1.81,96.18,False,,False,True,True,True,False,1.44,True,True,False,False,89.75,93.0,3.0,0.6,5.02,185,16703.65,WEAK,42.1
+PSX,259.47,0.37,1.11,2330375.0,74.6,-0.0856,False,245.94,225.22,5.5,47.4,13.7,6.82,265.33,True,,False,True,False,True,False,0.05,True,True,False,False,258.54,267.25,3.0,0.36,8.37,107,27763.29,WEAK,40.6
+EOG,147.36,-0.07,1.18,2595550.0,54.5,-0.2593,False,146.05,143.14,0.9,10.8,73.1,3.47,153.67,True,,False,False,False,True,False,-0.43,True,True,False,False,145.51,151.78,3.0,1.26,2.39,54,7957.44,WEAK,36.3
+TMO,609.82,1.1,1.47,1214775.0,54.8,-4.4298,False,606.8,580.22,0.5,29.2,40.4,15.31,647.0,False,,False,True,True,True,False,1.12,False,True,False,False,606.15,628.11,3.0,0.6,4.98,27,16465.14,WEAK,33.6
+PM,191.06,0.68,1.33,3910600.0,54.6,-0.0793,False,188.34,186.96,1.44,15.0,11.9,4.76,207.76,False,,False,True,False,True,False,0.83,True,True,False,False,190.55,196.79,3.0,0.27,11.24,196,37447.76,WEAK,28.1
+META,648.03,0.57,1.24,13653650.0,67.2,9.8753,False,602.53,597.18,7.55,18.5,10.1,21.37,788.22,False,,False,True,False,True,False,1.34,True,True,True,False,646.2,667.47,3.0,0.28,10.62,54,34993.62,WEAK,24.9
