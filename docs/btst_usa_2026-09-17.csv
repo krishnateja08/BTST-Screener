@@ -1,6 +1,1 @@
 Symbol,Close,Change%,Volume_Ratio,Avg_Vol,RSI,MACD_Hist,MACD_Crossover,EMA20,EMA50,EMA_Dist%,ADX,Range_Pos%,ATR,52W_High,Near_52W_High,Candle,Marubozu,FinalHrFade,RS_Beat,Weekly_Align,Gap_Up,Gap_Pct,Sector_Align,Breadth_OK,Entry_Overextended,Has_Earnings,Stop_Loss,Target,Target%,SL%,RR_Ratio,Shares,Position_Value,Conviction,BTST_Score
-TMO,648.43,1.1,1.57,1831990.0,69.4,0.388,True,613.9,586.0,5.63,30.7,67.7,15.89,653.4,True,,False,False,True,True,False,0.1,True,True,False,False,638.0,667.88,3.0,1.61,1.86,9,5835.87,MODERATE,64.9
-AMD,512.5,1.65,1.17,18999310.0,56.1,4.8563,False,491.47,486.57,4.28,12.3,30.4,23.32,584.73,False,,False,True,True,True,False,2.59,True,True,False,False,506.05,527.88,3.0,1.26,2.38,15,7687.5,WEAK,38.7
-INTC,101.05,4.03,1.3,91559590.0,54.7,1.1062,False,97.12,98.46,4.05,13.9,34.3,5.64,142.35,False,,False,True,True,True,False,4.39,True,True,False,False,99.29,104.08,3.0,1.74,1.72,56,5658.8,WEAK,31.4
-DIS,106.99,0.54,1.4,7232020.0,53.9,-0.3158,False,106.19,104.04,0.75,21.9,36.1,2.27,115.42,False,,False,True,True,True,False,0.05,False,True,False,False,106.23,110.2,3.0,0.71,4.22,131,14015.69,WEAK,28.4
-DOW,30.08,0.77,1.44,8506900.0,50.3,-0.0731,False,29.96,30.38,0.4,11.4,69.7,1.05,41.82,False,,False,False,True,False,False,-1.51,False,True,False,False,29.48,30.98,2.99,1.99,1.5,166,4993.28,WEAK,18.0
