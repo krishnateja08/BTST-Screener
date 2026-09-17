@@ -1,0 +1,5 @@
+Symbol,Close,Change%,Volume_Ratio,Avg_Vol,RSI,MACD_Hist,MACD_Crossover,EMA20,EMA50,EMA_Dist%,ADX,Range_Pos%,ATR,52W_High,Near_52W_High,Candle,Marubozu,FinalHrFade,RS_Beat,Weekly_Align,Gap_Up,Gap_Pct,Sector_Align,Breadth_OK,Entry_Overextended,Has_Earnings,Stop_Loss,Target,Target%,SL%,RR_Ratio,Shares,Position_Value,Conviction,BTST_Score
+DIVISLAB,9158.0,-0.43,2.14,411319.0,57.5,-62.3366,False,9090.9,8467.74,0.74,60.0,91.4,197.35,9615.0,True,,False,False,False,True,False,-0.33,False,True,False,False,8974.84,9432.74,3.0,2.0,1.5,27,247266.0,MODERATE,60.8
+PAYTM,1790.0,3.47,4.13,3728149.0,64.5,0.2083,True,1683.29,1539.48,6.34,42.6,47.3,62.22,1855.5,True,,False,True,True,True,False,5.78,False,True,False,False,1754.2,1843.7,3.0,2.0,1.5,139,248810.0,WEAK,54.4
+PNB,116.8,1.83,1.53,12056223.0,55.2,-0.2178,False,115.89,113.81,0.78,14.2,76.1,2.12,131.33,False,,False,False,True,True,False,0.03,True,True,False,False,114.68,119.97,2.71,1.82,1.5,2358,275414.41,WEAK,53.6
+KOTAKBANK,415.0,1.27,1.17,9318400.0,54.2,-1.5816,False,413.38,404.29,0.39,36.8,73.4,6.84,452.42,False,,False,False,True,True,True,0.93,True,True,False,False,409.35,425.26,2.47,1.36,1.82,884,366860.0,WEAK,49.3
