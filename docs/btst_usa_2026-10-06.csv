@@ -1,0 +1,2 @@
+Symbol,Close,Change%,Volume_Ratio,Avg_Vol,RSI,MACD_Hist,MACD_Crossover,EMA20,EMA50,EMA_Dist%,ADX,Range_Pos%,ATR,52W_High,Near_52W_High,Candle,Marubozu,FinalHrFade,RS_Beat,Weekly_Align,Gap_Up,Gap_Pct,Sector_Align,Breadth_OK,Entry_Overextended,Has_Earnings,Stop_Loss,Target,Target%,SL%,RR_Ratio,Shares,Position_Value,Conviction,BTST_Score
+VST,145.18,3.69,1.52,5689410.0,56.2,0.4308,False,141.2,143.93,2.82,11.0,71.4,5.07,215.85,False,,False,False,True,False,True,2.87,True,True,False,False,142.28,149.54,3.0,2.0,1.5,34,4936.29,MODERATE,56.0
