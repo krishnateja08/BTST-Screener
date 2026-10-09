@@ -1,0 +1,4 @@
+Symbol,Close,Change%,Volume_Ratio,Avg_Vol,RSI,MACD_Hist,MACD_Crossover,EMA20,EMA50,EMA_Dist%,ADX,Range_Pos%,ATR,52W_High,Near_52W_High,Candle,Marubozu,FinalHrFade,RS_Beat,Weekly_Align,Gap_Up,Gap_Pct,Sector_Align,Breadth_OK,Entry_Overextended,Has_Earnings,Stop_Loss,Target,Target%,SL%,RR_Ratio,Shares,Position_Value,Conviction,BTST_Score
+LICHSGFIN,537.0,4.19,5.15,2828396.0,50.3,-5.388,False,535.98,534.26,0.19,28.0,62.3,18.04,586.43,False,,False,False,True,True,True,0.87,False,False,False,False,526.26,553.11,3.0,2.0,1.5,465,249705.0,WEAK,31.6
+BERGEPAINT,467.95,0.87,1.38,395299.0,49.4,3.908,False,464.5,480.25,0.74,30.0,64.3,11.83,590.09,False,,False,False,True,False,False,0.43,False,False,False,False,462.45,481.99,3.0,1.18,2.55,909,425366.56,WEAK,18.9
+PNB,115.29,0.61,1.49,13740175.0,51.8,-0.2136,False,114.51,114.06,0.68,19.9,42.2,2.8,131.33,False,,False,True,True,True,False,0.12,False,False,False,False,113.71,118.75,3.0,1.37,2.19,3164,364777.56,WEAK,16.2
