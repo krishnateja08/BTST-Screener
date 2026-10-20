@@ -1,0 +1,1344 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>BTST Screener — 2026-10-21</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:     #080c10; --surf:  #0d1117; --surf2: #161b22;
+    --border: #30363d; --green: #00ff88; --yellow:#ffd740;
+    --red:    #ff6b6b; --blue:  #60d4ff; --text:  #ffffff;
+    --muted:  #a0aab4; --r:     12px;
+    --mono: 'Space Mono',monospace; --sans: 'Syne',sans-serif;
+  }
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  body{background:var(--bg);color:var(--text);font-family:var(--sans);padding-bottom:60px;-webkit-font-smoothing:antialiased}
+
+  /* HEADER — compact single bar */
+  .header{background:linear-gradient(90deg,#0d1117 0%,#0a1628 50%,#0d1117 100%);border-bottom:1px solid var(--border);padding:10px clamp(14px,3vw,32px);display:flex;align-items:center;gap:14px;flex-wrap:nowrap;overflow:hidden}
+  .logo-inline{display:flex;flex-direction:column;justify-content:center;flex-shrink:0}
+  .logo-inline h1{font-size:1.1rem;font-weight:800;letter-spacing:-.5px;line-height:1.15;white-space:nowrap}
+  .logo-inline h1 span{color:var(--green)}
+  .logo-inline p{font-family:var(--mono);font-size:.6rem;color:#7888a0;letter-spacing:1.2px;text-transform:uppercase;margin-top:1px}
+  .hdr-divider{width:1px;height:28px;background:var(--border);flex-shrink:0}
+  .pills-inline{display:flex;gap:6px;flex:1;flex-wrap:nowrap;overflow:hidden;align-items:center;min-width:0}
+  .pill{display:flex;align-items:center;gap:5px;background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:999px;padding:3px 10px;font-family:var(--mono);font-size:.7rem;color:#c8d4e0;white-space:nowrap}
+  .dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+  .dot.live{animation:blink 2s infinite}
+  @keyframes blink{0%,100%{opacity:1}50%{opacity:.25}}
+  .hdr-ts{display:flex;align-items:center;gap:8px;flex-shrink:0;margin-left:auto;font-family:var(--mono)}
+  .hdr-clock{font-size:.88rem;font-weight:700;color:var(--blue);white-space:nowrap}
+  .tz-tag{display:inline-block;background:rgba(96,212,255,.15);color:var(--blue);border:1px solid rgba(96,212,255,.4);border-radius:4px;font-size:.62rem;padding:1px 5px;letter-spacing:1px;font-weight:700;vertical-align:middle}
+  .hdr-date{font-size:.68rem;color:#7888a0;white-space:nowrap}
+
+  /* MARKET PILLS — per-tab, shown/hidden via JS */
+  .market-pills{display:none;gap:6px;align-items:center;flex:1;min-width:0;overflow:hidden}
+  .market-pills.active{display:flex}
+
+  /* TABS BAR */
+  .tabs-bar{background:var(--surf);border-bottom:1px solid var(--border);padding:0 clamp(14px,3vw,32px);display:flex;align-items:center;gap:2px}
+  .tab-btn{display:flex;align-items:center;gap:6px;background:transparent;border:none;border-bottom:2px solid transparent;padding:9px 16px;cursor:pointer;font-family:var(--mono);font-size:clamp(.72rem,1.3vw,.82rem);font-weight:700;color:var(--muted);transition:color .2s,border-color .2s;white-space:nowrap;margin-bottom:-1px}
+  .tab-btn .flag{font-size:.95rem}
+  .tab-btn.active.india-btn{color:var(--green);border-bottom-color:var(--green)}
+  .tab-btn.active.usa-btn{color:var(--blue);border-bottom-color:var(--blue)}
+  .tab-btn.active.orb-btn{color:#f9a825;border-bottom-color:#f9a825}
+  .tab-btn:hover:not(.active){color:var(--text)}
+  .tabs-bar-spacer{flex:1}
+  .tabs-bar-label{font-family:var(--mono);font-size:.62rem;color:#7888a0;letter-spacing:.5px;white-space:nowrap}
+
+  /* CONTENT */
+  .content{padding:clamp(20px,4vw,36px) clamp(14px,5vw,48px)}
+
+  /* TAB PANELS */
+  .tab-panel{display:none;animation:fadeUp .35s ease}
+  .tab-panel.active{display:block}
+
+  /* CARDS */
+  .cards{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:20px}
+  @media(max-width:860px){.cards{grid-template-columns:repeat(3,1fr)}}
+  @media(max-width:520px){.cards{grid-template-columns:repeat(2,1fr)}}
+  .card{background:var(--surf);border:1px solid var(--border);border-radius:var(--r);padding:10px 14px 9px;position:relative;overflow:hidden;transition:transform .2s,box-shadow .2s;animation:fadeUp .4s ease both}
+  .card:hover{transform:translateY(-2px);box-shadow:0 6px 18px rgba(0,0,0,.4)}
+  .card::after{content:'';position:absolute;bottom:0;left:0;right:0;height:2px;border-radius:0 0 var(--r) var(--r)}
+  .card.cg::after{background:var(--green)} .card.cy::after{background:var(--yellow)}
+  .card.cr::after{background:var(--red)}   .card.cb::after{background:var(--blue)}
+  .card.cm::after{background:var(--muted)}
+  .card-ico{font-size:.9rem;margin-bottom:4px;display:block}
+  .card-val{font-family:var(--mono);line-height:1;font-size:clamp(1.1rem,2.2vw,1.5rem);font-weight:700}
+  .card-lbl{font-size:clamp(.6rem,1.1vw,.7rem);color:var(--muted);text-transform:uppercase;letter-spacing:.8px;margin-top:4px;line-height:1.3}
+  .card:nth-child(1){animation-delay:.04s} .card:nth-child(2){animation-delay:.08s}
+  .card:nth-child(3){animation-delay:.12s} .card:nth-child(4){animation-delay:.16s}
+  .card:nth-child(5){animation-delay:.20s}
+
+  /* SECTION HEADER */
+  .sh{display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap}
+  .sh-title{font-size:clamp(1rem,2.2vw,1.2rem);font-weight:700;white-space:nowrap;color:var(--text)}
+  .sh-line{flex:1;height:1px;background:var(--border);min-width:16px}
+  .sh-sub{font-family:var(--mono);font-size:clamp(.72rem,1.4vw,.82rem);color:#b8c8d8;white-space:nowrap}
+
+  /* TABLE */
+  .scroll-hint{display:none;font-family:var(--mono);font-size:.62rem;color:var(--muted);text-align:right;margin-bottom:6px}
+  @media(max-width:680px){.scroll-hint{display:block}}
+  .tw{overflow-x:auto;border-radius:var(--r);border:1px solid var(--border);-webkit-overflow-scrolling:touch}
+  table{width:100%;border-collapse:collapse;font-size:clamp(.85rem,1.6vw,.98rem)}
+  thead tr{background:var(--surf2)}
+  th{font-family:var(--mono);font-size:clamp(.68rem,1.2vw,.76rem);text-transform:uppercase;letter-spacing:.9px;color:#c8d0db;padding:clamp(12px,1.6vw,16px) clamp(10px,1.5vw,16px);text-align:left;white-space:nowrap;border-bottom:1px solid var(--border)}
+  tbody tr{background:var(--surf);border-bottom:1px solid var(--border);transition:background .15s;animation:fadeUp .3s ease both}
+  tbody tr:hover{background:var(--surf2)}
+  tbody tr:last-child{border-bottom:none}
+  td{padding:clamp(11px,1.6vw,15px) clamp(10px,1.5vw,16px);white-space:nowrap;color:var(--text)}
+  td.rnk{font-size:1.15rem;text-align:center;width:46px}
+  td.sym{font-family:var(--mono);font-weight:700;font-size:clamp(.88rem,1.6vw,1rem);color:var(--blue);letter-spacing:.5px}
+  td.num{font-family:var(--mono);font-size:clamp(.82rem,1.5vw,.94rem);color:#dde4ed}
+  tbody tr:nth-child(1){animation-delay:.05s} tbody tr:nth-child(2){animation-delay:.09s}
+  tbody tr:nth-child(3){animation-delay:.13s} tbody tr:nth-child(4){animation-delay:.17s}
+  tbody tr:nth-child(5){animation-delay:.21s} tbody tr:nth-child(6){animation-delay:.25s}
+  tbody tr:nth-child(7){animation-delay:.29s} tbody tr:nth-child(8){animation-delay:.33s}
+  tbody tr:nth-child(9){animation-delay:.37s} tbody tr:nth-child(10){animation-delay:.41s}
+
+  /* BADGES */
+  .badge{display:inline-block;padding:4px 10px;border-radius:999px;font-family:var(--mono);font-size:clamp(.7rem,1.2vw,.8rem);font-weight:700}
+  .bg{background:rgba(0,255,136,.15);color:#00ff88;border:1px solid rgba(0,255,136,.4)}
+  .by{background:rgba(255,215,64,.15);color:#ffd740;border:1px solid rgba(255,215,64,.4)}
+  .br{background:rgba(255,107,107,.15);color:#ff6b6b;border:1px solid rgba(255,107,107,.4)}
+
+  /* SCORE BAR */
+  .bw{display:flex;align-items:center;gap:9px;min-width:115px}
+  .bt{flex:1;height:7px;background:var(--border);border-radius:99px;overflow:hidden}
+  .b{height:100%;border-radius:99px}
+  .bl{font-family:var(--mono);font-size:clamp(.78rem,1.4vw,.9rem);font-weight:700;min-width:34px;text-align:right;color:var(--text)}
+
+  /* LEGEND */
+  .legend{display:flex;flex-wrap:wrap;gap:10px 18px;margin-top:18px;padding:clamp(12px,2vw,18px) clamp(12px,2vw,20px);background:var(--surf);border:1px solid var(--border);border-radius:var(--r)}
+  .li{display:flex;align-items:center;gap:7px;font-family:var(--mono);font-size:clamp(.78rem,1.4vw,.9rem);color:#d8e4f0;font-weight:500}
+  .ld{width:10px;height:10px;border-radius:2px;flex-shrink:0}
+
+  /* PARAMS GRID */
+  .pg{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:28px}
+  @media(max-width:780px){.pg{grid-template-columns:repeat(2,1fr)}}
+  @media(max-width:460px){.pg{grid-template-columns:1fr}}
+  .pc{background:var(--surf);border:1px solid var(--border);border-radius:10px;padding:clamp(11px,2vw,16px)}
+  .pn{font-family:var(--mono);font-size:clamp(.7rem,1.3vw,.82rem);color:var(--blue);text-transform:uppercase;letter-spacing:.9px;margin-bottom:5px;display:flex;justify-content:space-between;align-items:center}
+  .pw{font-family:var(--mono);font-size:clamp(.66rem,1.2vw,.76rem);color:var(--green);font-weight:700}
+  .pd{font-size:clamp(.78rem,1.4vw,.88rem);color:#b0bcc8;line-height:1.6}
+
+  /* DISCLAIMER */
+  .disc{margin-top:26px;padding:clamp(12px,2vw,16px) clamp(13px,2vw,20px);background:rgba(255,215,64,.05);border:1px solid rgba(255,215,64,.22);border-radius:8px;font-size:clamp(.76rem,1.4vw,.84rem);color:#b0bcc8;line-height:1.75}
+  .disc strong{color:var(--yellow)}
+
+  /* FOOTER */
+  .footer{text-align:center;padding:clamp(18px,3vw,28px) clamp(14px,5vw,48px) 0;font-family:var(--mono);font-size:clamp(.66rem,1.2vw,.76rem);color:var(--muted);border-top:1px solid var(--border);margin-top:40px;line-height:2.2}
+
+  @keyframes fadeUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+</style>
+</head>
+<body>
+
+<!-- HEADER — compact single bar -->
+<div class="header">
+  <div class="logo-inline">
+    <h1>BTST <span>Screener</span></h1>
+    <p>India · USA · Buy Today Sell Tomorrow</p>
+  </div>
+  <div class="hdr-divider"></div>
+
+  <!-- India status pills (shown by default) -->
+  <div class="market-pills active" id="pills-india">
+    <div class="pill"><div class="dot live" style="background:#ff5252"></div>Market:&nbsp;<strong style="color:#ff5252">CAUTION</strong></div>
+    <div class="pill"><div class="dot" style="background:#40c4ff"></div>Nifty 50:&nbsp;<strong style="color:#40c4ff">-1.11%</strong></div>
+    <div class="pill"><div class="dot" style="background:#00e676"></div>India VIX:&nbsp;<strong style="color:#00e676">14.77</strong></div>
+    <div class="pill"><div class="dot" style="background:#7d8590"></div>Scanned:&nbsp;<strong style="color:#e6edf3">100</strong></div>
+    <div class="pill"><div class="dot" style="background:#7d8590"></div>Picks:&nbsp;<strong style="color:#e6edf3">9</strong></div>
+  </div>
+
+  <!-- USA status pills -->
+  <div class="market-pills" id="pills-usa">
+    <div class="pill"><div class="dot live" style="background:#00e676"></div>Market:&nbsp;<strong style="color:#00e676">BULLISH</strong></div>
+    <div class="pill"><div class="dot" style="background:#40c4ff"></div>S&amp;P 500:&nbsp;<strong style="color:#40c4ff">+0.28%</strong></div>
+    <div class="pill"><div class="dot" style="background:#00e676"></div>CBOE VIX:&nbsp;<strong style="color:#00e676">17.31</strong></div>
+    <div class="pill"><div class="dot" style="background:#7d8590"></div>Scanned:&nbsp;<strong style="color:#e6edf3">137</strong></div>
+    <div class="pill"><div class="dot" style="background:#7d8590"></div>Picks:&nbsp;<strong style="color:#e6edf3">15</strong></div>
+  </div>
+
+  <!-- ORB status pills -->
+  <div class="market-pills" id="pills-orb">
+    <div class="pill"><div class="dot live" style="background:#f9a825"></div>Mode:&nbsp;<strong style="color:#f9a825">INTRADAY</strong></div>
+    <div class="pill"><div class="dot" style="background:#f9a825"></div>Strategy:&nbsp;<strong style="color:#e6edf3">ORB 5-min</strong></div>
+    <div class="pill"><div class="dot" style="background:#7d8590"></div>🇮🇳 Breakouts:&nbsp;<strong style="color:#e6edf3">0</strong></div>
+    <div class="pill"><div class="dot" style="background:#7d8590"></div>🇺🇸 Breakouts:&nbsp;<strong style="color:#e6edf3">0</strong></div>
+  </div>
+
+  <div class="hdr-ts">
+    <span class="hdr-clock"><span id="live-clock">05:06:40 AM</span> <span class="tz-tag">IST</span></span>
+    <span class="hdr-date">21 Oct 2026</span>
+  </div>
+</div>
+
+<!-- TABS BAR -->
+<div class="tabs-bar">
+  <button class="tab-btn india-btn active" onclick="switchTab('india')">
+    <span class="flag">🇮🇳</span> India <span style="font-size:.6rem;opacity:.55">NIFTY 100</span>
+  </button>
+  <button class="tab-btn usa-btn" onclick="switchTab('usa')">
+    <span class="flag">🇺🇸</span> USA <span style="font-size:.6rem;opacity:.55">S&amp;P 500</span>
+  </button>
+  <button class="tab-btn orb-btn" onclick="switchTab('orb')">
+    <span class="flag">📊</span> ORB <span style="font-size:.6rem;opacity:.55">5-MIN</span>
+  </button>
+  <div class="tabs-bar-spacer"></div>
+  <span class="tabs-bar-label">Last generated · Auto-report</span>
+</div>
+
+<!-- CONTENT -->
+<div class="content">
+
+  <!-- INDIA PANEL -->
+  <div class="tab-panel active" id="panel-india">
+    
+    <div class="cards" id="cards-india">
+      <div class="card cg"><span class="card-ico">🟢</span><div class="card-val" style="color:var(--green)">0</div><div class="card-lbl">Strong Picks (≥70)</div></div>
+      <div class="card cy"><span class="card-ico">🟡</span><div class="card-val" style="color:var(--yellow)">0</div><div class="card-lbl">Moderate (50–69)</div></div>
+      <div class="card cr"><span class="card-ico">🔴</span><div class="card-val" style="color:var(--red)">9</div><div class="card-lbl">Weak (&lt;50)</div></div>
+      <div class="card cb"><span class="card-ico">📋</span><div class="card-val" style="color:var(--blue)">9</div><div class="card-lbl">Total Candidates</div></div>
+      <div class="card cm"><span class="card-ico">🔍</span><div class="card-val" style="color:var(--text)">100</div><div class="card-lbl">Stocks Scanned</div></div>
+    </div>
+    <div class="sh">
+      <div class="sh-title">🎯 Top BTST Candidates — India</div>
+      <div class="sh-line"></div>
+      <div class="sh-sub">Entry window: 3:00–3:20 PM IST</div>
+    </div>
+    <div style="margin:10px 0 14px;padding:12px 16px;background:rgba(255,193,7,0.06);border:1px solid rgba(255,193,7,0.22);border-radius:8px;display:flex;flex-wrap:wrap;gap:10px 24px;align-items:flex-start">
+      <div style="font-family:var(--mono);font-size:.72rem;font-weight:700;color:#ffd740;white-space:nowrap;padding-top:1px">⚡ EXIT RULES · INDIA</div>
+      <div style="display:flex;flex-wrap:wrap;gap:8px 20px;flex:1;font-family:var(--mono);font-size:.72rem">
+        <span style="color:#a0aab4">🎯 Target: <strong style="color:#00ff88">see Target% col</strong></span>
+        <span style="color:#a0aab4">🛑 SL: <strong style="color:#ff6b6b">see SL% col</strong></span>
+        <span style="color:#ff6b6b;font-weight:700">⚠ Gap-down open → exit by 9:20 AM IST, do not hold</span>
+        <span style="color:#a0aab4">📉 First 15-min low breaks SL → exit immediately</span>
+      </div>
+    </div>
+    <p class="scroll-hint">← swipe to see all columns</p>
+    <div class="tw">
+      <table>
+        <thead><tr><th>#</th><th>Symbol</th><th>Conviction</th><th>Close (₹)</th><th>Change</th><th>Vol Ratio</th><th>RSI</th><th>ADX</th><th>Range Pos</th><th>52W High</th><th>Gap</th><th>Candle</th><th>MACD</th><th>RS</th><th>Weekly</th><th>Sector</th><th>SL / Target</th><th>R:R</th><th>Position Size</th><th>BTST Score</th></tr></thead>
+        <tbody>
+        <tr>
+          <td class="rnk">🥇</td>
+          <td class="sym">UNIONBANK</td>
+          <td><span class="badge br">— WEAK</span></td>
+          <td class="num">₹180.70</td>
+          <td><span style="color:#00ff88;font-weight:700;font-family:var(--mono);font-size:.78rem">▲ 5.25%</span></td>
+          <td><span class="badge bg">3.77x</span></td>
+          <td><span class="badge bg">58.5</span></td>
+          <td class="num">30.0</td>
+          <td class="num">78.3%</td>
+          <td><span class="badge br">—</span></td>
+          <td><span class="badge by">⬆ +0.7%</span></td>
+          <td><span class="badge br" style="color:var(--muted)">—</span></td>
+          <td><span class="badge br" style="color:var(--muted)">—</span></td>
+          <td><span class="badge bg">📈 RS+</span></td>
+          <td><span class="badge bg">✅ W</span></td>
+          <td style="text-align:center"><span style="display:inline-block;background:rgba(255,107,107,0.10);color:#ff6b6b;border:1px solid rgba(255,107,107,0.30);border-radius:4px;font-family:var(--mono);font-size:.65rem;font-weight:700;padding:2px 7px;letter-spacing:.5px;white-space:nowrap">▼ Bear</span></td>
+          <td class="num" style="line-height:1.55">
+            <span style="color:#ff6b6b" title="Stop-loss: –2.0% from entry">₹177.09 <span style="font-size:.72rem;opacity:.8">–2.0%</span></span><br>
+            <span style="color:#00ff88" title="Target: +3.0% from entry">₹186.12 <span style="font-size:.72rem;opacity:.8">+3.0%</span></span>
+          </td>
+          <td class="num" style="color:#ffd740;font-weight:700">1.5x</td>
+          <td class="num" style="font-family:var(--mono);font-size:.78rem;color:#c8d4e0">1,385 sh &nbsp; ₹250,270</td>
+          <td>
+            <div class="bw">
+              <div class="bt"><div class="b" style="width:44%;background:#ff5252"></div></div>
+              <span class="bl">43.8</span>
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <td class="rnk">🥈</td>
+          <td class="sym">FEDERALBNK</td>
+          <td><span class="badge br">— WEAK</span></td>
+          <td class="num">₹348.85</td>
+          <td><span style="color:#00ff88;font-weight:700;font-family:var(--mono);font-size:.78rem">▲ 3.21%</span></td>
+          <td><span class="badge bg">3.74x</span></td>
+          <td><span class="badge bg">64.5</span></td>
+          <td class="num">23.1</td>
+          <td class="num">80.5%</td>
+          <td><span class="badge br">—</span></td>
+          <td><span class="badge br" style="color:var(--muted)">—</span></td>
+          <td><span class="badge br" style="color:var(--muted)">—</span></td>
+          <td><span class="badge br" style="color:var(--muted)">—</span></td>
+          <td><span class="badge bg">📈 RS+</span></td>
+          <td><span class="badge bg">✅ W</span></td>
+          <td style="text-align:center"><span style="display:inline-block;background:rgba(255,107,107,0.10);color:#ff6b6b;border:1px solid rgba(255,107,107,0.30);border-radius:4px;font-family:var(--mono);font-size:.65rem;font-weight:700;padding:2px 7px;letter-spacing:.5px;white-space:nowrap">▼ Bear</span></td>
+          <td class="num" style="line-height:1.55">
+            <span style="color:#ff6b6b" title="Stop-loss: –2.0% from entry">₹341.87 <span style="font-size:.72rem;opacity:.8">–2.0%</span></span><br>
+            <span style="color:#00ff88" title="Target: +3.0% from entry">₹359.32 <span style="font-size:.72rem;opacity:.8">+3.0%</span></span>
+          </td>
+          <td class="num" style="color:#ffd740;font-weight:700">1.5x</td>
+          <td class="num" style="font-family:var(--mono);font-size:.78rem;color:#c8d4e0">716 sh &nbsp; ₹249,777</td>
+          <td>
+            <div class="bw">
+              <div class="bt"><div class="b" style="width:40%;background:#ff5252"></div></div>
+              <span class="bl">39.6</span>
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <td class="rnk">🥉</td>
+          <td class="sym">BANKBARODA</td>
+          <td><span class="badge br">— WEAK</span></td>
+          <td class="num">₹238.20</td>
+          <td><span style="color:#00ff88;font-weight:700;font-family:var(--mono);font-size:.78rem">▲ 3.39%</span></td>
+          <td><span class="badge bg">1.72x</span></td>
+          <td><span class="badge bg">55.1</span></td>
+          <td class="num">14.1</td>
+          <td class="num">94.4%</td>
+          <td><span class="badge br">—</span></td>
+          <td><span class="badge br" style="color:var(--muted)">—</span></td>
+          <td><span class="badge br" style="color:var(--muted)">—</span></td>
+          <td><span class="badge br" style="color:var(--muted)">—</span></td>
+          <td><span class="badge bg">📈 RS+</span></td>
+          <td><span class="badge br" style="color:var(--muted)">—</span></td>
+          <td style="text-align:center"><span style="display:inline-block;background:rgba(255,107,107,0.10);color:#ff6b6b;border:1px solid rgba(255,107,107,0.30);border-radius:4px;font-family:var(--mono);font-size:.65rem;font-weight:700;padding:2px 7px;letter-spacing:.5px;white-space:nowrap">▼ Bear</span></td>
+          <td class="num" style="line-height:1.55">
+            <span style="color:#ff6b6b" title="Stop-loss: –2.0% from entry">₹233.44 <span style="font-size:.72rem;opacity:.8">–2.0%</span></span><br>
+            <span style="color:#00ff88" title="Target: +3.0% from entry">₹245.35 <span style="font-size:.72rem;opacity:.8">+3.0%</span></span>
+          </td>
+          <td class="num" style="color:#ffd740;font-weight:700">1.5x</td>
+          <td class="num" style="font-family:var(--mono);font-size:.78rem;color:#c8d4e0">1,050 sh &nbsp; ₹250,110</td>
+          <td>
+            <div class="bw">
+              <div class="bt"><div class="b" style="width:35%;background:#ff5252"></div></div>
+              <span class="bl">34.6</span>
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <td class="rnk">#4</td>
+          <td class="sym">JSWSTEEL</td>
+          <td><span class="badge br">— WEAK</span></td>
+          <td class="num">₹1,241.30</td>
+          <td><span style="color:#00ff88;font-weight:700;font-family:var(--mono);font-size:.78rem">▲ 2.06%</span></td>
+          <td><span class="badge bg">1.85x</span></td>
+          <td><span class="badge by">51.3</span></td>
+          <td class="num">23.1</td>
+          <td class="num">83.6%</td>
+          <td><span class="badge br">—</span></td>
+          <td><span class="badge br" style="color:var(--muted)">—</span></td>
+          <td><span class="badge br" style="color:var(--muted)">—</span></td>
+          <td><span class="badge bg">⚡ X-over</span></td>
+          <td><span class="badge bg">📈 RS+</span></td>
+          <td><span class="badge br" style="color:var(--muted)">—</span></td>
+          <td style="text-align:center"><span style="display:inline-block;background:rgba(255,107,107,0.10);color:#ff6b6b;border:1px solid rgba(255,107,107,0.30);border-radius:4px;font-family:var(--mono);font-size:.65rem;font-weight:700;padding:2px 7px;letter-spacing:.5px;white-space:nowrap">▼ Bear</span></td>
+          <td class="num" style="line-height:1.55">
+            <span style="color:#ff6b6b" title="Stop-loss: –2.0% from entry">₹1,216.47 <span style="font-size:.72rem;opacity:.8">–2.0%</span></span><br>
+            <span style="color:#00ff88" title="Target: +3.0% from entry">₹1,278.54 <span style="font-size:.72rem;opacity:.8">+3.0%</span></span>
+          </td>
+          <td class="num" style="color:#ffd740;font-weight:700">1.5x</td>
+          <td class="num" style="font-family:var(--mono);font-size:.78rem;color:#c8d4e0">201 sh &nbsp; ₹249,501</td>
+          <td>
+            <div class="bw">
+              <div class="bt"><div class="b" style="width:31%;background:#ff5252"></div></div>
+              <span class="bl">31.0</span>
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <td class="rnk">#5</td>
+          <td class="sym">PNB</td>
+          <td><span class="badge br">— WEAK</span></td>
+          <td class="num">₹121.90</td>
+          <td><span style="color:#00ff88;font-weight:700;font-family:var(--mono);font-size:.78rem">▲ 4.82%</span></td>
+          <td><span class="badge bg">5.32x</span></td>
+          <td><span class="badge bg">63.1</span></td>
+          <td class="num">19.3</td>
+          <td class="num">36.4%</td>
+          <td><span class="badge br">—</span></td>
+          <td><span class="badge bg">⬆ +3.9%</span></td>
+          <td><span class="badge br" style="color:var(--muted)">—</span></td>
+          <td><span class="badge br" style="color:var(--muted)">—</span></td>
+          <td><span class="badge bg">📈 RS+</span></td>
+          <td><span class="badge bg">✅ W</span></td>
+          <td style="text-align:center"><span style="display:inline-block;background:rgba(255,107,107,0.10);color:#ff6b6b;border:1px solid rgba(255,107,107,0.30);border-radius:4px;font-family:var(--mono);font-size:.65rem;font-weight:700;padding:2px 7px;letter-spacing:.5px;white-space:nowrap">▼ Bear</span></td>
+          <td class="num" style="line-height:1.55">
+            <span style="color:#ff6b6b" title="Stop-loss: –1.6% from entry">₹120.00 <span style="font-size:.72rem;opacity:.8">–1.6%</span></span><br>
+            <span style="color:#00ff88" title="Target: +3.0% from entry">₹125.56 <span style="font-size:.72rem;opacity:.8">+3.0%</span></span>
+          </td>
+          <td class="num" style="color:#ffd740;font-weight:700">1.9x</td>
+          <td class="num" style="font-family:var(--mono);font-size:.78rem;color:#c8d4e0">2,631 sh &nbsp; ₹320,719</td>
+          <td>
+            <div class="bw">
+              <div class="bt"><div class="b" style="width:30%;background:#ff5252"></div></div>
+              <span class="bl">30.5</span>
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <td class="rnk">#6</td>
+          <td class="sym">CANBK</td>
+          <td><span class="badge br">— WEAK</span></td>
+          <td class="num">₹122.00</td>
+          <td><span style="color:#00ff88;font-weight:700;font-family:var(--mono);font-size:.78rem">▲ 3.14%</span></td>
+          <td><span class="badge by">1.23x</span></td>
+          <td><span class="badge by">50.9</span></td>
+          <td class="num">16.5</td>
+          <td class="num">79.7%</td>
+          <td><span class="badge br">—</span></td>
+          <td><span class="badge by">⬆ +0.8%</span></td>
+          <td><span class="badge br" style="color:var(--muted)">—</span></td>
+          <td><span class="badge br" style="color:var(--muted)">—</span></td>
+          <td><span class="badge bg">📈 RS+</span></td>
+          <td><span class="badge br" style="color:var(--muted)">—</span></td>
+          <td style="text-align:center"><span style="display:inline-block;background:rgba(255,107,107,0.10);color:#ff6b6b;border:1px solid rgba(255,107,107,0.30);border-radius:4px;font-family:var(--mono);font-size:.65rem;font-weight:700;padding:2px 7px;letter-spacing:.5px;white-space:nowrap">▼ Bear</span></td>
+          <td class="num" style="line-height:1.55">
+            <span style="color:#ff6b6b" title="Stop-loss: –2.0% from entry">₹119.56 <span style="font-size:.72rem;opacity:.8">–2.0%</span></span><br>
+            <span style="color:#00ff88" title="Target: +3.0% from entry">₹125.66 <span style="font-size:.72rem;opacity:.8">+3.0%</span></span>
+          </td>
+          <td class="num" style="color:#ffd740;font-weight:700">1.5x</td>
+          <td class="num" style="font-family:var(--mono);font-size:.78rem;color:#c8d4e0">2,049 sh &nbsp; ₹249,978</td>
+          <td>
+            <div class="bw">
+              <div class="bt"><div class="b" style="width:24%;background:#ff5252"></div></div>
+              <span class="bl">23.7</span>
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <td class="rnk">#7</td>
+          <td class="sym">EICHERMOT</td>
+          <td><span class="badge br">— WEAK</span></td>
+          <td class="num">₹7,349.00</td>
+          <td><span style="color:#00ff88;font-weight:700;font-family:var(--mono);font-size:.78rem">▲ 0.89%</span></td>
+          <td><span class="badge by">1.30x</span></td>
+          <td><span class="badge by">52.5</span></td>
+          <td class="num">40.9</td>
+          <td class="num">31.4%</td>
+          <td><span class="badge br">—</span></td>
+          <td><span class="badge br" style="color:var(--muted)">—</span></td>
+          <td><span class="badge br" style="color:var(--muted)">—</span></td>
+          <td><span class="badge br" style="color:var(--muted)">—</span></td>
+          <td><span class="badge bg">📈 RS+</span></td>
+          <td><span class="badge br" style="color:var(--muted)">—</span></td>
+          <td style="text-align:center"><span style="display:inline-block;background:rgba(255,107,107,0.10);color:#ff6b6b;border:1px solid rgba(255,107,107,0.30);border-radius:4px;font-family:var(--mono);font-size:.65rem;font-weight:700;padding:2px 7px;letter-spacing:.5px;white-space:nowrap">▼ Bear</span></td>
+          <td class="num" style="line-height:1.55">
+            <span style="color:#ff6b6b" title="Stop-loss: –0.6% from entry">₹7,308.00 <span style="font-size:.72rem;opacity:.8">–0.6%</span></span><br>
+            <span style="color:#00ff88" title="Target: +3.0% from entry">₹7,569.47 <span style="font-size:.72rem;opacity:.8">+3.0%</span></span>
+          </td>
+          <td class="num" style="color:#00ff88;font-weight:700">5.4x</td>
+          <td class="num" style="font-family:var(--mono);font-size:.78rem;color:#c8d4e0">121 sh &nbsp; ₹889,229</td>
+          <td>
+            <div class="bw">
+              <div class="bt"><div class="b" style="width:20%;background:#ff5252"></div></div>
+              <span class="bl">20.5</span>
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <td class="rnk">#8</td>
+          <td class="sym">SBIN</td>
+          <td><span class="badge br">— WEAK</span></td>
+          <td class="num">₹973.70</td>
+          <td><span style="color:#00ff88;font-weight:700;font-family:var(--mono);font-size:.78rem">▲ 1.15%</span></td>
+          <td><span class="badge bg">1.74x</span></td>
+          <td><span class="badge br">49.5</span></td>
+          <td class="num">38.7</td>
+          <td class="num">56.3%</td>
+          <td><span class="badge br">—</span></td>
+          <td><span class="badge br" style="color:var(--muted)">—</span></td>
+          <td><span class="badge br" style="color:var(--muted)">—</span></td>
+          <td><span class="badge br" style="color:var(--muted)">—</span></td>
+          <td><span class="badge bg">📈 RS+</span></td>
+          <td><span class="badge br" style="color:var(--muted)">—</span></td>
+          <td style="text-align:center"><span style="display:inline-block;background:rgba(255,107,107,0.10);color:#ff6b6b;border:1px solid rgba(255,107,107,0.30);border-radius:4px;font-family:var(--mono);font-size:.65rem;font-weight:700;padding:2px 7px;letter-spacing:.5px;white-space:nowrap">▼ Bear</span></td>
+          <td class="num" style="line-height:1.55">
+            <span style="color:#ff6b6b" title="Stop-loss: –1.3% from entry">₹960.70 <span style="font-size:.72rem;opacity:.8">–1.3%</span></span><br>
+            <span style="color:#00ff88" title="Target: +2.7% from entry">₹999.80 <span style="font-size:.72rem;opacity:.8">+2.7%</span></span>
+          </td>
+          <td class="num" style="color:#00ff88;font-weight:700">2.0x</td>
+          <td class="num" style="font-family:var(--mono);font-size:.78rem;color:#c8d4e0">384 sh &nbsp; ₹373,901</td>
+          <td>
+            <div class="bw">
+              <div class="bt"><div class="b" style="width:20%;background:#ff5252"></div></div>
+              <span class="bl">19.6</span>
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <td class="rnk">#9</td>
+          <td class="sym">TCS</td>
+          <td><span class="badge br">— WEAK</span> <span class="badge br" title="Price overextended vs EMA — lower quality entry">⚠ OX</span></td>
+          <td class="num">₹2,460.90</td>
+          <td><span style="color:#ff6b6b;font-weight:700;font-family:var(--mono);font-size:.78rem">▼ 0.17%</span></td>
+          <td><span class="badge br">1.19x</span></td>
+          <td><span class="badge bg">73.5</span></td>
+          <td class="num">29.7</td>
+          <td class="num">44.4%</td>
+          <td><span class="badge br">—</span></td>
+          <td><span class="badge br" style="color:var(--muted)">—</span></td>
+          <td><span class="badge br" style="color:var(--muted)">—</span></td>
+          <td><span class="badge br" style="color:var(--muted)">—</span></td>
+          <td><span class="badge bg">📈 RS+</span></td>
+          <td><span class="badge bg">✅ W</span></td>
+          <td style="text-align:center"><span style="display:inline-block;background:rgba(255,107,107,0.10);color:#ff6b6b;border:1px solid rgba(255,107,107,0.30);border-radius:4px;font-family:var(--mono);font-size:.65rem;font-weight:700;padding:2px 7px;letter-spacing:.5px;white-space:nowrap">▼ Bear</span></td>
+          <td class="num" style="line-height:1.55">
+            <span style="color:#ff6b6b" title="Stop-loss: –1.2% from entry">₹2,432.10 <span style="font-size:.72rem;opacity:.8">–1.2%</span></span><br>
+            <span style="color:#00ff88" title="Target: +3.0% from entry">₹2,534.73 <span style="font-size:.72rem;opacity:.8">+3.0%</span></span>
+          </td>
+          <td class="num" style="color:#00ff88;font-weight:700">2.6x</td>
+          <td class="num" style="font-family:var(--mono);font-size:.78rem;color:#c8d4e0">173 sh &nbsp; ₹425,736</td>
+          <td>
+            <div class="bw">
+              <div class="bt"><div class="b" style="width:19%;background:#ff5252"></div></div>
+              <span class="bl">18.9</span>
+            </div>
+          </td>
+        </tr></tbody>
+      </table>
+    </div>
+    
+    <div class="legend">
+      <div class="li"><div class="ld" style="background:var(--green)"></div>Score ≥70 — Strong Signal</div>
+      <div class="li"><div class="ld" style="background:var(--yellow)"></div>Score 50–69 — Moderate</div>
+      <div class="li"><div class="ld" style="background:var(--red)"></div>Score &lt;50 — Avoid</div>
+      <div class="li"><div class="ld" style="background:var(--blue)"></div>Vol Ratio &gt;1.5× = Conviction buying</div>
+      <div class="li"><div class="ld" style="background:var(--muted)"></div>RSI 55–75 = Ideal momentum zone</div>
+      <div class="li"><div class="ld" style="background:var(--muted)"></div>ADX &gt;25 = Confirmed trend</div>
+      <div class="li"><div class="ld" style="background:var(--muted)"></div>Range Pos &gt;90% = Closing near high</div>
+      <div class="li"><div class="ld" style="background:var(--green)"></div>⬆ = Gap-up open that held by close</div>
+      <div class="li"><div class="ld" style="background:var(--green)"></div>⭐/🕯/🔨 = Candle pattern detected</div>
+      <div class="li"><div class="ld" style="background:var(--green)"></div>RS+ = Stock beat index today</div>
+      <div class="li"><div class="ld" style="background:var(--green)"></div>✅ W = Above weekly EMA20</div>
+      <div class="li"><div class="ld" style="background:var(--muted)"></div>▲/▼ in score = vs previous session</div>
+    </div>
+  </div>
+
+  <!-- USA PANEL -->
+  <div class="tab-panel" id="panel-usa">
+    
+    <div class="cards" id="cards-usa">
+      <div class="card cg"><span class="card-ico">🟢</span><div class="card-val" style="color:var(--green)">0</div><div class="card-lbl">Strong Picks (≥70)</div></div>
+      <div class="card cy"><span class="card-ico">🟡</span><div class="card-val" style="color:var(--yellow)">7</div><div class="card-lbl">Moderate (50–69)</div></div>
+      <div class="card cr"><span class="card-ico">🔴</span><div class="card-val" style="color:var(--red)">8</div><div class="card-lbl">Weak (&lt;50)</div></div>
+      <div class="card cb"><span class="card-ico">📋</span><div class="card-val" style="color:var(--blue)">15</div><div class="card-lbl">Total Candidates</div></div>
+      <div class="card cm"><span class="card-ico">🔍</span><div class="card-val" style="color:var(--text)">137</div><div class="card-lbl">Stocks Scanned</div></div>
+    </div>
+    <div class="sh">
+      <div class="sh-title">🎯 Top BTST Candidates — USA</div>
+      <div class="sh-line"></div>
+      <div class="sh-sub">Entry window: 3:30–4:00 PM EST</div>
+    </div>
+    <div style="margin:10px 0 14px;padding:12px 16px;background:rgba(255,193,7,0.06);border:1px solid rgba(255,193,7,0.22);border-radius:8px;display:flex;flex-wrap:wrap;gap:10px 24px;align-items:flex-start">
+      <div style="font-family:var(--mono);font-size:.72rem;font-weight:700;color:#ffd740;white-space:nowrap;padding-top:1px">⚡ EXIT RULES · USA</div>
+      <div style="display:flex;flex-wrap:wrap;gap:8px 20px;flex:1;font-family:var(--mono);font-size:.72rem">
+        <span style="color:#a0aab4">🎯 Target: <strong style="color:#00ff88">see Target% col</strong></span>
+        <span style="color:#a0aab4">🛑 SL: <strong style="color:#ff6b6b">see SL% col</strong></span>
+        <span style="color:#ff6b6b;font-weight:700">⚠ Gap-down open → exit by 9:35 AM EST, do not hold</span>
+        <span style="color:#a0aab4">📉 First 15-min low breaks SL → exit immediately</span>
+      </div>
+    </div>
+    <p class="scroll-hint">← swipe to see all columns</p>
+    <div class="tw">
+      <table>
+        <thead><tr><th>#</th><th>Symbol</th><th>Conviction</th><th>Close ($)</th><th>Change</th><th>Vol Ratio</th><th>RSI</th><th>ADX</th><th>Range Pos</th><th>52W High</th><th>Gap</th><th>Candle</th><th>MACD</th><th>RS</th><th>Weekly</th><th>Sector</th><th>SL / Target</th><th>R:R</th><th>Position Size</th><th>BTST Score</th></tr></thead>
+        <tbody>
+        <tr>
+          <td class="rnk">🥇</td>
+          <td class="sym">DOW</td>
+          <td><span class="badge by">⚡ MOD</span></td>
+          <td class="num">$30.69</td>
+          <td><span style="color:#00ff88;font-weight:700;font-family:var(--mono);font-size:.78rem">▲ 2.03%</span></td>
+          <td><span class="badge by">1.33x</span></td>
+          <td><span class="badge bg">65.5</span></td>
+          <td class="num">17.2</td>
+          <td class="num">92.3%</td>
+          <td><span class="badge br">—</span></td>
+          <td><span class="badge by">⬆ +0.8%</span></td>
+          <td><span class="badge br" style="color:var(--muted)">—</span></td>
+          <td><span class="badge br" style="color:var(--muted)">—</span></td>
+          <td><span class="badge bg">📈 RS+</span></td>
+          <td><span class="badge bg">✅ W</span></td>
+          <td style="text-align:center"><span style="display:inline-block;background:rgba(0,255,136,0.12);color:#00ff88;border:1px solid rgba(0,255,136,0.35);border-radius:4px;font-family:var(--mono);font-size:.65rem;font-weight:700;padding:2px 7px;letter-spacing:.5px;white-space:nowrap">▲ Bull</span></td>
+          <td class="num" style="line-height:1.55">
+            <span style="color:#ff6b6b" title="Stop-loss: –2.0% from entry">$30.08 <span style="font-size:.72rem;opacity:.8">–2.0%</span></span><br>
+            <span style="color:#00ff88" title="Target: +3.0% from entry">$31.61 <span style="font-size:.72rem;opacity:.8">+3.0%</span></span>
+          </td>
+          <td class="num" style="color:#ffd740;font-weight:700">1.5x</td>
+          <td class="num" style="font-family:var(--mono);font-size:.78rem;color:#c8d4e0">163 sh &nbsp; $5,002</td>
+          <td>
+            <div class="bw">
+              <div class="bt"><div class="b" style="width:59%;background:#ffca28"></div></div>
+              <span class="bl">59.3</span>
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <td class="rnk">🥈</td>
+          <td class="sym">TMO</td>
+          <td><span class="badge by">⚡ MOD</span></td>
+          <td class="num">$687.37</td>
+          <td><span style="color:#00ff88;font-weight:700;font-family:var(--mono);font-size:.78rem">▲ 1.18%</span></td>
+          <td><span class="badge bg">1.51x</span></td>
+          <td><span class="badge bg">61.3</span></td>
+          <td class="num">39.1</td>
+          <td class="num">57.3%</td>
+          <td><span class="badge bg">🚀 52W</span></td>
+          <td><span class="badge br" style="color:var(--muted)">—</span></td>
+          <td><span class="badge br" style="color:var(--muted)">—</span></td>
+          <td><span class="badge br" style="color:var(--muted)">—</span></td>
+          <td><span class="badge bg">📈 RS+</span></td>
+          <td><span class="badge bg">✅ W</span></td>
+          <td style="text-align:center"><span style="display:inline-block;background:rgba(0,255,136,0.12);color:#00ff88;border:1px solid rgba(0,255,136,0.35);border-radius:4px;font-family:var(--mono);font-size:.65rem;font-weight:700;padding:2px 7px;letter-spacing:.5px;white-space:nowrap">▲ Bull</span></td>
+          <td class="num" style="line-height:1.55">
+            <span style="color:#ff6b6b" title="Stop-loss: –1.2% from entry">$679.32 <span style="font-size:.72rem;opacity:.8">–1.2%</span></span><br>
+            <span style="color:#00ff88" title="Target: +3.0% from entry">$707.99 <span style="font-size:.72rem;opacity:.8">+3.0%</span></span>
+          </td>
+          <td class="num" style="color:#00ff88;font-weight:700">2.6x</td>
+          <td class="num" style="font-family:var(--mono);font-size:.78rem;color:#c8d4e0">12 sh &nbsp; $8,248</td>
+          <td>
+            <div class="bw">
+              <div class="bt"><div class="b" style="width:59%;background:#ffca28"></div></div>
+              <span class="bl">58.8</span>
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <td class="rnk">🥉</td>
+          <td class="sym">ECL</td>
+          <td><span class="badge by">⚡ MOD</span></td>
+          <td class="num">$288.16</td>
+          <td><span style="color:#00ff88;font-weight:700;font-family:var(--mono);font-size:.78rem">▲ 0.78%</span></td>
+          <td><span class="badge by">1.23x</span></td>
+          <td><span class="badge bg">60.8</span></td>
+          <td class="num">20.0</td>
+          <td class="num">90.8%</td>
+          <td><span class="badge br">—</span></td>
+          <td><span class="badge br" style="color:var(--muted)">—</span></td>
+          <td><span class="badge br" style="color:var(--muted)">—</span></td>
+          <td><span class="badge br" style="color:var(--muted)">—</span></td>
+          <td><span class="badge bg">📈 RS+</span></td>
+          <td><span class="badge bg">✅ W</span></td>
+          <td style="text-align:center"><span style="display:inline-block;background:rgba(0,255,136,0.12);color:#00ff88;border:1px solid rgba(0,255,136,0.35);border-radius:4px;font-family:var(--mono);font-size:.65rem;font-weight:700;padding:2px 7px;letter-spacing:.5px;white-space:nowrap">▲ Bull</span></td>
+          <td class="num" style="line-height:1.55">
+            <span style="color:#ff6b6b" title="Stop-loss: –1.5% from entry">$283.74 <span style="font-size:.72rem;opacity:.8">–1.5%</span></span><br>
+            <span style="color:#00ff88" title="Target: +2.9% from entry">$296.44 <span style="font-size:.72rem;opacity:.8">+2.9%</span></span>
+          </td>
+          <td class="num" style="color:#ffd740;font-weight:700">1.9x</td>
+          <td class="num" style="font-family:var(--mono);font-size:.78rem;color:#c8d4e0">22 sh &nbsp; $6,340</td>
+          <td>
+            <div class="bw">
+              <div class="bt"><div class="b" style="width:58%;background:#ffca28"></div></div>
+              <span class="bl">58.2</span>
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <td class="rnk">#4</td>
+          <td class="sym">ISRG</td>
+          <td><span class="badge by">⚡ MOD</span></td>
+          <td class="num">$438.00</td>
+          <td><span style="color:#00ff88;font-weight:700;font-family:var(--mono);font-size:.78rem">▲ 1.11%</span></td>
+          <td><span class="badge bg">1.55x</span></td>
+          <td><span class="badge bg">69.7</span></td>
+          <td class="num">17.7</td>
+          <td class="num">71.4%</td>
+          <td><span class="badge br">—</span></td>
+          <td><span class="badge br" style="color:var(--muted)">—</span></td>
+          <td><span class="badge br" style="color:var(--muted)">—</span></td>
+          <td><span class="badge br" style="color:var(--muted)">—</span></td>
+          <td><span class="badge bg">📈 RS+</span></td>
+          <td><span class="badge bg">✅ W</span></td>
+          <td style="text-align:center"><span style="display:inline-block;background:rgba(0,255,136,0.12);color:#00ff88;border:1px solid rgba(0,255,136,0.35);border-radius:4px;font-family:var(--mono);font-size:.65rem;font-weight:700;padding:2px 7px;letter-spacing:.5px;white-space:nowrap">▲ Bull</span></td>
+          <td class="num" style="line-height:1.55">
+            <span style="color:#ff6b6b" title="Stop-loss: –1.4% from entry">$432.00 <span style="font-size:.72rem;opacity:.8">–1.4%</span></span><br>
+            <span style="color:#00ff88" title="Target: +3.0% from entry">$451.14 <span style="font-size:.72rem;opacity:.8">+3.0%</span></span>
+          </td>
+          <td class="num" style="color:#00ff88;font-weight:700">2.2x</td>
+          <td class="num" style="font-family:var(--mono);font-size:.78rem;color:#c8d4e0">16 sh &nbsp; $7,008</td>
+          <td>
+            <div class="bw">
+              <div class="bt"><div class="b" style="width:56%;background:#ffca28"></div></div>
+              <span class="bl">56.0</span>
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <td class="rnk">#5</td>
+          <td class="sym">NUE</td>
+          <td><span class="badge by">⚡ MOD</span></td>
+          <td class="num">$261.50</td>
+          <td><span style="color:#00ff88;font-weight:700;font-family:var(--mono);font-size:.78rem">▲ 0.30%</span></td>
+          <td><span class="badge by">1.33x</span></td>
+          <td><span class="badge bg">61.4</span></td>
+          <td class="num">14.0</td>
+          <td class="num">87.4%</td>
+          <td><span class="badge br">—</span></td>
+          <td><span class="badge br" style="color:var(--muted)">—</span></td>
+          <td><span class="badge br" style="color:var(--muted)">—</span></td>
+          <td><span class="badge br" style="color:var(--muted)">—</span></td>
+          <td><span class="badge bg">📈 RS+</span></td>
+          <td><span class="badge bg">✅ W</span></td>
+          <td style="text-align:center"><span style="display:inline-block;background:rgba(0,255,136,0.12);color:#00ff88;border:1px solid rgba(0,255,136,0.35);border-radius:4px;font-family:var(--mono);font-size:.65rem;font-weight:700;padding:2px 7px;letter-spacing:.5px;white-space:nowrap">▲ Bull</span></td>
+          <td class="num" style="line-height:1.55">
+            <span style="color:#ff6b6b" title="Stop-loss: –2.0% from entry">$256.27 <span style="font-size:.72rem;opacity:.8">–2.0%</span></span><br>
+            <span style="color:#00ff88" title="Target: +3.0% from entry">$269.35 <span style="font-size:.72rem;opacity:.8">+3.0%</span></span>
+          </td>
+          <td class="num" style="color:#ffd740;font-weight:700">1.5x</td>
+          <td class="num" style="font-family:var(--mono);font-size:.78rem;color:#c8d4e0">19 sh &nbsp; $4,968</td>
+          <td>
+            <div class="bw">
+              <div class="bt"><div class="b" style="width:55%;background:#ffca28"></div></div>
+              <span class="bl">55.4</span>
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <td class="rnk">#6</td>
+          <td class="sym">ADP</td>
+          <td><span class="badge br">— WEAK</span> <span class="badge br" title="Price overextended vs EMA — lower quality entry">⚠ OX</span></td>
+          <td class="num">$292.75</td>
+          <td><span style="color:#00ff88;font-weight:700;font-family:var(--mono);font-size:.78rem">▲ 1.99%</span></td>
+          <td><span class="badge bg">1.51x</span></td>
+          <td><span class="badge bg">72.4</span></td>
+          <td class="num">25.9</td>
+          <td class="num">75.1%</td>
+          <td><span class="badge bg">🚀 52W</span></td>
+          <td><span class="badge by">⬆ +0.8%</span></td>
+          <td><span class="badge br" style="color:var(--muted)">—</span></td>
+          <td><span class="badge br" style="color:var(--muted)">—</span></td>
+          <td><span class="badge bg">📈 RS+</span></td>
+          <td><span class="badge bg">✅ W</span></td>
+          <td style="text-align:center"><span style="display:inline-block;background:rgba(0,255,136,0.12);color:#00ff88;border:1px solid rgba(0,255,136,0.35);border-radius:4px;font-family:var(--mono);font-size:.65rem;font-weight:700;padding:2px 7px;letter-spacing:.5px;white-space:nowrap">▲ Bull</span></td>
+          <td class="num" style="line-height:1.55">
+            <span style="color:#ff6b6b" title="Stop-loss: –1.6% from entry">$288.18 <span style="font-size:.72rem;opacity:.8">–1.6%</span></span><br>
+            <span style="color:#00ff88" title="Target: +2.8% from entry">$301.02 <span style="font-size:.72rem;opacity:.8">+2.8%</span></span>
+          </td>
+          <td class="num" style="color:#ffd740;font-weight:700">1.8x</td>
+          <td class="num" style="font-family:var(--mono);font-size:.78rem;color:#c8d4e0">21 sh &nbsp; $6,148</td>
+          <td>
+            <div class="bw">
+              <div class="bt"><div class="b" style="width:52%;background:#ffca28"></div></div>
+              <span class="bl">52.5</span>
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <td class="rnk">#7</td>
+          <td class="sym">CB</td>
+          <td><span class="badge br">— WEAK</span></td>
+          <td class="num">$357.75</td>
+          <td><span style="color:#00ff88;font-weight:700;font-family:var(--mono);font-size:.78rem">▲ 0.42%</span></td>
+          <td><span class="badge bg">1.72x</span></td>
+          <td><span class="badge bg">68.4</span></td>
+          <td class="num">25.5</td>
+          <td class="num">43.4%</td>
+          <td><span class="badge bg">🚀 52W</span></td>
+          <td><span class="badge br" style="color:var(--muted)">—</span></td>
+          <td><span class="badge br" style="color:var(--muted)">—</span></td>
+          <td><span class="badge br" style="color:var(--muted)">—</span></td>
+          <td><span class="badge bg">📈 RS+</span></td>
+          <td><span class="badge bg">✅ W</span></td>
+          <td style="text-align:center"><span style="display:inline-block;background:rgba(0,255,136,0.12);color:#00ff88;border:1px solid rgba(0,255,136,0.35);border-radius:4px;font-family:var(--mono);font-size:.65rem;font-weight:700;padding:2px 7px;letter-spacing:.5px;white-space:nowrap">▲ Bull</span></td>
+          <td class="num" style="line-height:1.55">
+            <span style="color:#ff6b6b" title="Stop-loss: –0.7% from entry">$355.10 <span style="font-size:.72rem;opacity:.8">–0.7%</span></span><br>
+            <span style="color:#00ff88" title="Target: +2.4% from entry">$366.45 <span style="font-size:.72rem;opacity:.8">+2.4%</span></span>
+          </td>
+          <td class="num" style="color:#00ff88;font-weight:700">3.3x</td>
+          <td class="num" style="font-family:var(--mono);font-size:.78rem;color:#c8d4e0">37 sh &nbsp; $13,237</td>
+          <td>
+            <div class="bw">
+              <div class="bt"><div class="b" style="width:52%;background:#ffca28"></div></div>
+              <span class="bl">52.2</span>
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <td class="rnk">#8</td>
+          <td class="sym">CRM</td>
+          <td><span class="badge br">— WEAK</span></td>
+          <td class="num">$242.43</td>
+          <td><span style="color:#ff6b6b;font-weight:700;font-family:var(--mono);font-size:.78rem">▼ 0.01%</span></td>
+          <td><span class="badge br">1.14x</span></td>
+          <td><span class="badge bg">57.1</span></td>
+          <td class="num">18.9</td>
+          <td class="num">79.9%</td>
+          <td><span class="badge br">—</span></td>
+          <td><span class="badge br" style="color:var(--muted)">—</span></td>
+          <td><span class="badge br" style="color:var(--muted)">—</span></td>
+          <td><span class="badge br" style="color:var(--muted)">—</span></td>
+          <td><span class="badge br" style="color:var(--muted)">—</span></td>
+          <td><span class="badge bg">✅ W</span></td>
+          <td style="text-align:center"><span style="display:inline-block;background:rgba(255,107,107,0.10);color:#ff6b6b;border:1px solid rgba(255,107,107,0.30);border-radius:4px;font-family:var(--mono);font-size:.65rem;font-weight:700;padding:2px 7px;letter-spacing:.5px;white-space:nowrap">▼ Bear</span></td>
+          <td class="num" style="line-height:1.55">
+            <span style="color:#ff6b6b" title="Stop-loss: –2.0% from entry">$237.58 <span style="font-size:.72rem;opacity:.8">–2.0%</span></span><br>
+            <span style="color:#00ff88" title="Target: +3.0% from entry">$249.70 <span style="font-size:.72rem;opacity:.8">+3.0%</span></span>
+          </td>
+          <td class="num" style="color:#ffd740;font-weight:700">1.5x</td>
+          <td class="num" style="font-family:var(--mono);font-size:.78rem;color:#c8d4e0">20 sh &nbsp; $4,849</td>
+          <td>
+            <div class="bw">
+              <div class="bt"><div class="b" style="width:49%;background:#ff5252"></div></div>
+              <span class="bl">48.9</span>
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <td class="rnk">#9</td>
+          <td class="sym">CMCSA</td>
+          <td><span class="badge br">— WEAK</span></td>
+          <td class="num">$22.36</td>
+          <td><span style="color:#00ff88;font-weight:700;font-family:var(--mono);font-size:.78rem">▲ 2.10%</span></td>
+          <td><span class="badge br">1.15x</span></td>
+          <td><span class="badge by">53.5</span></td>
+          <td class="num">39.0</td>
+          <td class="num">86.5%</td>
+          <td><span class="badge br">—</span></td>
+          <td><span class="badge by">⬆ +0.8%</span></td>
+          <td><span class="badge br" style="color:var(--muted)">—</span></td>
+          <td><span class="badge br" style="color:var(--muted)">—</span></td>
+          <td><span class="badge bg">📈 RS+</span></td>
+          <td><span class="badge br" style="color:var(--muted)">—</span></td>
+          <td style="text-align:center"><span style="display:inline-block;background:rgba(0,255,136,0.12);color:#00ff88;border:1px solid rgba(0,255,136,0.35);border-radius:4px;font-family:var(--mono);font-size:.65rem;font-weight:700;padding:2px 7px;letter-spacing:.5px;white-space:nowrap">▲ Bull</span></td>
+          <td class="num" style="line-height:1.55">
+            <span style="color:#ff6b6b" title="Stop-loss: –1.4% from entry">$22.04 <span style="font-size:.72rem;opacity:.8">–1.4%</span></span><br>
+            <span style="color:#00ff88" title="Target: +3.0% from entry">$23.03 <span style="font-size:.72rem;opacity:.8">+3.0%</span></span>
+          </td>
+          <td class="num" style="color:#00ff88;font-weight:700">2.1x</td>
+          <td class="num" style="font-family:var(--mono);font-size:.78rem;color:#c8d4e0">312 sh &nbsp; $6,976</td>
+          <td>
+            <div class="bw">
+              <div class="bt"><div class="b" style="width:47%;background:#ff5252"></div></div>
+              <span class="bl">46.9</span>
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <td class="rnk">#10</td>
+          <td class="sym">SHW</td>
+          <td><span class="badge br">— WEAK</span></td>
+          <td class="num">$336.01</td>
+          <td><span style="color:#00ff88;font-weight:700;font-family:var(--mono);font-size:.78rem">▲ 1.33%</span></td>
+          <td><span class="badge br">1.15x</span></td>
+          <td><span class="badge bg">58.4</span></td>
+          <td class="num">18.2</td>
+          <td class="num">64.1%</td>
+          <td><span class="badge br">—</span></td>
+          <td><span class="badge br" style="color:var(--muted)">—</span></td>
+          <td><span class="badge br" style="color:var(--muted)">—</span></td>
+          <td><span class="badge br" style="color:var(--muted)">—</span></td>
+          <td><span class="badge bg">📈 RS+</span></td>
+          <td><span class="badge bg">✅ W</span></td>
+          <td style="text-align:center"><span style="display:inline-block;background:rgba(0,255,136,0.12);color:#00ff88;border:1px solid rgba(0,255,136,0.35);border-radius:4px;font-family:var(--mono);font-size:.65rem;font-weight:700;padding:2px 7px;letter-spacing:.5px;white-space:nowrap">▲ Bull</span></td>
+          <td class="num" style="line-height:1.55">
+            <span style="color:#ff6b6b" title="Stop-loss: –1.3% from entry">$331.61 <span style="font-size:.72rem;opacity:.8">–1.3%</span></span><br>
+            <span style="color:#00ff88" title="Target: +3.0% from entry">$346.09 <span style="font-size:.72rem;opacity:.8">+3.0%</span></span>
+          </td>
+          <td class="num" style="color:#00ff88;font-weight:700">2.3x</td>
+          <td class="num" style="font-family:var(--mono);font-size:.78rem;color:#c8d4e0">22 sh &nbsp; $7,392</td>
+          <td>
+            <div class="bw">
+              <div class="bt"><div class="b" style="width:46%;background:#ff5252"></div></div>
+              <span class="bl">46.2</span>
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <td class="rnk">#11</td>
+          <td class="sym">SYK</td>
+          <td><span class="badge br">— WEAK</span> <span class="badge br" title="Price overextended vs EMA — lower quality entry">⚠ OX</span></td>
+          <td class="num">$304.40</td>
+          <td><span style="color:#00ff88;font-weight:700;font-family:var(--mono);font-size:.78rem">▲ 2.17%</span></td>
+          <td><span class="badge by">1.27x</span></td>
+          <td><span class="badge bg">65.9</span></td>
+          <td class="num">21.3</td>
+          <td class="num">89.7%</td>
+          <td><span class="badge br">—</span></td>
+          <td><span class="badge bg">⬆ +1.5%</span></td>
+          <td><span class="badge br" style="color:var(--muted)">—</span></td>
+          <td><span class="badge br" style="color:var(--muted)">—</span></td>
+          <td><span class="badge bg">📈 RS+</span></td>
+          <td><span class="badge bg">✅ W</span></td>
+          <td style="text-align:center"><span style="display:inline-block;background:rgba(0,255,136,0.12);color:#00ff88;border:1px solid rgba(0,255,136,0.35);border-radius:4px;font-family:var(--mono);font-size:.65rem;font-weight:700;padding:2px 7px;letter-spacing:.5px;white-space:nowrap">▲ Bull</span></td>
+          <td class="num" style="line-height:1.55">
+            <span style="color:#ff6b6b" title="Stop-loss: –1.8% from entry">$298.93 <span style="font-size:.72rem;opacity:.8">–1.8%</span></span><br>
+            <span style="color:#00ff88" title="Target: +3.0% from entry">$313.53 <span style="font-size:.72rem;opacity:.8">+3.0%</span></span>
+          </td>
+          <td class="num" style="color:#ffd740;font-weight:700">1.7x</td>
+          <td class="num" style="font-family:var(--mono);font-size:.78rem;color:#c8d4e0">18 sh &nbsp; $5,479</td>
+          <td>
+            <div class="bw">
+              <div class="bt"><div class="b" style="width:45%;background:#ff5252"></div></div>
+              <span class="bl">44.7</span>
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <td class="rnk">#12</td>
+          <td class="sym">XOM</td>
+          <td><span class="badge br">— WEAK</span></td>
+          <td class="num">$177.86</td>
+          <td><span style="color:#ff6b6b;font-weight:700;font-family:var(--mono);font-size:.78rem">▼ 0.24%</span></td>
+          <td><span class="badge by">1.22x</span></td>
+          <td><span class="badge bg">69.9</span></td>
+          <td class="num">28.0</td>
+          <td class="num">55.1%</td>
+          <td><span class="badge bg">🚀 52W</span></td>
+          <td><span class="badge br" style="color:var(--muted)">—</span></td>
+          <td><span class="badge br" style="color:var(--muted)">—</span></td>
+          <td><span class="badge br" style="color:var(--muted)">—</span></td>
+          <td><span class="badge br" style="color:var(--muted)">—</span></td>
+          <td><span class="badge bg">✅ W</span></td>
+          <td style="text-align:center"><span style="display:inline-block;background:rgba(0,255,136,0.12);color:#00ff88;border:1px solid rgba(0,255,136,0.35);border-radius:4px;font-family:var(--mono);font-size:.65rem;font-weight:700;padding:2px 7px;letter-spacing:.5px;white-space:nowrap">▲ Bull</span></td>
+          <td class="num" style="line-height:1.55">
+            <span style="color:#ff6b6b" title="Stop-loss: –1.7% from entry">$174.91 <span style="font-size:.72rem;opacity:.8">–1.7%</span></span><br>
+            <span style="color:#00ff88" title="Target: +3.0% from entry">$183.20 <span style="font-size:.72rem;opacity:.8">+3.0%</span></span>
+          </td>
+          <td class="num" style="color:#ffd740;font-weight:700">1.8x</td>
+          <td class="num" style="font-family:var(--mono);font-size:.78rem;color:#c8d4e0">33 sh &nbsp; $5,869</td>
+          <td>
+            <div class="bw">
+              <div class="bt"><div class="b" style="width:44%;background:#ff5252"></div></div>
+              <span class="bl">43.9</span>
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <td class="rnk">#13</td>
+          <td class="sym">MAR</td>
+          <td><span class="badge br">— WEAK</span> <span class="badge br" title="Price overextended vs EMA — lower quality entry">⚠ OX</span></td>
+          <td class="num">$397.31</td>
+          <td><span style="color:#00ff88;font-weight:700;font-family:var(--mono);font-size:.78rem">▲ 1.69%</span></td>
+          <td><span class="badge by">1.22x</span></td>
+          <td><span class="badge by">79.5</span></td>
+          <td class="num">34.0</td>
+          <td class="num">93.5%</td>
+          <td><span class="badge bg">🚀 52W</span></td>
+          <td><span class="badge by">⬆ +0.6%</span></td>
+          <td><span class="badge br" style="color:var(--muted)">—</span></td>
+          <td><span class="badge br" style="color:var(--muted)">—</span></td>
+          <td><span class="badge bg">📈 RS+</span></td>
+          <td><span class="badge bg">✅ W</span></td>
+          <td style="text-align:center"><span style="display:inline-block;background:rgba(0,255,136,0.12);color:#00ff88;border:1px solid rgba(0,255,136,0.35);border-radius:4px;font-family:var(--mono);font-size:.65rem;font-weight:700;padding:2px 7px;letter-spacing:.5px;white-space:nowrap">▲ Bull</span></td>
+          <td class="num" style="line-height:1.55">
+            <span style="color:#ff6b6b" title="Stop-loss: –1.5% from entry">$391.45 <span style="font-size:.72rem;opacity:.8">–1.5%</span></span><br>
+            <span style="color:#00ff88" title="Target: +2.8% from entry">$408.55 <span style="font-size:.72rem;opacity:.8">+2.8%</span></span>
+          </td>
+          <td class="num" style="color:#ffd740;font-weight:700">1.9x</td>
+          <td class="num" style="font-family:var(--mono);font-size:.78rem;color:#c8d4e0">17 sh &nbsp; $6,754</td>
+          <td>
+            <div class="bw">
+              <div class="bt"><div class="b" style="width:44%;background:#ff5252"></div></div>
+              <span class="bl">43.8</span>
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <td class="rnk">#14</td>
+          <td class="sym">SPGI</td>
+          <td><span class="badge br">— WEAK</span> <span class="badge br" title="Price overextended vs EMA — lower quality entry">⚠ OX</span></td>
+          <td class="num">$438.12</td>
+          <td><span style="color:#00ff88;font-weight:700;font-family:var(--mono);font-size:.78rem">▲ 2.41%</span></td>
+          <td><span class="badge br">1.17x</span></td>
+          <td><span class="badge bg">68.8</span></td>
+          <td class="num">20.4</td>
+          <td class="num">82.1%</td>
+          <td><span class="badge br">—</span></td>
+          <td><span class="badge bg">⬆ +1.4%</span></td>
+          <td><span class="badge br" style="color:var(--muted)">—</span></td>
+          <td><span class="badge br" style="color:var(--muted)">—</span></td>
+          <td><span class="badge bg">📈 RS+</span></td>
+          <td><span class="badge bg">✅ W</span></td>
+          <td style="text-align:center"><span style="display:inline-block;background:rgba(0,255,136,0.12);color:#00ff88;border:1px solid rgba(0,255,136,0.35);border-radius:4px;font-family:var(--mono);font-size:.65rem;font-weight:700;padding:2px 7px;letter-spacing:.5px;white-space:nowrap">▲ Bull</span></td>
+          <td class="num" style="line-height:1.55">
+            <span style="color:#ff6b6b" title="Stop-loss: –1.4% from entry">$432.00 <span style="font-size:.72rem;opacity:.8">–1.4%</span></span><br>
+            <span style="color:#00ff88" title="Target: +3.0% from entry">$451.26 <span style="font-size:.72rem;opacity:.8">+3.0%</span></span>
+          </td>
+          <td class="num" style="color:#00ff88;font-weight:700">2.1x</td>
+          <td class="num" style="font-family:var(--mono);font-size:.78rem;color:#c8d4e0">16 sh &nbsp; $7,010</td>
+          <td>
+            <div class="bw">
+              <div class="bt"><div class="b" style="width:42%;background:#ff5252"></div></div>
+              <span class="bl">42.4</span>
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <td class="rnk">#15</td>
+          <td class="sym">LMT</td>
+          <td><span class="badge br">— WEAK</span></td>
+          <td class="num">$548.71</td>
+          <td><span style="color:#00ff88;font-weight:700;font-family:var(--mono);font-size:.78rem">▲ 0.09%</span></td>
+          <td><span class="badge by">1.28x</span></td>
+          <td><span class="badge bg">62.6</span></td>
+          <td class="num">34.6</td>
+          <td class="num">21.7%</td>
+          <td><span class="badge br">—</span></td>
+          <td><span class="badge br" style="color:var(--muted)">—</span></td>
+          <td><span class="badge br" style="color:var(--muted)">—</span></td>
+          <td><span class="badge br" style="color:var(--muted)">—</span></td>
+          <td><span class="badge br" style="color:var(--muted)">—</span></td>
+          <td><span class="badge bg">✅ W</span></td>
+          <td style="text-align:center"><span style="display:inline-block;background:rgba(0,255,136,0.12);color:#00ff88;border:1px solid rgba(0,255,136,0.35);border-radius:4px;font-family:var(--mono);font-size:.65rem;font-weight:700;padding:2px 7px;letter-spacing:.5px;white-space:nowrap">▲ Bull</span></td>
+          <td class="num" style="line-height:1.55">
+            <span style="color:#ff6b6b" title="Stop-loss: –0.5% from entry">$545.73 <span style="font-size:.72rem;opacity:.8">–0.5%</span></span><br>
+            <span style="color:#00ff88" title="Target: +3.0% from entry">$565.17 <span style="font-size:.72rem;opacity:.8">+3.0%</span></span>
+          </td>
+          <td class="num" style="color:#00ff88;font-weight:700">5.5x</td>
+          <td class="num" style="font-family:var(--mono);font-size:.78rem;color:#c8d4e0">33 sh &nbsp; $18,107</td>
+          <td>
+            <div class="bw">
+              <div class="bt"><div class="b" style="width:42%;background:#ff5252"></div></div>
+              <span class="bl">42.1</span>
+            </div>
+          </td>
+        </tr></tbody>
+      </table>
+    </div>
+    
+    <div class="legend">
+      <div class="li"><div class="ld" style="background:var(--green)"></div>Score ≥70 — Strong Signal</div>
+      <div class="li"><div class="ld" style="background:var(--yellow)"></div>Score 50–69 — Moderate</div>
+      <div class="li"><div class="ld" style="background:var(--red)"></div>Score &lt;50 — Avoid</div>
+      <div class="li"><div class="ld" style="background:var(--blue)"></div>Vol Ratio &gt;1.5× = Conviction buying</div>
+      <div class="li"><div class="ld" style="background:var(--muted)"></div>RSI 55–75 = Ideal momentum zone</div>
+      <div class="li"><div class="ld" style="background:var(--muted)"></div>ADX &gt;25 = Confirmed trend</div>
+      <div class="li"><div class="ld" style="background:var(--muted)"></div>Range Pos &gt;90% = Closing near high</div>
+      <div class="li"><div class="ld" style="background:var(--green)"></div>⬆ = Gap-up open that held by close</div>
+      <div class="li"><div class="ld" style="background:var(--green)"></div>⭐/🕯/🔨 = Candle pattern detected</div>
+      <div class="li"><div class="ld" style="background:var(--green)"></div>RS+ = Stock beat index today</div>
+      <div class="li"><div class="ld" style="background:var(--green)"></div>✅ W = Above weekly EMA20</div>
+      <div class="li"><div class="ld" style="background:var(--muted)"></div>▲/▼ in score = vs previous session</div>
+    </div>
+  </div>
+
+  <!-- ORB PANEL -->
+  <style>
+    .orb-sub{margin:20px 0 10px;padding:10px 14px;background:rgba(249,168,37,.05);border:1px solid rgba(249,168,37,.18);border-radius:8px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+    .orb-sub-title{font-family:var(--mono);font-size:.72rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#f9a825}
+    .orb-chip{font-family:var(--mono);font-size:.65rem;padding:2px 8px;border-radius:4px;background:rgba(249,168,37,.12);border:1px solid rgba(249,168,37,.25);color:#f9a825}
+    .orb-info{font-size:.72rem;color:var(--muted);line-height:1.5;margin-top:8px;padding:9px 13px;background:var(--surf);border:1px solid var(--border);border-radius:7px}
+    .orb-info strong{color:var(--text)}
+  </style>
+
+  <div class="tab-panel" id="panel-orb">
+
+    <!-- ORB explainer banner -->
+    <div class="orb-info">
+      <strong>⚡ Opening Range Breakout (ORB) — Intraday Strategy</strong><br>
+      Opening Range = first 15 min of trading (3 × 5-min bars).
+      &nbsp;·&nbsp; <strong>Buy</strong> when price breaks above ORB High with volume confirmation.
+      &nbsp;·&nbsp; <strong>Target</strong> = ORB High + 1.5 × ORB Range.
+      &nbsp;·&nbsp; <strong>Stop Loss</strong> = ORB Low (or price − ATR, whichever is tighter).
+      &nbsp;·&nbsp; Entry window: <strong>9:30–10:30 AM IST / EST</strong> &nbsp;·&nbsp; Exit by: <strong>3:00 PM IST / 3:30 PM EST</strong>.
+    </div>
+
+    <!-- India ORB -->
+    <div class="orb-sub" style="margin-top:16px">
+      <span class="orb-sub-title">🇮🇳 India ORB</span>
+      <span class="orb-chip">Nifty 100 · 5-min</span>
+      <span class="orb-chip">0 breakout(s)</span>
+      <span style="font-family:var(--mono);font-size:.62rem;color:var(--muted);margin-left:auto">ORB Window: 9:15–9:30 AM IST</span>
+    </div>
+    <p class="scroll-hint">← swipe to see all columns</p>
+    <div class="tw">
+      <table>
+        <thead><tr>
+          <th>#</th><th>Symbol</th><th>Price (₹)</th>
+          <th>ORB High</th><th>ORB Low</th><th>ORB Range%</th>
+          <th>Brk Above</th><th>Vol Ratio</th><th>RSI 5m</th><th>ADX 5m</th>
+          <th>Sector</th><th>Stop Loss</th><th>Target</th><th>R:R</th><th>ORB Score</th>
+        </tr></thead>
+        <tbody><tr><td colspan='15' style='text-align:center;color:var(--muted);padding:30px'>No ORB breakouts detected — market may not be open yet, or no confirmed breakouts this session.</td></tr></tbody>
+      </table>
+    </div>
+
+    <!-- USA ORB -->
+    <div class="orb-sub" style="margin-top:24px">
+      <span class="orb-sub-title">🇺🇸 USA ORB</span>
+      <span class="orb-chip">S&amp;P 500 · 5-min</span>
+      <span class="orb-chip">0 breakout(s)</span>
+      <span style="font-family:var(--mono);font-size:.62rem;color:var(--muted);margin-left:auto">ORB Window: 9:30–9:45 AM EST</span>
+    </div>
+    <p class="scroll-hint">← swipe to see all columns</p>
+    <div class="tw">
+      <table>
+        <thead><tr>
+          <th>#</th><th>Symbol</th><th>Price ($)</th>
+          <th>ORB High</th><th>ORB Low</th><th>ORB Range%</th>
+          <th>Brk Above</th><th>Vol Ratio</th><th>RSI 5m</th><th>ADX 5m</th>
+          <th>Sector</th><th>Stop Loss</th><th>Target</th><th>R:R</th><th>ORB Score</th>
+        </tr></thead>
+        <tbody><tr><td colspan='15' style='text-align:center;color:var(--muted);padding:30px'>No ORB breakouts detected — market may not be open yet, or no confirmed breakouts this session.</td></tr></tbody>
+      </table>
+    </div>
+
+    <!-- ORB legend -->
+    <div class="legend" style="margin-top:16px">
+      <div class="li"><div class="ld" style="background:#f9a825"></div>ORB Score ≥60 — Strong breakout signal</div>
+      <div class="li"><div class="ld" style="background:var(--yellow)"></div>Score 40–59 — Moderate breakout</div>
+      <div class="li"><div class="ld" style="background:var(--red)"></div>Score &lt;40 — Weak / avoid</div>
+      <div class="li"><div class="ld" style="background:var(--green)"></div>ORB High — Resistance turned support on breakout</div>
+      <div class="li"><div class="ld" style="background:var(--red)"></div>ORB Low — Invalidation / stop level</div>
+      <div class="li"><div class="ld" style="background:var(--green)"></div>Brk Above — % price is above ORB High</div>
+      <div class="li"><div class="ld" style="background:var(--blue)"></div>Vol Ratio ≥2× = Strong institutional buying</div>
+      <div class="li"><div class="ld" style="background:var(--muted)"></div>ADX 5m &gt;25 = Intraday trend confirmed</div>
+      <div class="li"><div class="ld" style="background:var(--muted)"></div>Tight ORB Range (&lt;1%) = Cleaner, more reliable breakout</div>
+    </div>
+
+  </div>
+
+  <div class="sh" style="margin-top:36px;cursor:pointer;user-select:none" onclick="toggleAllScoring()" id="scoring-header">
+    <div class="sh-title" style="display:flex;align-items:center;gap:10px">
+      ⚙️ Scoring Parameters
+      <span id="scoring-toggle-icon" style="font-size:.9rem;color:var(--blue);transition:transform .3s ease;display:inline-block;transform:rotate(-90deg)">▼</span>
+    </div>
+    <div class="sh-line"></div>
+    <div class="sh-sub">Max score ≈ 138 pts · base 100 + sector (7) + candle (10) + RS (5) + weekly MTF (8) + gap-up (8) &nbsp;<span id="scoring-sub-hint">· click to expand</span></div>
+  </div>
+
+  <!-- ── Compact 4-col scoring params ── -->
+  <style>
+    /* Entire scoring block collapses */
+    #scoring-body{
+      overflow:hidden;max-height:0;opacity:0;pointer-events:none;
+      transition:max-height .5s ease, opacity .35s ease;
+    }
+    #scoring-body.open{max-height:3000px;opacity:1;pointer-events:auto}
+    #scoring-header:hover .sh-title{color:var(--blue)}
+
+    .sp-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:9px;margin-top:16px}
+    @media(max-width:900px){.sp-grid{grid-template-columns:repeat(2,1fr)}}
+    @media(max-width:480px){.sp-grid{grid-template-columns:1fr}}
+
+    /* Sub-section labels (non-clickable) */
+    .sp-section{
+      grid-column:1/-1;
+      font-family:var(--mono);font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;
+      color:#c8d4e0;padding:5px 2px 7px;border-bottom:1px solid var(--border);margin-top:10px;
+    }
+
+    /* Scoring parameter cards */
+    .sp-card{background:var(--surf);border:1px solid var(--border);border-radius:8px;padding:13px 15px;position:relative;overflow:hidden;transition:border-color .15s}
+    .sp-card:hover{border-color:#2a3245}
+    .sp-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--sp-accent,transparent);opacity:.75}
+    .sp-card.sg{--sp-accent:var(--green)} .sp-card.sr{--sp-accent:var(--red)} .sp-card.sc{--sp-accent:var(--blue)} .sp-card.sy{--sp-accent:var(--yellow)}
+    .sp-top{display:flex;align-items:flex-start;justify-content:space-between;gap:5px;margin-bottom:5px}
+    .sp-name{font-family:var(--mono);font-size:.76rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#eef4ff}
+    .sp-badge{font-family:var(--mono);font-size:.76rem;font-weight:700;padding:2px 8px;border-radius:4px;white-space:nowrap;flex-shrink:0}
+    .sp-badge.sg{color:var(--green);background:rgba(0,230,118,.12)} .sp-badge.sr{color:var(--red);background:rgba(255,82,82,.12)}
+    .sp-badge.sc{color:var(--blue);background:rgba(64,196,255,.12)} .sp-badge.sy{color:var(--yellow);background:rgba(255,202,40,.1)}
+    .sp-desc{font-size:.86rem;color:#c4d4e4;line-height:1.5;margin-bottom:6px}
+    .sp-tags{display:flex;flex-wrap:wrap;gap:4px}
+    .sp-tag{font-family:var(--mono);font-size:.7rem;padding:2px 7px;border-radius:3px;background:var(--surf2);border:1px solid var(--border);color:#d8e4f0;white-space:nowrap}
+    .sp-tag.tg{color:var(--green);border-color:rgba(0,230,118,.3);background:rgba(0,230,118,.07)}
+    .sp-tag.tr{color:var(--red);border-color:rgba(255,82,82,.3);background:rgba(255,82,82,.07)}
+    .sp-tag.tc{color:var(--blue);border-color:rgba(64,196,255,.25);background:rgba(64,196,255,.07)}
+    .sp-formula{font-family:var(--mono);font-size:.72rem;color:var(--blue);background:rgba(64,196,255,.1);border:1px solid rgba(64,196,255,.2);padding:3px 9px;border-radius:4px;display:inline-block;margin-top:5px}
+    .sp-footer{margin-top:10px;padding:10px 14px;background:var(--surf);border:1px solid var(--border);border-radius:8px;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+    .sp-footer-lbl{font-family:var(--mono);font-size:.68rem;letter-spacing:.12em;text-transform:uppercase;color:#b8c8d8;margin-right:4px}
+    .sp-chip{font-family:var(--mono);font-size:.72rem;font-weight:600;padding:3px 10px;border-radius:5px;border:1px solid}
+    .sp-chip.sg{color:var(--green);background:rgba(0,230,118,.1);border-color:rgba(0,230,118,.2)}
+    .sp-chip.sr{color:var(--red);background:rgba(255,82,82,.1);border-color:rgba(255,82,82,.2)}
+    .sp-chip.sc{color:var(--blue);background:rgba(64,196,255,.1);border-color:rgba(64,196,255,.2)}
+    .sp-sep{color:var(--border);margin:0 1px}
+    /* Collapsible body — closed by default */
+    #scoring-body{overflow:hidden;max-height:0;opacity:0;pointer-events:none;transition:max-height .55s ease,opacity .35s ease;margin-top:4px}
+    #scoring-body.open{max-height:3000px;opacity:1;pointer-events:auto}
+    /* Sub-section labels inside grid */
+    .sp-section{grid-column:1/-1;font-family:var(--mono);font-size:.7rem;letter-spacing:.14em;text-transform:uppercase;color:#c8d4e0;padding:5px 2px 7px;border-bottom:1px solid var(--border);margin-top:10px}
+  </style>
+
+  <div id="scoring-body">
+  <div class="sp-grid">
+
+    <!-- MOMENTUM & TREND -->
+    <div class="sp-section">📈 Momentum &amp; Trend</div>
+
+    <div class="sp-card sg">
+      <div class="sp-top"><span class="sp-name">Volume Surge</span><span class="sp-badge sg">20 PTS</span></div>
+      <div class="sp-desc">Confirms institutional participation.</div>
+      <div class="sp-tags"><span class="sp-tag tg">Vol &gt;1.5× 10-day avg</span></div>
+    </div>
+
+    <div class="sp-card sg">
+      <div class="sp-top"><span class="sp-name">EMA Alignment</span><span class="sp-badge sg">15 PTS</span></div>
+      <div class="sp-desc">Confirms bullish structure.</div>
+      <div class="sp-tags"><span class="sp-tag tg">Above 20 EMA</span><span class="sp-tag tg">Above 50 EMA</span></div>
+    </div>
+
+    <div class="sp-card sg">
+      <div class="sp-top"><span class="sp-name">RSI Zone</span><span class="sp-badge sg">15 PTS</span></div>
+      <div class="sp-desc">Strong momentum without being overbought.</div>
+      <div class="sp-tags"><span class="sp-tag tg">RSI 55 – 75</span></div>
+    </div>
+
+    <div class="sp-card sg">
+      <div class="sp-top"><span class="sp-name">MACD Signal</span><span class="sp-badge sg">15 PTS</span></div>
+      <div class="sp-desc">Signals continuation.</div>
+      <div class="sp-tags"><span class="sp-tag tg">+ve histogram</span><span class="sp-tag tg">Fresh bull crossover</span></div>
+    </div>
+
+    <div class="sp-card sg">
+      <div class="sp-top"><span class="sp-name">ADX Trend</span><span class="sp-badge sg">10 PTS</span></div>
+      <div class="sp-desc">Reduces overnight whipsaw risk.</div>
+      <div class="sp-tags"><span class="sp-tag tg">ADX &gt; 25</span></div>
+    </div>
+
+    <div class="sp-card sg">
+      <div class="sp-top"><span class="sp-name">52-Week High</span><span class="sp-badge sg">10 PTS</span></div>
+      <div class="sp-desc">Proximity to breakout zone.</div>
+      <div class="sp-tags"><span class="sp-tag tg">Within 5% → Full</span><span class="sp-tag">Within 10% → Half</span></div>
+    </div>
+
+    <!-- PRICE ACTION -->
+    <div class="sp-section">🕯 Price Action &amp; Structure</div>
+
+    <div class="sp-card sg">
+      <div class="sp-top"><span class="sp-name">Price Breakout</span><span class="sp-badge sg">15 PTS</span></div>
+      <div class="sp-desc">Buyer dominance at close.</div>
+      <div class="sp-tags"><span class="sp-tag tg">Close in top 5–10% of range</span></div>
+    </div>
+
+    <div class="sp-card sg">
+      <div class="sp-top"><span class="sp-name">Candlestick Pattern</span><span class="sp-badge sg">+6–10 PTS</span></div>
+      <div class="sp-desc">High-confidence reversal/continuation candles.</div>
+      <div class="sp-tags"><span class="sp-tag tg">M-Star +10</span><span class="sp-tag tg">Engulfing +8</span><span class="sp-tag tg">Hammer +6</span></div>
+    </div>
+
+    <div class="sp-card sg">
+      <div class="sp-top"><span class="sp-name">Gap-Up &amp; Hold</span><span class="sp-badge sg">+5–8 PTS</span></div>
+      <div class="sp-desc">Open gapped above prior close and held.</div>
+      <div class="sp-tags"><span class="sp-tag tg">≥1% gap + pos ≥60% → +8</span><span class="sp-tag">≥0.5% held → +5</span></div>
+    </div>
+
+    <div class="sp-card sg">
+      <div class="sp-top"><span class="sp-name">Relative Strength</span><span class="sp-badge sg">+5 PTS</span></div>
+      <div class="sp-desc">Outperformance vs the broader index.</div>
+      <div class="sp-tags"><span class="sp-tag tg">Daily gain &gt; Index</span></div>
+    </div>
+
+    <!-- CONFIRMATION -->
+    <div class="sp-section">🔗 Confirmation &amp; Alignment</div>
+
+    <div class="sp-card sy">
+      <div class="sp-top"><span class="sp-name">Sector Alignment</span><span class="sp-badge sy">+7 PTS</span></div>
+      <div class="sp-desc">Bonus when sector index is also green on the day.</div>
+      <div class="sp-tags"><span class="sp-tag">e.g. Nifty Bank, XLK</span></div>
+    </div>
+
+    <div class="sp-card sy">
+      <div class="sp-top"><span class="sp-name">Weekly MTF Confirm</span><span class="sp-badge sy">+8 PTS</span></div>
+      <div class="sp-desc">Weekly &amp; daily trends aligned. Reduces reversal risk.</div>
+      <div class="sp-tags"><span class="sp-tag">Daily close &gt; Weekly EMA20</span></div>
+    </div>
+
+    <!-- RISK -->
+    <div class="sp-section">⚠ Risk &amp; Dynamic Levels</div>
+
+    <div class="sp-card sr">
+      <div class="sp-top"><span class="sp-name">ATR Penalty</span><span class="sp-badge sr">−40%</span></div>
+      <div class="sp-desc">Avoids chasing overextended stocks. Triggered if day's move exceeds 1.5× ATR.</div>
+      <div class="sp-tags"><span class="sp-tag tr">Move &gt; 1.5× ATR → penalty</span></div>
+    </div>
+
+    <div class="sp-card sc">
+      <div class="sp-top"><span class="sp-name">Stop Loss</span><span class="sp-badge sc">DYNAMIC</span></div>
+      <div class="sp-desc">Limits overnight gap risk. Tighter of the two values.</div>
+      <div class="sp-formula">max( Today's Low,  Close − 1×ATR )</div>
+    </div>
+
+    <div class="sp-card sc">
+      <div class="sp-top"><span class="sp-name">Target</span><span class="sp-badge sc">DYNAMIC</span></div>
+      <div class="sp-desc">Respects each stock's typical daily volatility range.</div>
+      <div class="sp-formula">Close + 1.5× ATR</div>
+    </div>
+
+  </div>
+
+  <!-- Score breakdown footer -->
+  <div class="sp-footer">
+    <span class="sp-footer-lbl">Score Breakdown</span>
+    <span class="sp-chip sg">Base 100</span><span class="sp-sep">+</span>
+    <span class="sp-chip sg">Sector +7</span><span class="sp-sep">+</span>
+    <span class="sp-chip sg">Candle +10</span><span class="sp-sep">+</span>
+    <span class="sp-chip sg">RS +5</span><span class="sp-sep">+</span>
+    <span class="sp-chip sg">Weekly MTF +8</span><span class="sp-sep">+</span>
+    <span class="sp-chip sg">Gap-Up +8</span><span class="sp-sep">=</span>
+    <span class="sp-chip sg" style="font-size:.76rem;padding:3px 10px">Max 138 PTS</span>
+    <span class="sp-chip sr" style="margin-left:auto">ATR Penalty −40%</span>
+    <span class="sp-chip sc">SL: Dynamic</span>
+    <span class="sp-chip sc">Target: Dynamic</span>
+  </div>
+
+  </div><!-- /scoring-body -->
+
+  <!-- DISCLAIMER -->
+  <div class="disc">
+    <strong>⚠ Disclaimer:</strong> This report is for educational and research purposes only.
+    It does <strong>not</strong> constitute financial advice or any recommendation to buy or sell securities.
+    Equity trading involves significant risk. Past patterns do not guarantee future performance.
+    For Indian markets, consult a <strong>SEBI-registered advisor</strong>.
+    For US markets, consult a <strong>FINRA/SEC-registered advisor</strong> before placing any trades.
+  </div>
+</div>
+
+<!-- FOOTER -->
+<div class="footer">
+  Generated by BTST Screener v3 (Fixed) · Python + yfinance + pandas-ta
+  &nbsp;|&nbsp; India: 21 Oct 2026, 05:06 AM IST &nbsp;·&nbsp; USA: 20 Oct 2026, 07:36 PM EST
+  <br>
+  Signals: Vol(20) · RSI(15) · MACD(15) · EMA(15) · Breakout(15) · ADX(10) · 52W(10) · Gap(+8) · Sector(+7) · Candle(+10) · RS(+5) · Weekly MTF(+8) · Marubozu(+12)
+  <br>
+  v3 Fixes: Closing Marubozu · MACD direction · MACD crossover · Dynamic VIX · Earnings filter · Min R:R 1.5x · Position sizing · Friday RVOL guard
+</div>
+
+<script>
+  // Live IST clock — updates every second
+  function updateLiveClock() {
+    const now = new Date();
+    // Convert to IST (UTC+5:30)
+    const istOffset = 5.5 * 60 * 60 * 1000;
+    const ist = new Date(now.getTime() + (now.getTimezoneOffset() * 60 * 1000) + istOffset);
+    let h = ist.getHours();
+    const ampm = h >= 12 ? 'PM' : 'AM';
+    h = h % 12 || 12;
+    const mm = String(ist.getMinutes()).padStart(2, '0');
+    const ss = String(ist.getSeconds()).padStart(2, '0');
+    const el = document.getElementById('live-clock');
+    if (el) el.textContent = String(h).padStart(2,'0') + ':' + mm + ':' + ss + ' ' + ampm;
+  }
+  updateLiveClock();
+  setInterval(updateLiveClock, 1000);
+
+  function switchTab(tab) {
+    // panels
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    document.getElementById('panel-' + tab).classList.add('active');
+    // buttons
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelector('.' + tab + '-btn').classList.add('active');
+    // pills — only show pills row that exists for this tab
+    document.querySelectorAll('.market-pills').forEach(p => p.classList.remove('active'));
+    const pillEl = document.getElementById('pills-' + tab);
+    if (pillEl) pillEl.classList.add('active');
+  }
+
+  // Scoring Parameters — single toggle for entire section
+  function toggleAllScoring() {
+    const body = document.getElementById('scoring-body');
+    const icon = document.getElementById('scoring-toggle-icon');
+    const sub  = document.getElementById('scoring-sub-hint');
+    if (body.classList.contains('open')) {
+      body.classList.remove('open');
+      icon.style.transform = 'rotate(-90deg)';
+      if (sub) sub.textContent = '· click to expand';
+    } else {
+      body.classList.add('open');
+      icon.style.transform = 'rotate(0deg)';
+      if (sub) sub.textContent = '· click to collapse';
+    }
+  }
+
+</script>
+</body>
+</html>
