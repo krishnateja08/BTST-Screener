@@ -1,10 +1,1 @@
 Symbol,Close,Change%,Volume_Ratio,Avg_Vol,RSI,MACD_Hist,MACD_Crossover,EMA20,EMA50,EMA_Dist%,ADX,Range_Pos%,ATR,52W_High,Near_52W_High,Candle,Marubozu,FinalHrFade,RS_Beat,Weekly_Align,Gap_Up,Gap_Pct,Sector_Align,Breadth_OK,Entry_Overextended,Has_Earnings,Stop_Loss,Target,Target%,SL%,RR_Ratio,Shares,Position_Value,Conviction,BTST_Score
-FDX,307.1,2.17,1.69,1007390.0,61.2,2.327,False,297.45,301.77,3.24,32.0,90.5,6.46,342.73,False,Morning Star,False,False,True,True,False,0.48,True,True,False,False,300.96,316.31,3.0,2.0,1.5,16,4913.6,GOOD,75.7
-QCOM,184.17,2.54,1.18,10448250.0,56.2,0.3681,True,178.27,177.83,3.31,9.9,95.1,6.59,257.56,False,,False,False,True,True,True,0.76,True,True,False,False,180.49,189.7,3.0,2.0,1.5,27,4972.59,MODERATE,64.1
-AEP,130.3,0.84,1.31,3169420.0,66.5,0.7201,False,125.82,124.7,3.56,34.0,97.8,2.24,139.52,False,,False,False,True,True,False,0.19,True,True,False,False,128.53,133.66,2.58,1.36,1.9,56,7296.8,MODERATE,61.4
-DLR,179.01,2.57,1.64,1990860.0,51.8,0.3193,True,176.72,180.11,1.3,22.8,90.8,4.75,206.06,False,,False,False,True,False,True,0.72,False,True,False,False,175.44,184.38,3.0,1.99,1.5,28,5012.28,WEAK,52.3
-NUE,270.79,5.22,1.97,1217250.0,66.0,1.4976,False,256.17,252.72,5.71,12.6,61.8,8.71,279.45,True,,False,False,True,True,True,2.97,True,True,False,False,265.37,278.91,3.0,2.0,1.5,18,4874.22,WEAK,48.8
-TSLA,407.46,4.04,1.14,39747110.0,65.5,2.5961,False,376.13,369.63,8.33,13.5,92.5,13.71,498.83,False,,False,False,True,True,True,1.57,True,True,True,False,399.31,419.68,3.0,2.0,1.5,12,4889.52,WEAK,45.2
-SPGI,448.93,-0.38,1.87,1954800.0,70.2,4.8044,False,427.4,419.64,5.04,30.2,8.3,10.93,518.88,False,,False,True,False,True,False,4.29,False,True,False,False,446.62,462.4,3.0,0.51,5.83,43,19303.99,WEAK,41.1
-HON,218.81,-0.21,1.14,2928110.0,60.9,1.3629,False,213.69,215.14,2.4,12.0,77.1,5.38,258.09,False,,False,False,False,False,False,0.32,True,True,False,False,214.87,225.37,3.0,1.8,1.66,25,5470.25,WEAK,39.2
-UPS,106.09,5.75,2.42,4513610.0,72.7,1.2132,False,98.5,99.13,7.71,35.2,92.8,2.43,116.86,False,,False,False,True,True,True,1.22,True,True,True,False,103.97,109.27,3.0,2.0,1.5,47,4986.23,WEAK,37.4
