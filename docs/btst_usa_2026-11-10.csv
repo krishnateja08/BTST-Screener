@@ -1,14 +1,1 @@
 Symbol,Close,Change%,Volume_Ratio,Avg_Vol,RSI,MACD_Hist,MACD_Crossover,EMA20,EMA50,EMA_Dist%,ADX,Range_Pos%,ATR,52W_High,Near_52W_High,Candle,Marubozu,FinalHrFade,RS_Beat,Weekly_Align,Gap_Up,Gap_Pct,Sector_Align,Breadth_OK,Entry_Overextended,Has_Earnings,Stop_Loss,Target,Target%,SL%,RR_Ratio,Shares,Position_Value,Conviction,BTST_Score
-TMO,721.63,3.87,1.14,1988180.0,61.6,0.0262,True,689.12,662.3,4.72,21.9,95.3,22.89,723.08,True,,False,False,True,True,True,0.65,True,True,False,False,707.2,743.28,3.0,2.0,1.5,6,4329.78,GOOD,77.6
-DE,691.28,2.92,1.42,1146630.0,62.5,4.6613,False,661.8,655.23,4.45,20.1,63.3,19.79,719.5,True,,False,False,True,True,True,2.06,True,True,False,False,681.4,712.02,3.0,1.43,2.1,10,6912.8,GOOD,71.0
-HON,229.0,4.07,1.1,2960580.0,62.1,0.6845,False,219.03,217.35,4.55,13.0,75.7,6.68,258.09,False,,False,False,True,True,True,1.22,True,True,False,False,224.42,235.87,3.0,2.0,1.5,21,4809.0,MODERATE,59.5
-AEP,128.33,1.42,1.19,4572080.0,55.0,-0.3554,False,127.45,125.9,0.69,30.6,86.5,2.78,139.52,False,,False,False,False,True,True,0.59,True,True,False,False,125.83,132.18,3.0,1.95,1.54,39,5004.87,MODERATE,59.0
-LLY,1411.95,4.28,1.17,3451890.0,67.9,5.015,False,1323.68,1254.62,6.67,38.3,86.0,48.66,1453.0,True,Morning Star,False,False,True,True,True,0.84,True,True,True,False,1383.71,1454.31,3.0,2.0,1.5,3,4235.85,WEAK,54.4
-MAR,417.16,0.17,1.28,1782190.0,69.8,0.9388,False,399.39,380.53,4.45,43.8,13.7,10.37,433.3,True,,False,True,False,True,False,1.74,True,True,False,False,415.79,429.67,3.0,0.33,9.13,72,30035.52,WEAK,51.3
-RBLX,51.6,4.67,1.19,12506570.0,55.7,-0.3058,False,49.11,47.81,5.07,21.2,61.6,3.24,108.29,False,,False,False,True,True,True,2.43,True,True,False,False,50.57,53.15,3.0,2.0,1.5,97,5005.2,WEAK,51.0
-DUK,128.1,0.25,1.32,4630240.0,62.8,0.3478,False,124.78,122.18,2.66,46.8,43.5,2.25,132.99,True,,False,True,False,True,False,0.84,True,True,False,False,127.26,131.48,2.64,0.66,4.02,119,15243.9,WEAK,48.3
-CHTR,121.2,2.65,1.2,2908520.0,56.8,2.4531,False,114.24,119.73,6.09,22.3,92.1,6.13,254.11,False,Hammer,False,False,True,False,True,1.48,True,True,True,False,118.78,124.84,3.0,2.0,1.5,41,4969.2,WEAK,45.3
-SPG,233.01,2.01,1.4,1462770.0,78.7,2.2328,False,217.03,212.23,7.36,44.5,80.8,4.3,235.97,True,,False,False,False,True,True,1.13,True,True,True,False,228.97,239.46,2.77,1.73,1.6,24,5592.24,WEAK,44.2
-PEP,141.88,0.38,1.16,9871910.0,63.3,0.8745,False,136.56,134.92,3.9,36.9,44.8,3.3,166.41,False,,False,True,False,True,False,0.16,True,True,False,False,140.58,146.14,3.0,0.92,3.28,76,10782.88,WEAK,42.2
-PSA,338.15,0.2,1.26,1241400.0,73.2,3.0671,False,318.9,308.87,6.03,46.5,2.0,7.31,345.89,True,,False,True,False,True,False,1.08,True,True,True,False,338.04,348.29,3.0,0.03,92.19,909,307378.34,WEAK,33.8
-MS,187.1,3.12,1.31,6763960.0,49.7,0.8729,False,186.13,191.93,0.52,23.6,47.3,6.0,229.58,False,,False,True,True,False,True,2.08,True,True,False,False,184.37,192.71,3.0,1.46,2.05,36,6735.6,WEAK,30.7
