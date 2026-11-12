@@ -1,2 +1,1 @@
 Symbol,Close,Change%,Volume_Ratio,Avg_Vol,RSI,MACD_Hist,MACD_Crossover,EMA20,EMA50,EMA_Dist%,ADX,Range_Pos%,ATR,52W_High,Near_52W_High,Candle,Marubozu,FinalHrFade,RS_Beat,Weekly_Align,Gap_Up,Gap_Pct,Sector_Align,Breadth_OK,Entry_Overextended,Has_Earnings,Stop_Loss,Target,Target%,SL%,RR_Ratio,Shares,Position_Value,Conviction,BTST_Score
-DUK,128.94,0.66,1.14,4885020.0,64.6,0.2659,False,125.18,122.44,3.01,46.7,66.4,2.29,132.99,True,Engulfing,False,False,False,True,False,-0.43,True,True,False,False,127.14,132.37,2.66,1.4,1.91,55,7091.7,MODERATE,66.1
