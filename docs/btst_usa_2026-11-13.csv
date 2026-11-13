@@ -1,0 +1,4 @@
+Symbol,Close,Change%,Volume_Ratio,Avg_Vol,RSI,MACD_Hist,MACD_Crossover,EMA20,EMA50,EMA_Dist%,ADX,Range_Pos%,ATR,52W_High,Near_52W_High,Candle,Marubozu,FinalHrFade,RS_Beat,Weekly_Align,Gap_Up,Gap_Pct,Sector_Align,Breadth_OK,Entry_Overextended,Has_Earnings,Stop_Loss,Target,Target%,SL%,RR_Ratio,Shares,Position_Value,Conviction,BTST_Score
+AVGO,345.22,3.99,1.16,28917100.0,53.9,1.4806,True,330.75,344.64,4.38,25.5,7.3,16.58,493.32,False,,False,True,True,False,False,5.43,True,True,False,False,344.31,355.58,3.0,0.26,11.38,109,37628.98,WEAK,37.1
+AMD,552.9,7.32,1.12,40921760.0,53.6,2.0478,True,519.87,532.3,6.35,22.0,67.2,40.06,658.52,False,,False,False,True,True,True,5.41,True,True,True,False,541.84,569.49,3.0,2.0,1.5,9,4976.1,WEAK,35.1
+DLR,181.13,0.14,1.2,3369080.0,53.0,0.5491,False,178.59,179.91,1.42,14.9,26.3,6.07,206.06,False,,False,True,True,True,False,1.44,True,True,False,False,179.35,186.56,3.0,0.98,3.05,56,10143.28,WEAK,32.3
